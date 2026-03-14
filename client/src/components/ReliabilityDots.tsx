@@ -23,7 +23,7 @@ export function ReliabilityDots({ score, size = 6, className = "" }: Reliability
             width: size,
             height: size,
             borderRadius: "50%",
-            backgroundColor: filled ? "oklch(0.65 0.18 220)" : "oklch(0.9 0.005 90)",
+            backgroundColor: filled ? "oklch(0.62 0.19 218)" : "oklch(0.88 0.006 85)",
             display: "inline-block",
             transition: "background-color 0.2s ease",
           }}

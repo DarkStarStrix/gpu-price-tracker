@@ -1,5 +1,6 @@
 /*
-  AvailabilityBadge — Colored indicator for offer availability state
+  AvailabilityBadge — Premium availability state indicator
+  Design: Data Observatory v2 — pill badges with pulsing dot for available state
 */
 
 import type { AvailabilityState } from "@/lib/data";
@@ -10,30 +11,42 @@ interface AvailabilityBadgeProps {
   className?: string;
 }
 
-const stateStyles: Record<AvailabilityState, { bg: string; dot: string; text: string }> = {
+const stateStyles: Record<AvailabilityState, {
+  container: string;
+  dot: string;
+  text: string;
+  pulse: boolean;
+}> = {
   available: {
-    bg: "bg-[oklch(0.65_0.2_150_/_0.08)]",
-    dot: "bg-[oklch(0.65_0.2_150)]",
-    text: "text-[oklch(0.45_0.15_150)]",
+    container: "bg-[oklch(0.60_0.18_155_/_0.08)] border border-[oklch(0.60_0.18_155_/_0.2)]",
+    dot: "bg-[oklch(0.60_0.18_155)]",
+    text: "text-[oklch(0.42_0.15_155)]",
+    pulse: true,
   },
   limited: {
-    bg: "bg-[oklch(0.7_0.17_80_/_0.08)]",
-    dot: "bg-[oklch(0.7_0.17_80)]",
-    text: "text-[oklch(0.5_0.12_80)]",
+    container: "bg-[oklch(0.68_0.18_80_/_0.08)] border border-[oklch(0.68_0.18_80_/_0.2)]",
+    dot: "bg-[oklch(0.68_0.18_80)]",
+    text: "text-[oklch(0.48_0.14_80)]",
+    pulse: false,
   },
   unavailable: {
-    bg: "bg-[oklch(0.6_0.15_25_/_0.08)]",
-    dot: "bg-[oklch(0.6_0.15_25)]",
-    text: "text-[oklch(0.45_0.12_25)]",
+    container: "bg-[oklch(0.58_0.22_25_/_0.07)] border border-[oklch(0.58_0.22_25_/_0.2)]",
+    dot: "bg-[oklch(0.58_0.22_25)]",
+    text: "text-[oklch(0.42_0.16_25)]",
+    pulse: false,
   },
 };
 
 export function AvailabilityBadge({ state, className = "" }: AvailabilityBadgeProps) {
-  const styles = stateStyles[state];
+  const s = stateStyles[state];
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm font-data text-[11px] tracking-wide ${styles.bg} ${styles.text} ${className}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-data text-[10px] tracking-wide font-medium ${s.container} ${s.text} ${className}`}>
+      <span className={`relative w-1.5 h-1.5 rounded-full ${s.dot} flex-shrink-0`}>
+        {s.pulse && (
+          <span className={`absolute inset-0 rounded-full ${s.dot} animate-ping opacity-60`} />
+        )}
+      </span>
       {availabilityLabel(state)}
     </span>
   );

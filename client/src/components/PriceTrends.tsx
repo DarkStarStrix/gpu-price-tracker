@@ -1,130 +1,172 @@
 /*
-  PriceTrends — Historical price chart for selected GPU models
-  Data Observatory design: clean line chart with Tufte-inspired minimal axes
+  PriceTrends — Premium price history chart
+  Design: Data Observatory v2 — Recharts with custom styling, animated tabs, clean axes
 */
 
 import { useState, useMemo } from "react";
 import { GPU_MODELS, PROVIDERS, OFFERS, getSparkline, formatPrice } from "@/lib/data";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
 
-const CHART_GPUS = ["h100-sxm", "a100-sxm-80", "rtx-4090"];
-const CHART_COLORS = [
-  "oklch(0.65 0.18 220)",  // teal
-  "oklch(0.7 0.17 45)",    // coral
-  "oklch(0.55 0.15 250)",  // navy
-  "oklch(0.65 0.2 150)",   // green
-  "oklch(0.7 0.17 80)",    // amber
+const CHART_GPUS = [
+  { id: "h100-sxm",    label: "H100 SXM" },
+  { id: "a100-sxm-80", label: "A100 80G" },
+  { id: "rtx-4090",    label: "RTX 4090" },
 ];
 
-const DAY_LABELS = ["7d ago", "6d", "5d", "4d", "3d", "2d", "1d", "12h", "10h", "8h", "6h", "4h", "2h", "Now"];
+const PROVIDER_COLORS = [
+  "oklch(0.62 0.19 218)",  // teal
+  "oklch(0.68 0.18 45)",   // coral
+  "oklch(0.52 0.16 255)",  // navy
+  "oklch(0.60 0.18 155)",  // sage
+  "oklch(0.68 0.18 80)",   // amber
+  "oklch(0.58 0.16 300)",  // purple
+];
+
+const TIME_LABELS = ["7d", "6d", "5d", "4d", "3d", "2d", "1d", "12h", "10h", "8h", "6h", "4h", "2h", "Now"];
 
 export function PriceTrends() {
   const [selectedGpu, setSelectedGpu] = useState("h100-sxm");
 
-  const chartData = useMemo(() => {
+  const { chartData, providerNames } = useMemo(() => {
     const gpuOffers = OFFERS.filter(o => o.gpuModelId === selectedGpu);
-
-    // Build data points for each provider
     const providerData: Record<string, number[]> = {};
     for (const offer of gpuOffers) {
       if (!providerData[offer.providerId]) {
         providerData[offer.providerId] = getSparkline(offer.id, offer.pricePerGpuHr);
       }
     }
-
-    // Build chart rows
-    return DAY_LABELS.map((label, i) => {
+    const names = Object.keys(providerData).map(id => PROVIDERS.find(p => p.id === id)?.name).filter(Boolean) as string[];
+    const data = TIME_LABELS.map((label, i) => {
       const point: Record<string, string | number> = { time: label };
       for (const [providerId, prices] of Object.entries(providerData)) {
-        const provider = PROVIDERS.find(p => p.id === providerId);
-        if (provider && prices[i] !== undefined) {
-          point[provider.name] = prices[i];
-        }
+        const name = PROVIDERS.find(p => p.id === providerId)?.name;
+        if (name && prices[i] !== undefined) point[name] = prices[i];
       }
       return point;
     });
-  }, [selectedGpu]);
-
-  const providerNames = useMemo(() => {
-    const gpuOffers = OFFERS.filter(o => o.gpuModelId === selectedGpu);
-    const ids = Array.from(new Set(gpuOffers.map(o => o.providerId)));
-    return ids.map(id => PROVIDERS.find(p => p.id === id)?.name).filter(Boolean) as string[];
+    return { chartData: data, providerNames: names };
   }, [selectedGpu]);
 
   const gpuModel = GPU_MODELS.find(g => g.id === selectedGpu);
 
+  // Calculate average for reference line
+  const avgPrice = useMemo(() => {
+    const allValues = chartData.flatMap(d =>
+      providerNames.map(n => d[n] as number).filter(v => typeof v === "number")
+    );
+    return allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : null;
+  }, [chartData, providerNames]);
+
   return (
     <section className="mb-10">
-      <div className="flex items-center justify-between mb-5">
+      {/* Header with GPU selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Price Trends</h2>
-          <p className="text-sm text-muted-foreground mt-1">7-day price history by provider for {gpuModel?.name ?? "selected GPU"}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            7-day price history for <strong className="text-foreground">{gpuModel?.name}</strong> across providers
+          </p>
         </div>
-        <div className="flex gap-1.5">
-          {CHART_GPUS.map(gpuId => {
-            const gpu = GPU_MODELS.find(g => g.id === gpuId);
-            return (
-              <button
-                key={gpuId}
-                onClick={() => setSelectedGpu(gpuId)}
-                className={`px-3 py-1.5 text-xs font-data rounded-md border transition-colors ${
-                  selectedGpu === gpuId
-                    ? "bg-[oklch(0.65_0.18_220_/_0.1)] border-[oklch(0.65_0.18_220_/_0.3)] text-[oklch(0.45_0.14_220)]"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {gpu?.name}
-              </button>
-            );
-          })}
+        <div className="flex gap-1 p-1 bg-[oklch(0.94_0.006_85)] rounded-lg">
+          {CHART_GPUS.map(g => (
+            <button
+              key={g.id}
+              onClick={() => setSelectedGpu(g.id)}
+              className={`px-3.5 py-1.5 text-xs font-data rounded-md transition-all duration-200 ${
+                selectedGpu === g.id
+                  ? "bg-card text-foreground font-medium shadow-[var(--shadow-xs)] border border-border/60"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-md p-4">
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.005 90)" />
+      {/* Chart */}
+      <div className="bg-card border border-border rounded-xl p-5 shadow-[var(--shadow-sm)]">
+        <ResponsiveContainer width="100%" height={340}>
+          <LineChart data={chartData} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
+            <CartesianGrid
+              strokeDasharray="4 4"
+              stroke="oklch(0.91 0.006 85)"
+              vertical={false}
+            />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", fill: "oklch(0.5 0.03 250)" }}
-              axisLine={{ stroke: "oklch(0.9 0.008 90)" }}
+              tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", fill: "oklch(0.55 0.025 255)" }}
+              axisLine={{ stroke: "oklch(0.9 0.008 85)" }}
               tickLine={false}
+              dy={6}
             />
             <YAxis
-              tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", fill: "oklch(0.5 0.03 250)" }}
+              tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", fill: "oklch(0.55 0.025 255)" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => `$${v.toFixed(1)}`}
-              width={48}
+              width={44}
             />
+            {avgPrice && (
+              <ReferenceLine
+                y={avgPrice}
+                stroke="oklch(0.68 0.18 80 / 0.4)"
+                strokeDasharray="6 3"
+                label={{
+                  value: `avg $${avgPrice.toFixed(2)}`,
+                  position: "insideTopRight",
+                  fontSize: 9,
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fill: "oklch(0.55 0.14 80)",
+                }}
+              />
+            )}
             <Tooltip
               contentStyle={{
-                backgroundColor: "oklch(0.99 0.003 90)",
-                border: "1px solid oklch(0.9 0.008 90)",
-                borderRadius: "6px",
-                fontSize: "12px",
+                backgroundColor: "oklch(0.993 0.003 85)",
+                border: "1px solid oklch(0.9 0.008 85)",
+                borderRadius: "10px",
+                fontSize: "11px",
                 fontFamily: "'IBM Plex Mono', monospace",
-                boxShadow: "0 2px 8px oklch(0.25 0.04 250 / 0.08)",
+                boxShadow: "0 4px 16px oklch(0.22 0.045 255 / 0.1)",
+                padding: "10px 14px",
               }}
-              formatter={(value: number) => [formatPrice(value), ""]}
-              labelStyle={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, marginBottom: 4 }}
+              formatter={(value: number, name: string) => [
+                <span style={{ fontWeight: 600 }}>{formatPrice(value)}</span>,
+                name,
+              ]}
+              labelStyle={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 600,
+                fontSize: "12px",
+                color: "oklch(0.22 0.045 255)",
+                marginBottom: "6px",
+                display: "block",
+              }}
+              cursor={{ stroke: "oklch(0.62 0.19 218 / 0.2)", strokeWidth: 1 }}
             />
             <Legend
-              wrapperStyle={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif" }}
+              wrapperStyle={{
+                fontSize: "11px",
+                fontFamily: "'DM Sans', sans-serif",
+                paddingTop: "12px",
+              }}
               iconType="line"
+              iconSize={16}
             />
             {providerNames.map((name, i) => (
               <Line
                 key={name}
                 type="monotone"
                 dataKey={name}
-                stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                stroke={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 3, strokeWidth: 0 }}
+                activeDot={{ r: 4, strokeWidth: 0, fill: PROVIDER_COLORS[i % PROVIDER_COLORS.length] }}
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             ))}
           </LineChart>

@@ -1,6 +1,6 @@
 /*
-  Sparkline — Inline SVG sparkline chart for price trends
-  Data Observatory design: thin teal lines on transparent background
+  Sparkline — Inline SVG sparkline with smooth bezier curves
+  Design: Data Observatory v2 — smooth curves, trend-aware color, subtle fill
 */
 
 interface SparklineProps {
@@ -11,25 +11,42 @@ interface SparklineProps {
   className?: string;
 }
 
+function smoothPath(points: [number, number][]): string {
+  if (points.length < 2) return "";
+  let d = `M${points[0][0]},${points[0][1]}`;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const cpX = (prev[0] + curr[0]) / 2;
+    d += ` C${cpX},${prev[1]} ${cpX},${curr[1]} ${curr[0]},${curr[1]}`;
+  }
+  return d;
+}
+
 export function Sparkline({ data, width = 80, height = 24, color, className = "" }: SparklineProps) {
   if (data.length < 2) return null;
 
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const range = max - min || 1;
-  const padding = 2;
+  const range = max - min || 0.01;
+  const pad = 2;
 
-  const points = data.map((val, i) => {
-    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
-    const y = height - padding - ((val - min) / range) * (height - padding * 2);
-    return `${x},${y}`;
-  });
+  const coords: [number, number][] = data.map((val, i) => [
+    pad + (i / (data.length - 1)) * (width - pad * 2),
+    height - pad - ((val - min) / range) * (height - pad * 2),
+  ]);
 
-  const pathD = points.map((p, i) => (i === 0 ? `M${p}` : `L${p}`)).join(" ");
+  const pathD = smoothPath(coords);
 
-  // Determine trend color
+  // Fill area under curve
+  const fillD = `${pathD} L${coords[coords.length - 1][0]},${height} L${coords[0][0]},${height} Z`;
+
   const trend = data[data.length - 1] - data[0];
-  const strokeColor = color ?? (trend <= 0 ? "oklch(0.65 0.2 150)" : "oklch(0.7 0.17 45)");
+  const strokeColor = color ?? (trend <= 0 ? "oklch(0.60 0.18 155)" : "oklch(0.68 0.18 45)");
+  const fillColor = color ?? (trend <= 0 ? "oklch(0.60 0.18 155 / 0.08)" : "oklch(0.68 0.18 45 / 0.08)");
+
+  const lastX = coords[coords.length - 1][0];
+  const lastY = coords[coords.length - 1][1];
 
   return (
     <svg
@@ -39,21 +56,13 @@ export function Sparkline({ data, width = 80, height = 24, color, className = ""
       className={className}
       style={{ display: "inline-block", verticalAlign: "middle" }}
     >
-      <path
-        d={pathD}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Fill */}
+      <path d={fillD} fill={fillColor} />
+      {/* Line */}
+      <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={1.5} strokeLinecap="round" />
       {/* End dot */}
-      <circle
-        cx={parseFloat(points[points.length - 1].split(",")[0])}
-        cy={parseFloat(points[points.length - 1].split(",")[1])}
-        r={2}
-        fill={strokeColor}
-      />
+      <circle cx={lastX} cy={lastY} r={2.5} fill={strokeColor} />
+      <circle cx={lastX} cy={lastY} r={4} fill={strokeColor} opacity={0.2} />
     </svg>
   );
 }

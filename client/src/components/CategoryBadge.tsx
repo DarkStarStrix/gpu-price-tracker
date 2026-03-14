@@ -1,5 +1,6 @@
 /*
-  CategoryBadge — Provider category indicator (Stable / Marketplace / Shifting Pool)
+  CategoryBadge — Provider category indicator
+  Design: Data Observatory v2 — bordered mono badges
 */
 
 import type { ProviderCategory } from "@/lib/data";
@@ -11,9 +12,9 @@ interface CategoryBadgeProps {
 }
 
 const catStyles: Record<ProviderCategory, string> = {
-  stable: "bg-[oklch(0.65_0.18_220_/_0.1)] text-[oklch(0.45_0.14_220)]",
-  marketplace: "bg-[oklch(0.7_0.17_45_/_0.1)] text-[oklch(0.5_0.14_45)]",
-  shifting_pool: "bg-[oklch(0.7_0.17_80_/_0.1)] text-[oklch(0.5_0.12_80)]",
+  stable:       "bg-[oklch(0.62_0.19_218_/_0.07)] text-[oklch(0.42_0.16_218)] border border-[oklch(0.62_0.19_218_/_0.2)]",
+  marketplace:  "bg-[oklch(0.68_0.18_45_/_0.07)] text-[oklch(0.48_0.14_45)] border border-[oklch(0.68_0.18_45_/_0.2)]",
+  shifting_pool:"bg-[oklch(0.68_0.18_80_/_0.07)] text-[oklch(0.48_0.14_80)] border border-[oklch(0.68_0.18_80_/_0.2)]",
 };
 
 export function CategoryBadge({ category, className = "" }: CategoryBadgeProps) {

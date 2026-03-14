@@ -1,15 +1,24 @@
 /*
-  QuickComparison — Summary cards for common GPU configurations
-  Data Observatory design: cards with inline provider comparisons
+  QuickComparison — Premium animated GPU comparison cards
+  Design: Data Observatory v2 — elevated cards, staggered entrance, accent bars
 */
 
 import { useState } from "react";
 import { buildComparisons, formatPrice, getProvider, type ComparisonRow } from "@/lib/data";
 import { ReliabilityDots } from "./ReliabilityDots";
 import { AvailabilityBadge } from "./AvailabilityBadge";
-import { ExternalLink, ChevronDown, ChevronUp, Trophy, TrendingDown } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, Trophy, TrendingDown, Zap } from "lucide-react";
 
 const POPULAR_GPUS = ["h100-sxm", "a100-sxm-80", "rtx-4090", "h200-sxm", "b200-sxm", "l40s"];
+
+// Architecture color coding
+const ARCH_COLORS: Record<string, string> = {
+  Blackwell:     "bg-[oklch(0.68_0.18_45_/_0.1)] text-[oklch(0.5_0.15_45)]",
+  Hopper:        "bg-[oklch(0.62_0.19_218_/_0.1)] text-[oklch(0.45_0.16_218)]",
+  "Ada Lovelace":"bg-[oklch(0.60_0.18_155_/_0.1)] text-[oklch(0.42_0.15_155)]",
+  Ampere:        "bg-[oklch(0.52_0.16_255_/_0.1)] text-[oklch(0.38_0.12_255)]",
+  Volta:         "bg-[oklch(0.68_0.18_80_/_0.1)] text-[oklch(0.5_0.14_80)]",
+};
 
 export function QuickComparison() {
   const comparisons = buildComparisons(POPULAR_GPUS);
@@ -17,21 +26,12 @@ export function QuickComparison() {
 
   return (
     <section className="mb-10">
-      <div className="flex items-baseline justify-between mb-5">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Quick Comparison</h2>
-          <p className="text-sm text-muted-foreground mt-1">Lowest per-GPU/hr prices across providers for popular configurations</p>
-        </div>
-        <span className="font-data text-xs text-muted-foreground">
-          {comparisons.reduce((sum, c) => sum + c.providers.length, 0)} offers tracked
-        </span>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {comparisons.map((row) => (
+        {comparisons.map((row, idx) => (
           <ComparisonCard
             key={row.gpuModelId}
             row={row}
+            index={idx}
             isExpanded={expandedGpu === row.gpuModelId}
             onToggle={() => setExpandedGpu(expandedGpu === row.gpuModelId ? null : row.gpuModelId)}
           />
@@ -41,71 +41,114 @@ export function QuickComparison() {
   );
 }
 
-function ComparisonCard({ row, isExpanded, onToggle }: { row: ComparisonRow; isExpanded: boolean; onToggle: () => void }) {
+function ComparisonCard({
+  row, index, isExpanded, onToggle,
+}: {
+  row: ComparisonRow; index: number; isExpanded: boolean; onToggle: () => void;
+}) {
   const bestValueProvider = row.bestValue ? getProvider(row.bestValue.providerId) : null;
+  const lowestProvider = row.providers[0];
+
+  // Determine architecture from first provider's GPU
+  const archClass = ARCH_COLORS["Hopper"] ?? ARCH_COLORS["Ampere"];
 
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden transition-shadow hover:shadow-[0_2px_12px_oklch(0.25_0.04_250_/_0.06)]">
+    <div
+      className="elevated-card rounded-xl overflow-hidden animate-fade-up"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      {/* Top accent line — teal gradient */}
+      <div className="h-[2px] bg-gradient-to-r from-[oklch(0.62_0.19_218)] via-[oklch(0.62_0.19_218_/_0.5)] to-transparent" />
+
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-border/60">
+      <div className="px-5 py-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-[oklch(0.65_0.18_220_/_0.08)] flex items-center justify-center">
-            <span className="font-data text-xs font-medium text-[oklch(0.5_0.14_220)]">{row.vramGb}G</span>
+          {/* VRAM badge */}
+          <div className="w-10 h-10 rounded-lg bg-[oklch(0.22_0.045_255_/_0.06)] flex flex-col items-center justify-center border border-[oklch(0.22_0.045_255_/_0.08)]">
+            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">{row.vramGb}</span>
+            <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">GB</span>
           </div>
           <div>
-            <h3 className="font-semibold text-sm text-foreground">{row.gpuModelName}</h3>
-            <span className="font-data text-[11px] text-muted-foreground">{row.vramGb} GB VRAM</span>
+            <h3 className="font-bold text-base text-foreground tracking-tight">{row.gpuModelName}</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="font-data text-[10px] text-muted-foreground">{row.vramGb}GB VRAM</span>
+              <span className="text-border">·</span>
+              <span className="font-data text-[10px] text-muted-foreground">{row.providers.length} providers</span>
+            </div>
           </div>
         </div>
+
+        {/* Price */}
         <div className="text-right">
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="w-3.5 h-3.5 text-[oklch(0.65_0.2_150)]" />
-            <span className="font-data text-lg font-semibold text-foreground">{formatPrice(row.lowestOverall)}</span>
+          <div className="flex items-center gap-1 justify-end">
+            <TrendingDown className="w-3 h-3 text-[oklch(0.60_0.18_155)]" />
+            <span className="font-data text-xl font-bold text-foreground tracking-tight">
+              {formatPrice(row.lowestOverall)}
+            </span>
           </div>
-          <span className="font-data text-[10px] text-muted-foreground">/gpu/hr lowest</span>
+          <span className="font-data text-[10px] text-muted-foreground">/gpu/hr</span>
         </div>
       </div>
 
+      {/* Divider */}
+      <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
+
       {/* Provider rows */}
-      <div className="px-4 py-2">
-        {row.providers.slice(0, isExpanded ? undefined : 3).map((p, i) => (
-          <div key={p.providerId} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
-            <div className="flex items-center gap-2">
-              <span className="font-data text-[10px] text-muted-foreground w-4">{i + 1}.</span>
-              <span className="text-sm font-medium text-foreground">{p.providerName}</span>
-              <ReliabilityDots score={p.reliabilityScore} size={4} />
+      <div className="px-5 py-3 space-y-0">
+        {row.providers.slice(0, isExpanded ? undefined : 3).map((p, i) => {
+          const isLowest = i === 0;
+          return (
+            <div
+              key={p.providerId}
+              className={`flex items-center justify-between py-2 border-b border-border/30 last:border-0 transition-colors duration-150 ${
+                isLowest ? "opacity-100" : "opacity-80 hover:opacity-100"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="font-data text-[10px] text-muted-foreground w-4 text-right">{i + 1}</span>
+                <span className={`text-sm font-medium ${isLowest ? "text-foreground" : "text-foreground/80"}`}>
+                  {p.providerName}
+                </span>
+                <ReliabilityDots score={p.reliabilityScore} size={4} />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <AvailabilityBadge state={p.availability} />
+                <span className={`font-data text-sm font-semibold w-14 text-right ${
+                  isLowest ? "text-foreground" : "text-foreground/70"
+                }`}>
+                  {formatPrice(p.lowestPrice)}
+                </span>
+                <a
+                  href={p.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-[oklch(0.62_0.19_218)] hover:bg-teal-subtle transition-colors duration-150"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <AvailabilityBadge state={p.availability} />
-              <span className="font-data text-sm font-medium text-foreground w-16 text-right">{formatPrice(p.lowestPrice)}</span>
-              <a
-                href={p.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[oklch(0.65_0.18_220)] hover:text-[oklch(0.55_0.18_220)] transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 bg-[oklch(0.96_0.005_90)] border-t border-border/40 flex items-center justify-between">
+      <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between">
         {bestValueProvider && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Trophy className="w-3 h-3 text-[oklch(0.7_0.17_80)]" />
-            <span>Best value: <strong className="text-foreground">{bestValueProvider.name}</strong></span>
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-3 h-3 text-[oklch(0.68_0.18_80)]" />
+            <span className="text-[11px] text-muted-foreground">
+              Best value: <strong className="text-foreground font-medium">{bestValueProvider.name}</strong>
+            </span>
           </div>
         )}
         {row.providers.length > 3 && (
           <button
             onClick={onToggle}
-            className="flex items-center gap-1 text-[11px] text-[oklch(0.65_0.18_220)] hover:text-[oklch(0.55_0.18_220)] transition-colors ml-auto"
+            className="flex items-center gap-1 text-[11px] text-[oklch(0.62_0.19_218)] hover:text-[oklch(0.52_0.19_218)] transition-colors ml-auto"
           >
             {isExpanded ? (
-              <>Show less <ChevronUp className="w-3 h-3" /></>
+              <>Less <ChevronUp className="w-3 h-3" /></>
             ) : (
               <>{row.providers.length - 3} more <ChevronDown className="w-3 h-3" /></>
             )}

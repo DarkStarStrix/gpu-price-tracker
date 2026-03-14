@@ -1,11 +1,30 @@
 /*
-  MarketPulse — Key market metrics banner at top of dashboard
-  Data Observatory design: compact metric cards with scientific precision
+  MarketPulse — Premium animated market metrics banner
+  Design: Data Observatory v2 — animated counters, teal glow, depth layers
 */
 
-import { useMemo } from "react";
-import { OFFERS, PROVIDERS, GPU_MODELS, getProvider, getGpuModel, formatPrice } from "@/lib/data";
-import { Activity, TrendingDown, Server, Cpu } from "lucide-react";
+import { useMemo, useEffect, useState } from "react";
+import { OFFERS, PROVIDERS, formatPrice } from "@/lib/data";
+import { Activity, TrendingDown, Server, Cpu, Zap } from "lucide-react";
+
+function useCountUp(target: number, duration = 800, delay = 0) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const start = performance.now();
+      const step = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setValue(Math.round(eased * target));
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [target, duration, delay]);
+  return value;
+}
 
 export function MarketPulse() {
   const metrics = useMemo(() => {
@@ -13,9 +32,7 @@ export function MarketPulse() {
     const h100Offers = OFFERS.filter(o => o.gpuModelId === "h100-sxm" && o.availability !== "unavailable");
     const lowestH100 = h100Offers.length > 0 ? Math.min(...h100Offers.map(o => o.pricePerGpuHr)) : null;
     const highestH100 = h100Offers.length > 0 ? Math.max(...h100Offers.map(o => o.pricePerGpuHr)) : null;
-    const avgPrice = OFFERS.reduce((sum, o) => sum + o.pricePerGpuHr, 0) / OFFERS.length;
     const gpuModelsTracked = new Set(OFFERS.map(o => o.gpuModelId)).size;
-
     return {
       totalOffers: OFFERS.length,
       availableOffers: availableOffers.length,
@@ -23,69 +40,110 @@ export function MarketPulse() {
       gpuModels: gpuModelsTracked,
       lowestH100,
       highestH100,
-      avgPrice,
-      h100Spread: lowestH100 && highestH100 ? ((highestH100 / lowestH100 - 1) * 100).toFixed(0) : null,
+      h100Spread: lowestH100 && highestH100 ? Math.round((highestH100 / lowestH100 - 1) * 100) : null,
     };
   }, []);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
       <MetricCard
         icon={<Activity className="w-4 h-4" />}
         label="Active Offers"
-        value={`${metrics.availableOffers}`}
-        subtext={`of ${metrics.totalOffers} total`}
+        value={metrics.availableOffers}
+        suffix=""
+        subtext={`of ${metrics.totalOffers} tracked`}
         accent="teal"
+        delay={0}
       />
       <MetricCard
         icon={<Server className="w-4 h-4" />}
         label="Providers"
-        value={`${metrics.providers}`}
-        subtext="tracked"
+        value={metrics.providers}
+        suffix=""
+        subtext="cloud platforms"
         accent="navy"
+        delay={80}
       />
       <MetricCard
         icon={<TrendingDown className="w-4 h-4" />}
-        label="H100 SXM Low"
-        value={metrics.lowestH100 ? formatPrice(metrics.lowestH100) : "N/A"}
-        subtext={metrics.h100Spread ? `${metrics.h100Spread}% spread` : ""}
-        accent="green"
+        label="H100 Floor"
+        value={metrics.lowestH100 ? Math.round(metrics.lowestH100 * 100) : 0}
+        suffix=""
+        prefix="$"
+        divisor={100}
+        decimals={2}
+        subtext={metrics.h100Spread ? `${metrics.h100Spread}% spread vs ceiling` : ""}
+        accent="sage"
+        delay={160}
       />
       <MetricCard
         icon={<Cpu className="w-4 h-4" />}
         label="GPU Models"
-        value={`${metrics.gpuModels}`}
+        value={metrics.gpuModels}
+        suffix=""
         subtext="configurations"
         accent="coral"
+        delay={240}
       />
     </div>
   );
 }
 
 function MetricCard({
-  icon, label, value, subtext, accent,
+  icon, label, value, suffix = "", prefix = "", subtext, accent, delay = 0,
+  divisor = 1, decimals = 0,
 }: {
-  icon: React.ReactNode; label: string; value: string; subtext: string; accent: string;
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  subtext: string;
+  accent: string;
+  delay?: number;
+  divisor?: number;
+  decimals?: number;
 }) {
-  const accentStyles: Record<string, { bg: string; icon: string }> = {
-    teal: { bg: "bg-[oklch(0.65_0.18_220_/_0.06)]", icon: "text-[oklch(0.55_0.18_220)]" },
-    navy: { bg: "bg-[oklch(0.25_0.04_250_/_0.06)]", icon: "text-[oklch(0.4_0.04_250)]" },
-    green: { bg: "bg-[oklch(0.65_0.2_150_/_0.06)]", icon: "text-[oklch(0.5_0.18_150)]" },
-    coral: { bg: "bg-[oklch(0.7_0.17_45_/_0.06)]", icon: "text-[oklch(0.55_0.15_45)]" },
+  const animated = useCountUp(value, 900, delay);
+  const displayValue = decimals > 0
+    ? (animated / divisor).toFixed(decimals)
+    : animated.toString();
+
+  const accentMap: Record<string, { bg: string; iconBg: string; iconColor: string; glow: string; bar: string }> = {
+    teal:  { bg: "bg-card", iconBg: "bg-teal-subtle", iconColor: "text-teal", glow: "hover:shadow-teal", bar: "bg-[oklch(0.62_0.19_218)]" },
+    navy:  { bg: "bg-card", iconBg: "bg-navy-subtle", iconColor: "text-navy", glow: "hover:shadow-[0_4px_20px_oklch(0.22_0.045_255_/_0.12)]", bar: "bg-[oklch(0.22_0.045_255)]" },
+    sage:  { bg: "bg-card", iconBg: "bg-sage-subtle", iconColor: "text-sage", glow: "hover:shadow-[0_4px_20px_oklch(0.60_0.18_155_/_0.18)]", bar: "bg-[oklch(0.60_0.18_155)]" },
+    coral: { bg: "bg-card", iconBg: "bg-coral-subtle", iconColor: "text-coral", glow: "hover:shadow-coral", bar: "bg-[oklch(0.68_0.18_45)]" },
   };
 
-  const style = accentStyles[accent] ?? accentStyles.teal;
+  const s = accentMap[accent] ?? accentMap.teal;
 
   return (
-    <div className="bg-card border border-border rounded-md px-4 py-3">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-6 h-6 rounded flex items-center justify-center ${style.bg}`}>
-          <span className={style.icon}>{icon}</span>
+    <div
+      className={`relative overflow-hidden ${s.bg} border border-border rounded-lg px-5 py-4 transition-all duration-300 ${s.glow} animate-fade-up`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-[2px] ${s.bar} opacity-60`} />
+
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${s.iconBg}`}>
+          <span className={s.iconColor}>{icon}</span>
         </div>
-        <span className="text-[11px] font-data text-muted-foreground uppercase tracking-wider">{label}</span>
+        <span className="mono-label text-muted-foreground">{label}</span>
       </div>
-      <div className="font-data text-2xl font-semibold text-foreground tracking-tight">{value}</div>
-      {subtext && <div className="font-data text-[11px] text-muted-foreground mt-0.5">{subtext}</div>}
+
+      <div className="flex items-baseline gap-0.5">
+        {prefix && <span className="font-data text-lg text-muted-foreground">{prefix}</span>}
+        <span className="font-data text-3xl font-semibold text-foreground tracking-tight counter-animate">
+          {displayValue}
+        </span>
+        {suffix && <span className="font-data text-sm text-muted-foreground ml-1">{suffix}</span>}
+      </div>
+
+      {subtext && (
+        <p className="font-data text-[11px] text-muted-foreground mt-1">{subtext}</p>
+      )}
     </div>
   );
 }
