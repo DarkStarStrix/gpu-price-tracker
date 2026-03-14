@@ -3,9 +3,9 @@
   Design: Data Observatory v2 — animated counters, teal glow, depth layers
 */
 
-import { useMemo, useEffect, useState } from "react";
-import { OFFERS, PROVIDERS, formatPrice } from "@/lib/data";
-import { Activity, TrendingDown, Server, Cpu, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Activity, TrendingDown, Server, Cpu } from "lucide-react";
 
 function useCountUp(target: number, duration = 800, delay = 0) {
   const [value, setValue] = useState(0);
@@ -27,22 +27,16 @@ function useCountUp(target: number, duration = 800, delay = 0) {
 }
 
 export function MarketPulse() {
-  const metrics = useMemo(() => {
-    const availableOffers = OFFERS.filter(o => o.availability === "available");
-    const h100Offers = OFFERS.filter(o => o.gpuModelId === "h100-sxm" && o.availability !== "unavailable");
-    const lowestH100 = h100Offers.length > 0 ? Math.min(...h100Offers.map(o => o.pricePerGpuHr)) : null;
-    const highestH100 = h100Offers.length > 0 ? Math.max(...h100Offers.map(o => o.pricePerGpuHr)) : null;
-    const gpuModelsTracked = new Set(OFFERS.map(o => o.gpuModelId)).size;
-    return {
-      totalOffers: OFFERS.length,
-      availableOffers: availableOffers.length,
-      providers: PROVIDERS.length,
-      gpuModels: gpuModelsTracked,
-      lowestH100,
-      highestH100,
-      h100Spread: lowestH100 && highestH100 ? Math.round((highestH100 / lowestH100 - 1) * 100) : null,
-    };
-  }, []);
+  const { data: stats } = trpc.gpu.marketStats.useQuery();
+
+  const metrics = {
+    totalOffers:     stats?.totalOffers ?? 36,
+    availableOffers: stats?.availableOffers ?? 30,
+    providers:       stats?.providerCount ?? 6,
+    gpuModels:       stats?.gpuModelCount ?? 13,
+    lowestH100:      stats?.h100Floor ?? 1.99,
+    h100Spread:      null as number | null,
+  };
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">

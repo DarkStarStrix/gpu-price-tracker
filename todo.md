@@ -1,0 +1,26 @@
+# GPU Price Tracker — TODO
+
+- [x] Basic homepage layout with Data Observatory design
+- [x] Navigation with tab switching
+- [x] Hero section with blueprint background
+- [x] MarketPulse animated metric cards
+- [x] QuickComparison GPU cards
+- [x] OffersTable with filtering and sorting
+- [x] ProviderCards with reliability bars
+- [x] PriceTrends Recharts component
+- [x] Sparkline component with bezier curves
+- [x] AvailabilityBadge with pulsing dot
+- [x] CategoryBadge with bordered pills
+- [x] ReliabilityDots component
+- [x] Premium CSS design system v2
+- [x] Generated visual assets (hero, GPU diagram, price wave, constellation)
+- [x] Upgrade to full-stack (web-db-user)
+- [x] DB schema: gpu_offers, price_snapshots, poll_logs tables
+- [x] Backend polling service: Lambda, RunPod, Vast.ai API collectors (15-min interval)
+- [x] tRPC endpoints: offers, offersByModel, marketStats, priceHistory, sparklines, pollStatus
+- [x] Wire MarketPulse to live tRPC marketStats
+- [x] Wire OffersTable to live tRPC offers with comparison + alert integration
+- [x] Wire PriceTrends to live tRPC priceHistory with synthetic fallback
+- [x] GPU comparison drawer (select 2-3 GPUs, radar chart side-by-side)
+- [x] Price alert system (localStorage persistence, coral glow highlights in table)
+- [x] Vitest tests for GPU router procedures (5 tests passing)

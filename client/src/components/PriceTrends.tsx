@@ -4,7 +4,8 @@
 */
 
 import { useState, useMemo } from "react";
-import { GPU_MODELS, PROVIDERS, OFFERS, getSparkline, formatPrice } from "@/lib/data";
+import { trpc } from "@/lib/trpc";
+import { formatPrice } from "@/lib/data";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ReferenceLine,
@@ -30,27 +31,62 @@ const TIME_LABELS = ["7d", "6d", "5d", "4d", "3d", "2d", "1d", "12h", "10h", "8h
 export function PriceTrends() {
   const [selectedGpu, setSelectedGpu] = useState("h100-sxm");
 
+  // Try to get live history; fall back to synthetic sparklines from offers
+  const { data: history = [] } = trpc.gpu.priceHistory.useQuery({ gpuModelId: selectedGpu, days: 7 });
+  const { data: allOffers = [] } = trpc.gpu.offers.useQuery();
+
   const { chartData, providerNames } = useMemo(() => {
-    const gpuOffers = OFFERS.filter(o => o.gpuModelId === selectedGpu);
-    const providerData: Record<string, number[]> = {};
+    const gpuOffers = allOffers.filter(o => o.gpuModelId === selectedGpu);
+
+    if (history.length > 0) {
+      // Real DB history: group by provider, build time series
+      const providerMap: Record<string, { name: string; prices: Record<string, number> }> = {};
+      for (const snap of history) {
+        if (!providerMap[snap.providerId]) {
+          providerMap[snap.providerId] = { name: snap.providerId, prices: {} };
+        }
+        const label = new Date(snap.snapshotAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        providerMap[snap.providerId].prices[label] = snap.pricePerGpuHr;
+      }
+      const timeLabels = Array.from(new Set(history.map(s =>
+        new Date(s.snapshotAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      )));
+      const data = timeLabels.map(label => {
+        const point: Record<string, string | number> = { time: label };
+        for (const [, prov] of Object.entries(providerMap)) {
+          if (prov.prices[label] !== undefined) point[prov.name] = prov.prices[label];
+        }
+        return point;
+      });
+      const names = Object.values(providerMap).map(p => p.name);
+      return { chartData: data, providerNames: names };
+    }
+
+    // Synthetic fallback: generate sparklines from current offer prices
+    const providerData: Record<string, { name: string; prices: number[] }> = {};
     for (const offer of gpuOffers) {
       if (!providerData[offer.providerId]) {
-        providerData[offer.providerId] = getSparkline(offer.id, offer.pricePerGpuHr);
+        const base = offer.pricePerGpuHr;
+        const seed = offer.offerId.charCodeAt(0);
+        const prices = Array.from({ length: 14 }, (_, i) => {
+          const noise = Math.sin(seed + i * 1.7) * 0.04 * base;
+          return Math.round((base + noise) * 100) / 100;
+        });
+        providerData[offer.providerId] = { name: offer.providerName, prices };
       }
     }
-    const names = Object.keys(providerData).map(id => PROVIDERS.find(p => p.id === id)?.name).filter(Boolean) as string[];
+    const names = Object.values(providerData).map(p => p.name);
     const data = TIME_LABELS.map((label, i) => {
       const point: Record<string, string | number> = { time: label };
-      for (const [providerId, prices] of Object.entries(providerData)) {
-        const name = PROVIDERS.find(p => p.id === providerId)?.name;
-        if (name && prices[i] !== undefined) point[name] = prices[i];
+      for (const [, prov] of Object.entries(providerData)) {
+        if (prov.prices[i] !== undefined) point[prov.name] = prov.prices[i];
       }
       return point;
     });
     return { chartData: data, providerNames: names };
-  }, [selectedGpu]);
+  }, [selectedGpu, history, allOffers]);
 
-  const gpuModel = GPU_MODELS.find(g => g.id === selectedGpu);
+  const gpuModelName = CHART_GPUS.find(g => g.id === selectedGpu)?.label ?? selectedGpu;
 
   // Calculate average for reference line
   const avgPrice = useMemo(() => {
@@ -66,7 +102,7 @@ export function PriceTrends() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <p className="text-sm text-muted-foreground mt-1">
-            7-day price history for <strong className="text-foreground">{gpuModel?.name}</strong> across providers
+            7-day price history for <strong className="text-foreground">{gpuModelName}</strong> across providers
           </p>
         </div>
         <div className="flex gap-1 p-1 bg-[oklch(0.94_0.006_85)] rounded-lg">
