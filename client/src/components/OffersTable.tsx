@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatPrice } from "@/lib/data";
+import { formatPrice, GPU_TFLOPS } from "@/lib/data";
 import { Sparkline } from "./Sparkline";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { CategoryBadge } from "./CategoryBadge";
@@ -20,7 +20,7 @@ import {
   Loader2, Download,
 } from "lucide-react";
 
-type SortKey = "price" | "gpu" | "provider" | "vram" | "availability";
+type SortKey = "price" | "gpu" | "provider" | "vram" | "availability" | "efficiency";
 type SortDir = "asc" | "desc";
 
 const PROVIDER_RELIABILITY: Record<string, number> = {
@@ -95,6 +95,13 @@ export function OffersTable() {
         case "gpu":          cmp = a.gpuModelName.localeCompare(b.gpuModelName); break;
         case "provider":     cmp = a.providerName.localeCompare(b.providerName); break;
         case "vram":         cmp = a.vramPerGpuGb - b.vramPerGpuGb; break;
+        case "efficiency": {
+          const tflopsA = GPU_TFLOPS[a.gpuModelId] ?? 0;
+          const tflopsB = GPU_TFLOPS[b.gpuModelId] ?? 0;
+          const effA = tflopsA > 0 ? a.pricePerGpuHr / tflopsA : Infinity;
+          const effB = tflopsB > 0 ? b.pricePerGpuHr / tflopsB : Infinity;
+          cmp = effA - effB; break;
+        }
         case "availability": {
           const order: Record<string, number> = { available: 0, limited: 1, unavailable: 2 };
           cmp = (order[a.availability] ?? 3) - (order[b.availability] ?? 3); break;
@@ -306,6 +313,7 @@ export function OffersTable() {
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden lg:table-cell">Config</th>
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Region</th>
               <SortHeader label="$/GPU/hr" sortKey="price" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right" />
+              <SortHeader label="$/TFLOP" sortKey="efficiency" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right hidden xl:table-cell" />
               <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">7d</th>
               <SortHeader label="Avail." sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Reliability</th>
@@ -512,6 +520,21 @@ function OfferRow({
             {formatPrice(offer.totalNodePriceHr)}/node
           </div>
         )}
+      </td>
+
+      {/* $/TFLOP efficiency */}
+      <td className="px-4 py-3 text-right hidden xl:table-cell">
+        {(() => {
+          const tflops = GPU_TFLOPS[offer.gpuModelId];
+          if (!tflops) return <span className="font-data text-[10px] text-muted-foreground">—</span>;
+          const eff = offer.pricePerGpuHr / tflops;
+          return (
+            <div>
+              <div className="font-data text-sm font-medium text-foreground">${eff.toFixed(4)}</div>
+              <div className="font-data text-[10px] text-muted-foreground">{tflops.toLocaleString()} TF</div>
+            </div>
+          );
+        })()}
       </td>
 
       {/* Sparkline */}

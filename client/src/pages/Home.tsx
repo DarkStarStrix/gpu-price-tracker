@@ -11,7 +11,8 @@ import { QuickComparison } from "@/components/QuickComparison";
 import { OffersTable } from "@/components/OffersTable";
 import { ProviderCards } from "@/components/ProviderCards";
 import { PriceTrends } from "@/components/PriceTrends";
-import { Activity, RefreshCw, ChevronRight, ArrowRight } from "lucide-react";
+import { Activity, RefreshCw, ChevronRight, ArrowRight, Settings } from "lucide-react";
+import { Link } from "wouter";
 
 // Generated assets
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/hero-grid-bg-NQsreG7zHjL8KoMjMjEHPf.webp";
@@ -100,6 +101,13 @@ export default function Home() {
               <RefreshCw className="w-3 h-3" />
               <span className="hidden sm:inline">Refresh</span>
             </button>
+            <Link
+              href="/settings"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+            >
+              <Settings className="w-3 h-3" />
+              <span className="hidden sm:inline">API Keys</span>
+            </Link>
           </div>
         </div>
       </header>

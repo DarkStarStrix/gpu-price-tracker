@@ -6,7 +6,20 @@
 import { buildProviderSummaries, formatPrice, type ProviderCategory } from "@/lib/data";
 import { CategoryBadge } from "./CategoryBadge";
 import { ReliabilityDots } from "./ReliabilityDots";
-import { ExternalLink, MapPin, Cpu, Globe, Shield, Zap, BarChart2 } from "lucide-react";
+import { ExternalLink, MapPin, Cpu, Globe, Shield, Zap, BarChart2, Clock } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+function timeAgo(date: Date | null | undefined): string {
+  if (!date) return "never";
+  const d = date instanceof Date ? date : new Date(date);
+  const diffMs = Date.now() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
 
 const PROVIDER_ICONS: Record<string, string> = {
   lambda:     "Λ",
@@ -26,8 +39,21 @@ const PROVIDER_ACCENT: Record<string, string> = {
   paperspace: "from-[oklch(0.62_0.19_218)] to-[oklch(0.60_0.18_155)]",
 };
 
+// Map provider IDs to poll log source names
+const PROVIDER_SOURCE_MAP: Record<string, string> = {
+  lambda:     "lambda",
+  runpod:     "runpod",
+  tensordock: "vastai",  // Vast.ai data feeds tensordock slot
+  coreweave:  "static",
+  fluidstack: "static",
+  paperspace: "static",
+};
+
 export function ProviderCards() {
   const summaries = buildProviderSummaries();
+  const { data: pollStatus = {} } = trpc.gpu.providerPollStatus.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
 
   return (
     <section className="mb-10">
@@ -159,9 +185,15 @@ export function ProviderCards() {
                 </div>
               </div>
 
-              {/* Footer note */}
-              <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40">
-                <p className="text-[11px] text-muted-foreground leading-relaxed">{summary.provider.notes}</p>
+              {/* Footer: notes + last polled */}
+              <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">{summary.provider.notes}</p>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Clock className="w-3 h-3 text-muted-foreground" />
+                  <span className="font-data text-[10px] text-muted-foreground whitespace-nowrap">
+                    {timeAgo(pollStatus[PROVIDER_SOURCE_MAP[summary.provider.id] ?? ""] as Date | null)}
+                  </span>
+                </div>
               </div>
             </div>
           );

@@ -175,3 +175,21 @@ export async function getLastPollStatus() {
     .orderBy(desc(pollLogs.polledAt))
     .limit(10);
 }
+
+// Returns the most recent successful poll timestamp per provider source
+export async function getProviderPollStatus(): Promise<Record<string, Date | null>> {
+  const db = await getDb();
+  if (!db) return {};
+
+  const logs = await db.select().from(pollLogs)
+    .orderBy(desc(pollLogs.polledAt))
+    .limit(50);
+
+  const result: Record<string, Date | null> = {};
+  for (const log of logs) {
+    if (log.success && !result[log.source]) {
+      result[log.source] = log.polledAt;
+    }
+  }
+  return result;
+}

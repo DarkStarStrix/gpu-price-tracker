@@ -77,6 +77,24 @@ export interface ComparisonRow {
 
 // ─── GPU Models ──────────────────────────────────────────────────────────────
 
+// FP16 TFLOP/s per GPU (BF16 for Hopper/Blackwell, FP16 for others)
+// Sources: NVIDIA official spec sheets
+export const GPU_TFLOPS: Record<string, number> = {
+  "b200-sxm":     4500,  // BF16 with sparsity
+  "h200-sxm":     1979,  // BF16
+  "h100-sxm":     1979,  // BF16
+  "a100-sxm-80":   312,  // BF16
+  "a100-sxm-40":   312,
+  "a100-pcie":     312,
+  "l40s":          362,  // FP16
+  "l40":           181,
+  "rtx-4090":       82.6,
+  "rtx-3090":       35.6,
+  "rtx-a6000":      38.7,
+  "rtx-a5000":      27.8,
+  "v100":           14.0,
+};
+
 export const GPU_MODELS: GpuModel[] = [
   { id: "b200-sxm", name: "B200 SXM", aliases: ["B200", "NVIDIA B200 SXM6"], vramGb: 192, architecture: "Blackwell", generation: "current" },
   { id: "h200-sxm", name: "H200 SXM", aliases: ["H200", "NVIDIA H200 SXM"], vramGb: 141, architecture: "Hopper", generation: "current" },

@@ -29,3 +29,6 @@
 - [x] Wire real DB sparklines to OffersTable rows
 - [x] Wire real DB sparklines to PriceTrends chart
 - [x] CSV export button in OffersTable header
+- [ ] Settings page: in-app API key entry (Lambda, RunPod, Vast.ai)
+- [ ] Last polled timestamp badges on Provider cards
+- [ ] $/TFLOP efficiency column in OffersTable (sortable)

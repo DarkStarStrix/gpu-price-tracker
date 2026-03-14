@@ -10,6 +10,7 @@ import {
   getPriceHistory,
   getSparklineData,
   getLastPollStatus,
+  getProviderPollStatus,
 } from "./db";
 
 export const appRouter = router({
@@ -49,6 +50,46 @@ export const appRouter = router({
       .query(async ({ input }) => getSparklineData(input.offerIds)),
 
     pollStatus: publicProcedure.query(async () => getLastPollStatus()),
+    providerPollStatus: publicProcedure.query(async () => getProviderPollStatus()),
+  }),
+
+  // ── Settings ─────────────────────────────────────────────────────────────────
+
+  settings: router({
+    // Return which provider keys are currently configured (true/false, never expose values)
+    apiKeyStatus: publicProcedure.query(() => ({
+      lambda:  !!process.env.LAMBDA_API_KEY,
+      runpod:  !!process.env.RUNPOD_API_KEY,
+      vastai:  !!process.env.VAST_API_KEY,
+    })),
+
+    // Save API keys to process.env at runtime (persists for the session; user should
+    // also set them in the Secrets UI for persistence across restarts)
+    saveApiKeys: publicProcedure
+      .input(z.object({
+        lambda: z.string().optional(),
+        runpod: z.string().optional(),
+        vastai: z.string().optional(),
+      }))
+      .mutation(({ input }) => {
+        if (input.lambda !== undefined) {
+          if (input.lambda) process.env.LAMBDA_API_KEY = input.lambda;
+          else delete process.env.LAMBDA_API_KEY;
+        }
+        if (input.runpod !== undefined) {
+          if (input.runpod) process.env.RUNPOD_API_KEY = input.runpod;
+          else delete process.env.RUNPOD_API_KEY;
+        }
+        if (input.vastai !== undefined) {
+          if (input.vastai) process.env.VAST_API_KEY = input.vastai;
+          else delete process.env.VAST_API_KEY;
+        }
+        return {
+          lambda: !!process.env.LAMBDA_API_KEY,
+          runpod: !!process.env.RUNPOD_API_KEY,
+          vastai: !!process.env.VAST_API_KEY,
+        };
+      }),
   }),
 });
 
