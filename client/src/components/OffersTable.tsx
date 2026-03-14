@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { GPU_MODELS, PROVIDERS, formatPrice, type AvailabilityState } from "@/lib/data";
+import { formatPrice } from "@/lib/data";
 import { Sparkline } from "./Sparkline";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { CategoryBadge } from "./CategoryBadge";
@@ -16,8 +16,8 @@ import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import type { GpuOffer } from "../../../drizzle/schema";
 import {
   ExternalLink, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, X, Search, SlidersHorizontal, GitCompare, Bell,
-  Loader2,
+  X, Search, SlidersHorizontal, GitCompare, Bell,
+  Loader2, Download,
 } from "lucide-react";
 
 type SortKey = "price" | "gpu" | "provider" | "vram" | "availability";
@@ -38,6 +38,13 @@ interface Filters {
 
 export function OffersTable() {
   const { data: offers = [], isLoading } = trpc.gpu.offers.useQuery();
+
+  // Fetch real sparklines for all visible offer IDs
+  const offerIds = (offers as GpuOffer[]).map(o => o.offerId);
+  const { data: sparklineMap = {} } = trpc.gpu.sparklines.useQuery(
+    { offerIds },
+    { enabled: offerIds.length > 0 }
+  );
 
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -107,6 +114,31 @@ export function OffersTable() {
 
   const selectedOffers = offers.filter(o => selectedIds.includes(o.offerId)) as GpuOffer[];
   const alertCount = Object.keys(alerts).length;
+
+  // CSV export of current filtered view
+  function exportCSV() {
+    const headers = ["GPU","VRAM (GB)","Provider","Region","Config","$/GPU/hr","$/Node/hr","Availability","Cloud Type","Data Source"];
+    const rows = filteredOffers.map(o => [
+      o.gpuModelName,
+      o.vramPerGpuGb,
+      o.providerName,
+      o.region,
+      `${o.gpuCount}x GPU / ${o.vcpus} vCPU / ${o.ramGb}GB RAM`,
+      o.pricePerGpuHr.toFixed(4),
+      o.totalNodePriceHr.toFixed(4),
+      o.availability,
+      o.cloudType ?? "",
+      o.dataSource,
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gpu-prices-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // Unique GPU models and providers from live data
   const liveGpuModels = useMemo(() =>
@@ -178,6 +210,15 @@ export function OffersTable() {
               className="pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg w-48 focus:outline-none focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.4)] focus:border-[oklch(0.62_0.19_218_/_0.4)] transition-all duration-200 placeholder:text-muted-foreground/50"
             />
           </div>
+          {/* CSV Export */}
+          <button
+            onClick={exportCSV}
+            title="Export current view as CSV"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
@@ -292,6 +333,7 @@ export function OffersTable() {
                 isAlertTriggered={isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)}
                 onSetAlert={() => setAlertTarget(offer)}
                 hasAlert={!!getAlert(offer.gpuModelId)}
+                dbSparkline={sparklineMap[offer.offerId]}
               />
             ))}
             {!isLoading && filteredOffers.length === 0 && (
@@ -358,7 +400,7 @@ function SortHeader({
 }
 
 function OfferRow({
-  offer, isEven, rank, isSelected, onToggleSelect, isAlertTriggered, onSetAlert, hasAlert,
+  offer, isEven, rank, isSelected, onToggleSelect, isAlertTriggered, onSetAlert, hasAlert, dbSparkline,
 }: {
   offer: GpuOffer;
   isEven: boolean;
@@ -368,19 +410,21 @@ function OfferRow({
   isAlertTriggered: boolean;
   onSetAlert: () => void;
   hasAlert: boolean;
+  dbSparkline?: number[];
 }) {
   const reliability = PROVIDER_RELIABILITY[offer.providerId] ?? 0.85;
   const isTopOffer = rank < 3;
 
-  // Synthetic sparkline from price ± small noise (replaced by real data when DB has history)
+  // Use real DB sparkline when available, fall back to synthetic
   const sparkData = useMemo(() => {
+    if (dbSparkline && dbSparkline.length >= 2) return dbSparkline;
     const base = offer.pricePerGpuHr;
     const seed = offer.offerId.charCodeAt(0);
     return Array.from({ length: 14 }, (_, i) => {
       const noise = Math.sin(seed + i * 1.7) * 0.04 * base;
       return Math.round((base + noise) * 100) / 100;
     });
-  }, [offer.offerId, offer.pricePerGpuHr]);
+  }, [offer.offerId, offer.pricePerGpuHr, dbSparkline]);
 
   // Coral glow styles when alert is triggered
   const alertGlowClass = isAlertTriggered

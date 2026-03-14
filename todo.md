@@ -24,3 +24,8 @@
 - [x] GPU comparison drawer (select 2-3 GPUs, radar chart side-by-side)
 - [x] Price alert system (localStorage persistence, coral glow highlights in table)
 - [x] Vitest tests for GPU router procedures (5 tests passing)
+- [x] Add LAMBDA_API_KEY, RUNPOD_API_KEY, VAST_API_KEY as user-configurable secrets
+- [x] Update poller to use env keys (gracefully skip provider if key absent)
+- [x] Wire real DB sparklines to OffersTable rows
+- [x] Wire real DB sparklines to PriceTrends chart
+- [x] CSV export button in OffersTable header

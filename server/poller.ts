@@ -15,9 +15,14 @@ const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 // ─── Lambda Cloud API ─────────────────────────────────────────────────────────
 
 async function fetchLambda(): Promise<InsertGpuOffer[]> {
+  const apiKey = process.env.LAMBDA_API_KEY;
+  if (!apiKey) {
+    console.log("[Poller] Lambda: no API key set, skipping");
+    return [];
+  }
   const res = await axios.get("https://cloud.lambdalabs.com/api/v1/instance-types", {
     timeout: 10_000,
-    headers: { Accept: "application/json" },
+    headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` },
   });
 
   const data = res.data?.data ?? {};
@@ -64,6 +69,11 @@ async function fetchLambda(): Promise<InsertGpuOffer[]> {
 // ─── RunPod GraphQL API ───────────────────────────────────────────────────────
 
 async function fetchRunPod(): Promise<InsertGpuOffer[]> {
+  const apiKey = process.env.RUNPOD_API_KEY;
+  if (!apiKey) {
+    console.log("[Poller] RunPod: no API key set, skipping");
+    return [];
+  }
   const query = `{
     gpuTypes {
       id displayName memoryInGb lowestPrice { minimumBidPrice uninterruptablePrice }
@@ -72,7 +82,7 @@ async function fetchRunPod(): Promise<InsertGpuOffer[]> {
   }`;
 
   const res = await axios.post(
-    "https://api.runpod.io/graphql",
+    `https://api.runpod.io/graphql?api_key=${apiKey}`,
     { query },
     { timeout: 10_000, headers: { "Content-Type": "application/json" } }
   );
@@ -140,9 +150,14 @@ async function fetchRunPod(): Promise<InsertGpuOffer[]> {
 // ─── Vast.ai REST API ─────────────────────────────────────────────────────────
 
 async function fetchVastai(): Promise<InsertGpuOffer[]> {
+  const apiKey = process.env.VAST_API_KEY;
+  if (!apiKey) {
+    console.log("[Poller] Vast.ai: no API key set, skipping");
+    return [];
+  }
   const res = await axios.get(
     "https://console.vast.ai/api/v0/bundles/?q=[]&order=score-&type=on-demand&limit=40",
-    { timeout: 12_000, headers: { Accept: "application/json" } }
+    { timeout: 12_000, headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` } }
   );
 
   const offers_raw = res.data?.offers ?? [];
