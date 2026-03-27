@@ -19,7 +19,7 @@ export default function Account() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      window.location.href = getLoginUrl();
+      window.location.href = "/login";
     }
   }, [loading, isAuthenticated]);
 

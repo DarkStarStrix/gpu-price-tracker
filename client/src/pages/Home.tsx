@@ -135,15 +135,15 @@ export default function Home() {
                 <span className="hidden sm:inline">Account</span>
               </Link>
             ) : (
-              <a
-                href={getLoginUrl()}
+              <Link
+                href="/login"
                 title="Sign in"
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md font-medium transition-all duration-200"
                 style={{ background: "oklch(0.62 0.19 218)", color: "#fff", border: "none" }}
               >
                 <User className="w-3 h-3" />
                 <span className="hidden sm:inline">Sign in</span>
-              </a>
+              </Link>
             )}
 
             {/* API Keys — icon only on small, label on md+ */}

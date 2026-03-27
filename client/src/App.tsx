@@ -8,15 +8,18 @@ import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import Account from "./pages/Account";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/settings"} component={Settings} />
       <Route path={"/pricing"} component={Pricing} />
       <Route path={"/account"} component={Account} />
+      <Route path={"/login"} component={Login} />
+      <Route path={"/register"} component={Register} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

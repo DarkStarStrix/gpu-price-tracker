@@ -5,6 +5,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { emailAuthRouter } from "./auth";
 import {
   getAllOffers,
   getOffersByGpu,
@@ -50,6 +51,9 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    // Email/password auth — works on Railway without Manus OAuth
+    register: emailAuthRouter.register,
+    login:    emailAuthRouter.login,
   }),
 
   // ── GPU Offers ───────────────────────────────────────────────────────────────
