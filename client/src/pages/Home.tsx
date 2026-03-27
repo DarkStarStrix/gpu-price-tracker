@@ -96,32 +96,40 @@ export default function Home() {
           </nav>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2 animate-fade-in delay-240">
-            <span className="font-data text-[10px] text-muted-foreground hidden sm:block">
+          <div className="flex items-center gap-1.5 animate-fade-in delay-240">
+            {/* Clock + Refresh — always visible */}
+            <span className="font-data text-[10px] text-muted-foreground hidden lg:block mr-1">
               {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+              title="Refresh data"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
               onClick={() => window.location.reload()}
             >
               <RefreshCw className="w-3 h-3" />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden md:inline">Refresh</span>
             </button>
+
+            {/* Pro / Upgrade badge */}
             <Link
               href="/pricing"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md transition-all duration-200"
+              title={isPro ? "Pro plan active" : "Upgrade to Pro"}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border rounded-md transition-all duration-200"
               style={isPro
-                ? { color: "var(--color-teal)", borderColor: "oklch(0.62 0.19 218 / 0.3)", background: "oklch(0.62 0.19 218 / 0.06)" }
-                : { color: "var(--color-muted)", borderColor: "var(--color-border)" }
+                ? { color: "oklch(0.62 0.19 218)", borderColor: "oklch(0.62 0.19 218 / 0.35)", background: "oklch(0.62 0.19 218 / 0.08)" }
+                : { color: "oklch(0.45 0.04 255)", borderColor: "var(--color-border)", background: "transparent" }
               }
             >
               <Zap className="w-3 h-3" />
               <span className="hidden sm:inline">{isPro ? "Pro" : "Upgrade"}</span>
             </Link>
+
+            {/* Auth button */}
             {isAuthenticated ? (
               <Link
                 href="/account"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+                title="Account & billing"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
               >
                 <User className="w-3 h-3" />
                 <span className="hidden sm:inline">Account</span>
@@ -129,19 +137,23 @@ export default function Home() {
             ) : (
               <a
                 href={getLoginUrl()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all duration-200"
-                style={{ background: "var(--color-teal)", color: "#fff", border: "none" }}
+                title="Sign in"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md font-medium transition-all duration-200"
+                style={{ background: "oklch(0.62 0.19 218)", color: "#fff", border: "none" }}
               >
                 <User className="w-3 h-3" />
                 <span className="hidden sm:inline">Sign in</span>
               </a>
             )}
+
+            {/* API Keys — icon only on small, label on md+ */}
             <Link
               href="/settings"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+              title="Manage API keys"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
             >
               <Settings className="w-3 h-3" />
-              <span className="hidden sm:inline">API Keys</span>
+              <span className="hidden md:inline">API Keys</span>
             </Link>
           </div>
         </div>
