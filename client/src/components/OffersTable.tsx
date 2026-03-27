@@ -231,18 +231,6 @@ export function OffersTable() {
               className="pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg w-48 focus:outline-none focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.4)] focus:border-[oklch(0.62_0.19_218_/_0.4)] transition-all duration-200 placeholder:text-muted-foreground/50"
             />
           </div>
-          {/* CSV Export — Pro only, inline with other buttons */}
-          <ProGate featureName="CSV Export" blur={false}>
-            <button
-              onClick={exportCSV}
-              title="Export current filtered view as CSV"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
-            >
-              <Download className="w-3.5 h-3.5" />
-              CSV
-            </button>
-          </ProGate>
-
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
@@ -259,6 +247,19 @@ export function OffersTable() {
               </span>
             )}
           </button>
+
+          {/* CSV Export — Pro only, right next to Filters */}
+          <ProGate featureName="CSV Export" blur={false}>
+            <button
+              onClick={exportCSV}
+              disabled={isLoading}
+              title="Export current filtered view as CSV"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-border bg-card text-foreground hover:bg-[oklch(0.955_0.008_85)] hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </button>
+          </ProGate>
         </div>
       </div>
 

@@ -117,7 +117,7 @@ export default function Home() {
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border rounded-md transition-all duration-200"
               style={isPro
                 ? { color: "oklch(0.62 0.19 218)", borderColor: "oklch(0.62 0.19 218 / 0.35)", background: "oklch(0.62 0.19 218 / 0.08)" }
-                : { color: "oklch(0.45 0.04 255)", borderColor: "var(--color-border)", background: "transparent" }
+                : { color: "oklch(0.45 0.04 255)", borderColor: "oklch(0.895 0.008 85)", background: "transparent" }
               }
             >
               <Zap className="w-3 h-3" />

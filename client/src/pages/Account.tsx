@@ -17,7 +17,6 @@ import {
 export default function Account() {
   const { user, isAuthenticated, loading, logout } = useAuth();
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       window.location.href = getLoginUrl();
@@ -57,59 +56,44 @@ export default function Account() {
 
   if (loading || !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--color-teal)" }} />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-[oklch(0.62_0.19_218)]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
+    <div className="min-h-screen bg-background text-foreground">
+
       {/* Nav */}
-      <nav style={{
-        borderBottom: "1px solid var(--color-border)",
-        background: "rgba(248,246,240,0.92)",
-        backdropFilter: "blur(12px)",
-        position: "sticky", top: 0, zIndex: 50,
-      }}>
+      <nav className="sticky top-0 z-50 glass-card border-b">
         <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-sm font-mono" style={{ color: "var(--color-muted)" }}>
+          <Link href="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
             <ChevronLeft size={14} />
             Back to Dashboard
           </Link>
-          <span className="font-mono text-xs tracking-widest uppercase" style={{ color: "var(--color-muted)" }}>
-            Account
-          </span>
+          <span className="mono-label text-muted-foreground">Account</span>
         </div>
       </nav>
 
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-6">
 
         {/* Profile card */}
-        <div className="rounded-xl p-6" style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-sm)",
-        }}>
+        <div className="rounded-xl p-6 bg-card border border-border shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold"
-              style={{ background: "var(--color-teal-muted)", color: "var(--color-teal)", border: "1px solid var(--color-teal)" }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold bg-teal-subtle text-[oklch(0.42_0.16_218)] border border-[oklch(0.62_0.19_218_/_0.3)]">
               {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
             </div>
             <div>
-              <p className="font-semibold" style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
-                {user?.name ?? "—"}
-              </p>
-              <p className="text-sm" style={{ color: "var(--color-muted)", fontFamily: "var(--font-body)" }}>
-                {user?.email ?? "No email on file"}
-              </p>
+              <p className="font-semibold text-foreground">{user?.name ?? "—"}</p>
+              <p className="text-sm text-muted-foreground">{user?.email ?? "No email on file"}</p>
             </div>
             <div className="ml-auto">
-              <span className={`px-3 py-1 rounded-full text-xs font-mono tracking-wide ${
+              <span className={`px-3 py-1 rounded-full text-xs font-mono tracking-wide border ${
                 isPro
-                  ? "bg-[oklch(0.62_0.19_218_/_0.1)] text-[oklch(0.42_0.16_218)] border border-[oklch(0.62_0.19_218_/_0.3)]"
-                  : "border text-muted-foreground"
-              }`} style={{ borderColor: isPro ? undefined : "var(--color-border)" }}>
+                  ? "bg-[oklch(0.62_0.19_218_/_0.1)] text-[oklch(0.42_0.16_218)] border-[oklch(0.62_0.19_218_/_0.3)]"
+                  : "bg-muted text-muted-foreground border-border"
+              }`}>
                 {isPro ? "PRO" : "FREE"}
               </span>
             </div>
@@ -117,30 +101,24 @@ export default function Account() {
         </div>
 
         {/* Plan card */}
-        <div className="rounded-xl p-6" style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-sm)",
-        }}>
+        <div className="rounded-xl p-6 bg-card border border-border shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-2 mb-4">
-            <Shield size={16} style={{ color: "var(--color-teal)" }} />
-            <h2 className="font-semibold text-sm" style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
-              Subscription
-            </h2>
+            <Shield size={16} className="text-[oklch(0.62_0.19_218)]" />
+            <h2 className="font-semibold text-sm text-foreground">Subscription</h2>
           </div>
 
           {planQuery.isLoading ? (
-            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-muted)" }}>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 size={14} className="animate-spin" /> Loading plan…
             </div>
           ) : isPro ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <CheckCircle size={18} style={{ color: "var(--color-teal)" }} />
+                <CheckCircle size={18} className="text-[oklch(0.62_0.19_218)]" />
                 <div>
-                  <p className="font-medium text-sm" style={{ color: "var(--color-navy)" }}>Pro Plan — $10/mo</p>
+                  <p className="font-medium text-sm text-foreground">Pro Plan — $10/mo</p>
                   {plan?.currentPeriodEnd && (
-                    <p className="text-xs" style={{ color: "var(--color-muted)" }}>
+                    <p className="text-xs text-muted-foreground">
                       Renews {new Date(plan.currentPeriodEnd).toLocaleDateString()}
                     </p>
                   )}
@@ -149,44 +127,28 @@ export default function Account() {
               <button
                 onClick={handleManageBilling}
                 disabled={portalMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{
-                  border: "1px solid var(--color-border)",
-                  background: "transparent",
-                  color: "var(--color-navy)",
-                  cursor: portalMutation.isPending ? "not-allowed" : "pointer",
-                  opacity: portalMutation.isPending ? 0.7 : 1,
-                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-transparent text-foreground hover:bg-muted transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {portalMutation.isPending
                   ? <Loader2 size={14} className="animate-spin" />
                   : <CreditCard size={14} />}
                 Manage Billing
-                <ExternalLink size={12} style={{ color: "var(--color-muted)" }} />
+                <ExternalLink size={12} className="text-muted-foreground" />
               </button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Clock size={18} style={{ color: "var(--color-muted)" }} />
+                <Clock size={18} className="text-muted-foreground" />
                 <div>
-                  <p className="font-medium text-sm" style={{ color: "var(--color-navy)" }}>Free Plan</p>
-                  <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-                    3 features included. Upgrade for full access.
-                  </p>
+                  <p className="font-medium text-sm text-foreground">Free Plan</p>
+                  <p className="text-xs text-muted-foreground">3 features included. Upgrade for full access.</p>
                 </div>
               </div>
               <button
                 onClick={handleUpgrade}
                 disabled={checkoutMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{
-                  background: "var(--color-teal)",
-                  color: "#fff",
-                  border: "none",
-                  cursor: checkoutMutation.isPending ? "not-allowed" : "pointer",
-                  opacity: checkoutMutation.isPending ? 0.7 : 1,
-                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[oklch(0.62_0.19_218)] text-white hover:bg-[oklch(0.55_0.19_218)] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {checkoutMutation.isPending
                   ? <Loader2 size={14} className="animate-spin" />
@@ -198,17 +160,10 @@ export default function Account() {
         </div>
 
         {/* Sign out */}
-        <div className="rounded-xl p-6" style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-sm)",
-        }}>
+        <div className="rounded-xl p-6 bg-card border border-border shadow-[var(--shadow-sm)]">
           <button
             onClick={() => logout()}
-            className="flex items-center gap-2 text-sm transition-colors"
-            style={{ color: "var(--color-muted)", cursor: "pointer", background: "none", border: "none" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--color-coral)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--color-muted)")}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-[oklch(0.58_0.22_25)] transition-colors"
           >
             <LogOut size={14} />
             Sign out
