@@ -2,12 +2,17 @@
   GPU Price Poller — fetches live pricing from provider APIs
   Sources: Lambda Cloud API, RunPod GraphQL, Vast.ai REST, + static fallback
   Runs every 15 minutes via setInterval, seeded on startup.
+
+  Security notes:
+  - API keys are read from process.env only — never from client input directly
+  - RunPod key is sent via Authorization header (not query param) to avoid key
+    appearing in server access logs or network proxies
+  - All errors are caught and logged server-side; sanitized messages go to poll_logs
 */
 
 import axios from "axios";
 import { getDb } from "./db";
 import { gpuOffers, priceSnapshots, pollLogs, type InsertGpuOffer } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
 import { STATIC_OFFERS } from "./staticOffers";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -39,7 +44,6 @@ async function fetchLambda(): Promise<InsertGpuOffer[]> {
     const vcpus: number = specs?.vcpus ?? 0;
     const ram: number = Math.round((specs?.memory_gib ?? 0));
     const available = info?.regions_with_capacity_available?.length > 0;
-
     const gpuModelId = normalizeGpuId(gpuName);
 
     offers.push({
@@ -67,6 +71,8 @@ async function fetchLambda(): Promise<InsertGpuOffer[]> {
 }
 
 // ─── RunPod GraphQL API ───────────────────────────────────────────────────────
+// Key sent via Authorization header — NOT as a query param — to avoid
+// the key appearing in access logs, proxy logs, or browser history.
 
 async function fetchRunPod(): Promise<InsertGpuOffer[]> {
   const apiKey = process.env.RUNPOD_API_KEY;
@@ -82,9 +88,16 @@ async function fetchRunPod(): Promise<InsertGpuOffer[]> {
   }`;
 
   const res = await axios.post(
-    `https://api.runpod.io/graphql?api_key=${apiKey}`,
+    "https://api.runpod.io/graphql",
     { query },
-    { timeout: 10_000, headers: { "Content-Type": "application/json" } }
+    {
+      timeout: 10_000,
+      headers: {
+        "Content-Type": "application/json",
+        // Authorization header keeps key out of URL / access logs
+        "Authorization": `Bearer ${apiKey}`,
+      },
+    }
   );
 
   const gpuTypes = res.data?.data?.gpuTypes ?? [];
@@ -170,7 +183,7 @@ async function fetchVastai(): Promise<InsertGpuOffer[]> {
 
     const gpuModelId = normalizeGpuId(gpuName);
     const key = `vastai-${gpuModelId}`;
-    if (seen.has(key)) continue; // keep lowest price (first result, sorted by score)
+    if (seen.has(key)) continue;
     seen.add(key);
 
     const priceHr: number = o?.dph_total ?? 0;
@@ -178,7 +191,7 @@ async function fetchVastai(): Promise<InsertGpuOffer[]> {
 
     offers.push({
       offerId:          key,
-      providerId:       "tensordock",
+      providerId:       "vastai",
       providerName:     "Vast.ai",
       gpuModelId,
       gpuModelName:     normalizeGpuName(gpuName),
@@ -224,25 +237,25 @@ function normalizeGpuId(raw: string): string {
 
 function normalizeGpuName(raw: string): string {
   const map: Record<string, string> = {
-    "b200-sxm":    "B200 SXM",
-    "h200-sxm":    "H200 SXM",
-    "h100-sxm":    "H100 SXM",
-    "h100-pcie":   "H100 PCIe",
-    "a100-sxm-80": "A100 SXM 80GB",
-    "a100-pcie-40":"A100 PCIe 40GB",
-    "l40s":        "L40S",
-    "a40":         "A40",
-    "rtx-4090":    "RTX 4090",
-    "rtx-3090":    "RTX 3090",
-    "rtx-a6000":   "RTX A6000",
-    "rtx-a5000":   "RTX A5000",
-    "v100-sxm":    "V100 SXM",
+    "b200-sxm":     "B200 SXM",
+    "h200-sxm":     "H200 SXM",
+    "h100-sxm":     "H100 SXM",
+    "h100-pcie":    "H100 PCIe",
+    "a100-sxm-80":  "A100 SXM 80GB",
+    "a100-pcie-40": "A100 PCIe 40GB",
+    "l40s":         "L40S",
+    "a40":          "A40",
+    "rtx-4090":     "RTX 4090",
+    "rtx-3090":     "RTX 3090",
+    "rtx-a6000":    "RTX A6000",
+    "rtx-a5000":    "RTX A5000",
+    "v100-sxm":     "V100 SXM",
   };
   const id = normalizeGpuId(raw);
   return map[id] ?? raw;
 }
 
-// ─── DB upsert helpers ────────────────────────────────────────────────────────
+// ─── DB helpers ───────────────────────────────────────────────────────────────
 
 async function upsertOffers(offers: InsertGpuOffer[]): Promise<void> {
   const db = await getDb();
@@ -281,7 +294,9 @@ async function appendSnapshots(offers: InsertGpuOffer[]): Promise<void> {
 async function logPoll(source: string, success: boolean, count: number, durationMs: number, error?: string) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(pollLogs).values({ source, success, offersCount: count, durationMs, errorMessage: error });
+  // Truncate error message to avoid storing sensitive details (e.g. partial key in axios errors)
+  const safeError = error ? error.slice(0, 256).replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]") : undefined;
+  await db.insert(pollLogs).values({ source, success, offersCount: count, durationMs, errorMessage: safeError });
 }
 
 // ─── Seed static data ─────────────────────────────────────────────────────────
@@ -290,7 +305,6 @@ export async function seedStaticData(): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  // Check if already seeded
   const existing = await db.select().from(gpuOffers).limit(1);
   if (existing.length > 0) return;
 
@@ -308,8 +322,8 @@ async function runPollCycle(): Promise<void> {
   console.log("[Poller] Starting poll cycle...");
 
   const sources: Array<{ name: string; fn: () => Promise<InsertGpuOffer[]> }> = [
-    { name: "lambda",  fn: fetchLambda },
-    { name: "runpod",  fn: fetchRunPod },
+    { name: "lambda", fn: fetchLambda },
+    { name: "runpod", fn: fetchRunPod },
     { name: "vastai",  fn: fetchVastai },
   ];
 
@@ -327,9 +341,11 @@ async function runPollCycle(): Promise<void> {
         await logPoll(name, true, 0, Date.now() - start);
       }
     } catch (err: any) {
-      const msg = err?.message ?? String(err);
-      console.warn(`[Poller] ${name} failed: ${msg}`);
-      await logPoll(name, false, 0, Date.now() - start, msg);
+      // Strip any potential key material from error messages before logging
+      const raw: string = err?.message ?? String(err);
+      const safe = raw.slice(0, 256).replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]");
+      console.warn(`[Poller] ${name} failed: ${safe}`);
+      await logPoll(name, false, 0, Date.now() - start, safe);
     }
   }
 
@@ -339,9 +355,7 @@ async function runPollCycle(): Promise<void> {
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 
 export function startPoller(): void {
-  // Seed static data first, then kick off live polling
   seedStaticData().then(() => {
-    // First live poll after 30s (let server warm up)
     setTimeout(() => {
       runPollCycle();
       setInterval(runPollCycle, POLL_INTERVAL_MS);

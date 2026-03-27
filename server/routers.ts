@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import {
   getAllOffers,
   getOffersByGpu,
@@ -13,63 +14,121 @@ import {
   getProviderPollStatus,
 } from "./db";
 
+// ─── Input validators ─────────────────────────────────────────────────────────
+
+// API keys: printable ASCII only, 8–256 chars (covers all real provider key formats)
+const apiKeySchema = z
+  .string()
+  .min(8, "Key too short")
+  .max(256, "Key too long")
+  .regex(/^[\x20-\x7E]+$/, "Key contains invalid characters");
+
+const optionalApiKeySchema = z.union([
+  apiKeySchema,
+  z.literal(""),   // empty string = clear the key
+]).optional();
+
+const gpuModelIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z0-9\-]+$/, "Invalid GPU model ID");
+
+// ─── Safe error helper ────────────────────────────────────────────────────────
+// Never leak internal error details (stack traces, DB errors, env values) to the client.
+
+function safeError(err: unknown): TRPCError {
+  if (err instanceof TRPCError) return err;
+  console.error("[Router] Internal error:", err);
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "An internal error occurred. Please try again.",
+  });
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
-  // ── GPU Offers ──────────────────────────────────────────────────────────────────────
+  // ── GPU Offers ───────────────────────────────────────────────────────────────
 
   gpu: router({
-    offers: publicProcedure.query(async () => getAllOffers()),
+    offers: publicProcedure.query(async () => {
+      try { return await getAllOffers(); }
+      catch (e) { throw safeError(e); }
+    }),
 
     offersByModel: publicProcedure
-      .input(z.object({ gpuModelId: z.string() }))
-      .query(async ({ input }) => getOffersByGpu(input.gpuModelId)),
+      .input(z.object({ gpuModelId: gpuModelIdSchema }))
+      .query(async ({ input }) => {
+        try { return await getOffersByGpu(input.gpuModelId); }
+        catch (e) { throw safeError(e); }
+      }),
 
-    marketStats: publicProcedure.query(async () => getMarketStats()),
+    marketStats: publicProcedure.query(async () => {
+      try { return await getMarketStats(); }
+      catch (e) { throw safeError(e); }
+    }),
 
     priceHistory: publicProcedure
       .input(z.object({
-        gpuModelId: z.string(),
-        days: z.number().min(1).max(30).optional().default(7),
+        gpuModelId: gpuModelIdSchema,
+        days: z.number().int().min(1).max(30).optional().default(7),
       }))
-      .query(async ({ input }) => getPriceHistory(input.gpuModelId, input.days)),
+      .query(async ({ input }) => {
+        try { return await getPriceHistory(input.gpuModelId, input.days); }
+        catch (e) { throw safeError(e); }
+      }),
 
+    // Cap offerIds to 50 items, each max 128 chars to prevent abuse
     sparklines: publicProcedure
-      .input(z.object({ offerIds: z.array(z.string()).max(100) }))
-      .query(async ({ input }) => getSparklineData(input.offerIds)),
+      .input(z.object({
+        offerIds: z.array(z.string().max(128)).max(50),
+      }))
+      .query(async ({ input }) => {
+        try { return await getSparklineData(input.offerIds); }
+        catch (e) { throw safeError(e); }
+      }),
 
-    pollStatus: publicProcedure.query(async () => getLastPollStatus()),
-    providerPollStatus: publicProcedure.query(async () => getProviderPollStatus()),
+    pollStatus: publicProcedure.query(async () => {
+      try { return await getLastPollStatus(); }
+      catch (e) { throw safeError(e); }
+    }),
+
+    providerPollStatus: publicProcedure.query(async () => {
+      try { return await getProviderPollStatus(); }
+      catch (e) { throw safeError(e); }
+    }),
   }),
 
-  // ── Settings ─────────────────────────────────────────────────────────────────
+  // ── Settings (admin-only) ─────────────────────────────────────────────────
+  // apiKeyStatus is public (just booleans — no values exposed).
+  // saveApiKeys is admin-only — only the authenticated owner can set keys.
 
   settings: router({
-    // Return which provider keys are currently configured (true/false, never expose values)
+    // Public: returns true/false per provider — never exposes key values
     apiKeyStatus: publicProcedure.query(() => ({
-      lambda:  !!process.env.LAMBDA_API_KEY,
-      runpod:  !!process.env.RUNPOD_API_KEY,
+      lambda: !!process.env.LAMBDA_API_KEY,
+      runpod: !!process.env.RUNPOD_API_KEY,
       vastai:  !!process.env.VAST_API_KEY,
     })),
 
-    // Save API keys to process.env at runtime (persists for the session; user should
-    // also set them in the Secrets UI for persistence across restarts)
-    saveApiKeys: publicProcedure
+    // Admin-only: validate format, then write to process.env
+    saveApiKeys: adminProcedure
       .input(z.object({
-        lambda: z.string().optional(),
-        runpod: z.string().optional(),
-        vastai: z.string().optional(),
+        lambda: optionalApiKeySchema,
+        runpod: optionalApiKeySchema,
+        vastai:  optionalApiKeySchema,
       }))
       .mutation(({ input }) => {
         if (input.lambda !== undefined) {
@@ -84,10 +143,11 @@ export const appRouter = router({
           if (input.vastai) process.env.VAST_API_KEY = input.vastai;
           else delete process.env.VAST_API_KEY;
         }
+        // Return only boolean status — never echo keys back
         return {
           lambda: !!process.env.LAMBDA_API_KEY,
           runpod: !!process.env.RUNPOD_API_KEY,
-          vastai: !!process.env.VAST_API_KEY,
+          vastai:  !!process.env.VAST_API_KEY,
         };
       }),
   }),

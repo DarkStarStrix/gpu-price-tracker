@@ -32,3 +32,10 @@
 - [x] Settings page: in-app API key entry (Lambda, RunPod, Vast.ai)
 - [x] Last polled timestamp badges on Provider cards
 - [x] $/TFLOP efficiency column in OffersTable (sortable)
+- [x] Gate saveApiKeys behind adminProcedure — only owner can set keys
+- [x] Validate API key format/length before accepting
+- [x] Add rate limiting to all tRPC and API routes
+- [x] Sanitize error messages — no stack traces or internals to client
+- [x] Add input length caps to all string inputs
+- [x] Move RunPod API key to Authorization header (not query param)
+- [x] Security headers added (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)
