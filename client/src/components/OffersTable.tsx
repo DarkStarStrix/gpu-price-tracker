@@ -231,6 +231,18 @@ export function OffersTable() {
               className="pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg w-48 focus:outline-none focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.4)] focus:border-[oklch(0.62_0.19_218_/_0.4)] transition-all duration-200 placeholder:text-muted-foreground/50"
             />
           </div>
+          {/* CSV Export — Pro only, inline with other buttons */}
+          <ProGate featureName="CSV Export" blur={false}>
+            <button
+              onClick={exportCSV}
+              title="Export current filtered view as CSV"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
+            >
+              <Download className="w-3.5 h-3.5" />
+              CSV
+            </button>
+          </ProGate>
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
@@ -250,27 +262,12 @@ export function OffersTable() {
         </div>
       </div>
 
-      {/* Action bar: CSV export + selection hint */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="mono-label text-muted-foreground text-[11px]">
-          {selectedIds.length === 0 && !isLoading && offers.length > 0
-            ? "Select 2–3 rows to compare · click \u{1F514} to set price alerts"
-            : selectedIds.length > 0
-            ? `${selectedIds.length} selected`
-            : ""}
+      {/* Selection hint */}
+      {selectedIds.length === 0 && !isLoading && offers.length > 0 && (
+        <p className="mono-label text-muted-foreground mb-3">
+          Select 2–3 rows to compare · click the bell icon to set price alerts
         </p>
-        {/* CSV Export — Pro only, clearly placed on the right */}
-        <ProGate featureName="CSV Export" blur={false}>
-          <button
-            onClick={exportCSV}
-            title="Export current filtered view as CSV"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
-          </button>
-        </ProGate>
-      </div>
+      )}
 
       {/* Filter bar */}
       {showFilters && (
