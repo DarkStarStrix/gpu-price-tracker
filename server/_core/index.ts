@@ -177,6 +177,11 @@ async function startServer() {
     next();
   });
 
+  // ── Health check (Railway uses this to verify the service is up) ──────────────
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   app.use("/api/trpc", apiLimiter);
   app.use("/api/trpc/settings.saveApiKeys", settingsLimiter);
 
@@ -205,8 +210,9 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
   if (port !== preferredPort) console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  // Bind to 0.0.0.0 so Railway's proxy can reach the service
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${port}/`);
     startPoller();
   });
 }
