@@ -3,37 +3,47 @@ import {
   varchar, float, boolean, index,
 } from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
+  id:          int("id").autoincrement().primaryKey(),
+  openId:      varchar("openId", { length: 64 }).notNull().unique(),
+  name:        text("name"),
+  email:       varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  role:        mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// ─── GPU Offers (live snapshot) ─────────────────────────────────────────────
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+// Minimal: only Stripe IDs + plan/status needed for gating. Everything else
+// (amounts, periods, card details) is fetched from Stripe API on demand.
 
-/**
- * Current normalized offers — one row per provider+gpu combination.
- * Upserted on every polling cycle (every 15 minutes).
- */
+export const subscriptions = mysqlTable("subscriptions", {
+  id:                     int("id").autoincrement().primaryKey(),
+  userId:                 int("userId").notNull().unique(), // one active sub per user
+  plan:                   mysqlEnum("plan", ["free", "pro"]).notNull().default("free"),
+  status:                 varchar("status", { length: 32 }).notNull().default("active"),
+  stripeCustomerId:       varchar("stripeCustomerId", { length: 64 }),
+  stripeSubscriptionId:   varchar("stripeSubscriptionId", { length: 64 }),
+  // Cache period end for quick gating without hitting Stripe API on every request
+  currentPeriodEnd:       timestamp("currentPeriodEnd"),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:              timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => [
+  index("idx_sub_user").on(t.userId),
+  index("idx_sub_stripe_customer").on(t.stripeCustomerId),
+  index("idx_sub_stripe_sub").on(t.stripeSubscriptionId),
+]);
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// ─── GPU Offers (live snapshot) ──────────────────────────────────────────────
+
 export const gpuOffers = mysqlTable("gpu_offers", {
   id:               int("id").autoincrement().primaryKey(),
   offerId:          varchar("offerId", { length: 128 }).notNull().unique(),
@@ -66,9 +76,6 @@ export type InsertGpuOffer = typeof gpuOffers.$inferInsert;
 
 // ─── Price Snapshots (history) ───────────────────────────────────────────────
 
-/**
- * Append-only price history — one row per offer per polling cycle.
- */
 export const priceSnapshots = mysqlTable("price_snapshots", {
   id:            int("id").autoincrement().primaryKey(),
   offerId:       varchar("offerId", { length: 128 }).notNull(),

@@ -11,8 +11,11 @@ import { QuickComparison } from "@/components/QuickComparison";
 import { OffersTable } from "@/components/OffersTable";
 import { ProviderCards } from "@/components/ProviderCards";
 import { PriceTrends } from "@/components/PriceTrends";
-import { Activity, RefreshCw, ChevronRight, ArrowRight, Settings } from "lucide-react";
+import { Activity, RefreshCw, ChevronRight, ArrowRight, Settings, User, Zap } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 
 // Generated assets
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/hero-grid-bg-NQsreG7zHjL8KoMjMjEHPf.webp";
@@ -33,6 +36,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [scrolled, setScrolled] = useState(false);
   const [lastRefresh] = useState(() => new Date());
+  const { isAuthenticated } = useAuth();
+  const planQuery = trpc.subscription.myPlan.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 60_000 });
+  const isPro = planQuery.data?.isPro ?? false;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -101,6 +107,35 @@ export default function Home() {
               <RefreshCw className="w-3 h-3" />
               <span className="hidden sm:inline">Refresh</span>
             </button>
+            <Link
+              href="/pricing"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md transition-all duration-200"
+              style={isPro
+                ? { color: "var(--color-teal)", borderColor: "oklch(0.62 0.19 218 / 0.3)", background: "oklch(0.62 0.19 218 / 0.06)" }
+                : { color: "var(--color-muted)", borderColor: "var(--color-border)" }
+              }
+            >
+              <Zap className="w-3 h-3" />
+              <span className="hidden sm:inline">{isPro ? "Pro" : "Upgrade"}</span>
+            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/account"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+              >
+                <User className="w-3 h-3" />
+                <span className="hidden sm:inline">Account</span>
+              </Link>
+            ) : (
+              <a
+                href={getLoginUrl()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all duration-200"
+                style={{ background: "var(--color-teal)", color: "#fff", border: "none" }}
+              >
+                <User className="w-3 h-3" />
+                <span className="hidden sm:inline">Sign in</span>
+              </a>
+            )}
             <Link
               href="/settings"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"

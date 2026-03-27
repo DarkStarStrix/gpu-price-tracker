@@ -8,6 +8,14 @@ import type { TrpcContext } from "./_core/context";
 
 // ── Mock DB helpers ──────────────────────────────────────────────────────────
 
+vi.mock("./subscription", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./subscription")>();
+  return {
+    ...original,
+    isPro: vi.fn().mockResolvedValue(true),
+  };
+});
+
 vi.mock("./db", async (importOriginal) => {
   const original = await importOriginal<typeof import("./db")>();
   return {
@@ -132,10 +140,25 @@ describe("gpu.priceHistory", () => {
 });
 
 describe("gpu.sparklines", () => {
-  it("returns sparkline data as a record keyed by offerId", async () => {
-    const caller = appRouter.createCaller(makeCtx());
+  it("returns sparkline data as a record keyed by offerId (requires auth)", async () => {
+    // sparklines is a protectedProcedure — must pass an authenticated user
+    const authCtx: TrpcContext = {
+      user: {
+        id: 1,
+        openId: "test-user",
+        name: "Test User",
+        email: "test@example.com",
+        loginMethod: "manus",
+        role: "user" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(authCtx);
     const result = await caller.gpu.sparklines({ offerIds: ["lambda-h100-sxm-us-east", "runpod-h100-sxm-us"] });
-    // Returns Record<string, number[]> — an object keyed by offerId
     expect(typeof result).toBe("object");
     expect(result).not.toBeNull();
   });

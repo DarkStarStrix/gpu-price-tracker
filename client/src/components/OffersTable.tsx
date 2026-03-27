@@ -12,6 +12,7 @@ import { CategoryBadge } from "./CategoryBadge";
 import { ReliabilityDots } from "./ReliabilityDots";
 import { ComparisonDrawer } from "./ComparisonDrawer";
 import { PriceAlertModal } from "./PriceAlertModal";
+import { ProGate } from "./ProGate";
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import type { GpuOffer } from "../../../drizzle/schema";
 import {
@@ -217,15 +218,17 @@ export function OffersTable() {
               className="pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg w-48 focus:outline-none focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.4)] focus:border-[oklch(0.62_0.19_218_/_0.4)] transition-all duration-200 placeholder:text-muted-foreground/50"
             />
           </div>
-          {/* CSV Export */}
-          <button
-            onClick={exportCSV}
-            title="Export current view as CSV"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
-          >
-            <Download className="w-3.5 h-3.5" />
-            CSV
-          </button>
+          {/* CSV Export — Pro only */}
+          <ProGate featureName="CSV Export" blur={false}>
+            <button
+              onClick={exportCSV}
+              title="Export current view as CSV"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200"
+            >
+              <Download className="w-3.5 h-3.5" />
+              CSV
+            </button>
+          </ProGate>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
@@ -359,25 +362,29 @@ export function OffersTable() {
         </table>
       </div>
 
-      {/* Comparison Drawer */}
+      {/* Comparison Drawer — Pro only */}
       {showComparison && selectedOffers.length >= 2 && (
-        <ComparisonDrawer
-          offers={selectedOffers}
-          onClose={() => setShowComparison(false)}
-        />
+        <ProGate featureName="GPU Comparison">
+          <ComparisonDrawer
+            offers={selectedOffers}
+            onClose={() => setShowComparison(false)}
+          />
+        </ProGate>
       )}
 
-      {/* Price Alert Modal */}
+      {/* Price Alert Modal — Pro only */}
       {alertTarget && (
-        <PriceAlertModal
-          gpuModelId={alertTarget.gpuModelId}
-          gpuModelName={alertTarget.gpuModelName}
-          currentPrice={alertTarget.pricePerGpuHr}
-          existingAlert={getAlert(alertTarget.gpuModelId)}
-          onSave={setAlert}
-          onClear={clearAlert}
-          onClose={() => setAlertTarget(null)}
-        />
+        <ProGate featureName="Price Alerts">
+          <PriceAlertModal
+            gpuModelId={alertTarget.gpuModelId}
+            gpuModelName={alertTarget.gpuModelName}
+            currentPrice={alertTarget.pricePerGpuHr}
+            existingAlert={getAlert(alertTarget.gpuModelId)}
+            onSave={setAlert}
+            onClear={clearAlert}
+            onClose={() => setAlertTarget(null)}
+          />
+        </ProGate>
       )}
     </section>
   );

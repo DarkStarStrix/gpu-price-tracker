@@ -39,3 +39,19 @@
 - [x] Add input length caps to all string inputs
 - [x] Move RunPod API key to Authorization header (not query param)
 - [x] Security headers added (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)
+
+## SaaS Productization
+
+- [x] Define free vs pro feature gates (free: offers table, market stats, price trends; pro: comparison drawer, price alerts, CSV export, sparklines, settings)
+- [x] Add subscriptions table to DB schema (userId, plan, stripeCustomerId, stripeSubscriptionId, status, periodEnd)
+- [x] Set up Stripe integration (webdev_add_feature stripe)
+- [x] Build /pricing page with Free/Pro tier cards and Stripe checkout CTA
+- [x] /pricing page built with Free/Pro tier cards and Stripe checkout CTA
+- [x] Enforce feature gates on backend tRPC procedures (free vs pro)
+- [x] Enforce feature gates on frontend (ProGate lock overlays on comparison, alerts, CSV, sparklines)
+- [x] Stripe checkout flow: upgrade button → Stripe hosted checkout → webhook → DB update
+- [x] Stripe webhook handler: checkout.session.completed, customer.subscription.deleted
+- [x] Account/billing page: plan status, manage subscription link, cancel
+- [x] Auth flow: unauthenticated lands on free dashboard, sign up unlocks pro checkout
+- [x] Add useSubscription hook for frontend plan checks (via trpc.subscription.myPlan)
+- [x] Update nav: Upgrade/Pro badge, Account/Sign in links added

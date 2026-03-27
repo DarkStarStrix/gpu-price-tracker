@@ -6,6 +6,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
+import Pricing from "./pages/Pricing";
+import Account from "./pages/Account";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -13,6 +15,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/settings"} component={Settings} />
+      <Route path={"/pricing"} component={Pricing} />
+      <Route path={"/account"} component={Account} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
