@@ -16,10 +16,11 @@ import { PriceAlertModal } from "./PriceAlertModal";
 import { ProGate } from "./ProGate";
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import type { GpuOffer } from "../../../drizzle/schema";
+import { Link } from "wouter";
 import {
   ExternalLink, ArrowUpDown, ArrowUp, ArrowDown,
   X, Search, SlidersHorizontal, GitCompare, Bell,
-  Loader2, Download,
+  Loader2, Download, Lock,
 } from "lucide-react";
 
 type SortKey = "price" | "gpu" | "provider" | "vram" | "availability" | "efficiency";
@@ -248,18 +249,28 @@ export function OffersTable() {
             )}
           </button>
 
-          {/* CSV Export — Pro only, right next to Filters */}
-          <ProGate featureName="CSV Export" blur={false}>
+          {/* CSV Export — inline locked button, same height as Filters */}
+          {isPro ? (
             <button
               onClick={exportCSV}
               disabled={isLoading}
               title="Export current filtered view as CSV"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-border bg-card text-foreground hover:bg-[oklch(0.955_0.008_85)] hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </button>
-          </ProGate>
+          ) : (
+            <Link href="/pricing">
+              <button
+                title="Pro feature — upgrade to export CSV"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground/60 rounded-lg cursor-pointer hover:border-[oklch(0.62_0.19_218_/_0.4)] hover:text-[oklch(0.62_0.19_218)] transition-all duration-200"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
