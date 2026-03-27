@@ -55,19 +55,23 @@ async function startServer() {
 
   // ── Stripe webhook — MUST be registered before express.json() ────────────────
   // Stripe requires the raw body for signature verification.
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-    apiVersion: "2026-03-25.dahlia",
-  });
+  // Lazy init: only create the Stripe client if the key is present so the
+  // server starts cleanly on Railway even before the secret is configured.
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripe = stripeKey
+    ? new Stripe(stripeKey, { apiVersion: "2026-03-25.dahlia" })
+    : null;
 
   app.post(
     "/api/stripe/webhook",
     express.raw({ type: "application/json" }),
-    async (req, res) => {
+     async (req, res) => {
+      if (!stripe) {
+        return res.status(503).json({ error: "Stripe not configured" });
+      }
       const sig = req.headers["stripe-signature"] as string;
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
-
       let event: Stripe.Event;
-
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       } catch (err: any) {
@@ -92,7 +96,7 @@ async function startServer() {
 
             // Fetch full subscription from Stripe to get period end
             let periodEnd: Date | null = null;
-            if (session.subscription) {
+            if (session.subscription && stripe) {
               const stripeSub = await stripe.subscriptions.retrieve(session.subscription as string);
               // billing_cycle_anchor is the next renewal date in Stripe v21
               periodEnd = new Date((stripeSub.billing_cycle_anchor + 30 * 24 * 60 * 60) * 1000);

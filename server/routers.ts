@@ -17,11 +17,12 @@ import {
 import { getSubscription, upsertSubscription, isPro } from "./subscription";
 import { PLANS } from "./products";
 
-// ─── Stripe client ────────────────────────────────────────────────────────────
+// ─── Stripe client (lazy — null when key absent so server starts without it) ───────
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2026-03-25.dahlia",
-});
+const _stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = _stripeKey
+  ? new Stripe(_stripeKey, { apiVersion: "2026-03-25.dahlia" })
+  : null;
 
 // ─── Input validators ─────────────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pro plan not configured yet." });
       }
 
+      if (!stripe) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Payment not configured." });
       try {
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
@@ -161,6 +163,7 @@ export const appRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "No active subscription found." });
       }
 
+      if (!stripe) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Payment not configured." });
       try {
         const session = await stripe.billingPortal.sessions.create({
           customer: sub.stripeCustomerId,
