@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-05T16:47:15.089Z",
+  "generatedAt": "2026-11-05T16:51:16.984Z",
   "sources": [
     {
       "id": "runpod",
       "name": "RunPod",
       "status": "ok",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
-      "lastSuccessAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
+      "lastSuccessAt": "2026-11-05T16:51:16.984Z",
       "message": "69 offers observed",
       "exclusions": []
     },
@@ -15,7 +15,7 @@
       "id": "lambda",
       "name": "Lambda",
       "status": "not_configured",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
       "lastSuccessAt": null,
       "message": "Collector credentials not configured"
     },
@@ -23,13 +23,13 @@
       "id": "coreweave",
       "name": "CoreWeave",
       "status": "ok",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
-      "lastSuccessAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
+      "lastSuccessAt": "2026-11-05T16:51:16.984Z",
       "message": "18 offers observed; 6 rows excluded (see evidence)",
       "evidence": {
         "sourceUrl": "https://www.coreweave.com/pricing",
-        "retrievedAt": "2026-11-05T16:47:15.089Z",
-        "contentSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
+        "retrievedAt": "2026-11-05T16:51:16.984Z",
+        "contentSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
         "parserVersion": "coreweave-html-1"
       },
       "exclusions": [
@@ -63,12 +63,12 @@
       "id": "paperspace",
       "name": "Paperspace",
       "status": "ok",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
-      "lastSuccessAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
+      "lastSuccessAt": "2026-11-05T16:51:16.984Z",
       "message": "15 offers observed; 3 rows excluded (see evidence)",
       "evidence": {
         "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
-        "retrievedAt": "2026-11-05T16:47:15.089Z",
+        "retrievedAt": "2026-11-05T16:51:16.984Z",
         "contentSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
         "parserVersion": "paperspace-html-1"
       },
@@ -91,7 +91,7 @@
       "id": "tensordock",
       "name": "TensorDock",
       "status": "not_connected",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
       "lastSuccessAt": null,
       "message": "No verified collector connected"
     },
@@ -99,7 +99,7 @@
       "id": "fluidstack",
       "name": "FluidStack",
       "status": "not_connected",
-      "checkedAt": "2026-11-05T16:47:15.089Z",
+      "checkedAt": "2026-11-05T16:51:16.984Z",
       "lastSuccessAt": null,
       "message": "No verified collector connected"
     }
@@ -123,7 +123,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A100 80GB PCIe:secure",
@@ -143,7 +143,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A100 80GB PCIe:community",
@@ -163,7 +163,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A100-SXM4-40GB:community",
@@ -183,7 +183,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A100-SXM4-80GB:secure",
@@ -203,7 +203,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A100-SXM4-80GB:community",
@@ -223,7 +223,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA A40:secure",
@@ -238,12 +238,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 0.59,
       "totalNodePriceHr": 0.59,
-      "availability": "available",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA B200:secure",
@@ -258,12 +258,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 7.99,
       "totalNodePriceHr": 7.99,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA B200:community",
@@ -283,7 +283,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA B300 SXM6 AC:secure",
@@ -298,12 +298,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 8.99,
       "totalNodePriceHr": 8.99,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA B300 SXM6 AC:community",
@@ -323,7 +323,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3070:community",
@@ -343,7 +343,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3080:community",
@@ -358,12 +358,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 0.17,
       "totalNodePriceHr": 0.17,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3080 Ti:community",
@@ -383,7 +383,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3090:secure",
@@ -403,7 +403,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3090:community",
@@ -423,7 +423,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 3090 Ti:community",
@@ -443,7 +443,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 4070 Ti:community",
@@ -463,7 +463,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 4080:community",
@@ -483,7 +483,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 4080 SUPER:community",
@@ -503,7 +503,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 4090:secure",
@@ -523,7 +523,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 4090:community",
@@ -543,7 +543,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 5080:community",
@@ -563,7 +563,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 5090:secure",
@@ -578,12 +578,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 1.19,
       "totalNodePriceHr": 1.19,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA GeForce RTX 5090:community",
@@ -598,12 +598,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 0.69,
       "totalNodePriceHr": 0.69,
-      "availability": "limited",
+      "availability": "unknown",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 80GB HBM3:secure",
@@ -623,7 +623,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 80GB HBM3:community",
@@ -643,7 +643,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 NVL:secure",
@@ -658,12 +658,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 3.19,
       "totalNodePriceHr": 3.19,
-      "availability": "limited",
+      "availability": "unknown",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 NVL:community",
@@ -678,12 +678,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 2.59,
       "totalNodePriceHr": 2.59,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 PCIe:secure",
@@ -703,7 +703,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H100 PCIe:community",
@@ -723,7 +723,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H200:secure",
@@ -743,7 +743,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H200:community",
@@ -763,7 +763,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA H200 NVL:secure",
@@ -778,12 +778,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 3.79,
       "totalNodePriceHr": 3.79,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA L4:secure",
@@ -798,12 +798,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 0.59,
       "totalNodePriceHr": 0.59,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA L40:secure",
@@ -823,7 +823,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA L40:community",
@@ -843,7 +843,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA L40S:secure",
@@ -858,12 +858,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 1.09,
       "totalNodePriceHr": 1.09,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA L40S:community",
@@ -883,7 +883,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 2000 Ada Generation:secure",
@@ -903,7 +903,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 4000 Ada Generation:secure",
@@ -923,7 +923,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 4000 Ada Generation:community",
@@ -943,7 +943,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 4000 SFF Ada Generation:community",
@@ -963,7 +963,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 5000 Ada Generation:community",
@@ -983,7 +983,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 6000 Ada Generation:secure",
@@ -998,12 +998,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 0.99,
       "totalNodePriceHr": 0.99,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX 6000 Ada Generation:community",
@@ -1023,7 +1023,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A2000:community",
@@ -1043,7 +1043,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A4000:secure",
@@ -1063,7 +1063,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A4000:community",
@@ -1083,7 +1083,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A4500:secure",
@@ -1103,7 +1103,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A4500:community",
@@ -1123,7 +1123,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A5000:secure",
@@ -1143,7 +1143,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A5000:community",
@@ -1163,7 +1163,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A6000:secure",
@@ -1183,7 +1183,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX A6000:community",
@@ -1203,7 +1203,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 4000 Blackwell:secure",
@@ -1223,7 +1223,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 4500 Blackwell:secure",
@@ -1243,7 +1243,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 4500 Blackwell Server Edition:secure",
@@ -1263,7 +1263,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 5000 Blackwell:secure",
@@ -1283,7 +1283,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 5000 Blackwell:community",
@@ -1303,7 +1303,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition:community",
@@ -1323,7 +1323,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition:secure",
@@ -1343,7 +1343,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition:community",
@@ -1363,7 +1363,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition MIG 1g.24gb:secure",
@@ -1383,7 +1383,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition MIG 2g.48gb:secure",
@@ -1403,7 +1403,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Workstation Edition:secure",
@@ -1418,12 +1418,12 @@
       "region": "Not specified",
       "pricePerGpuHr": 2.59,
       "totalNodePriceHr": 2.59,
-      "availability": "unknown",
+      "availability": "limited",
       "providerLink": "https://www.runpod.io/pricing",
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "secure",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Workstation Edition:community",
@@ -1443,7 +1443,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:Tesla V100-PCIE-16GB:community",
@@ -1463,7 +1463,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "runpod:Tesla V100-SXM2-16GB:community",
@@ -1483,7 +1483,7 @@
       "sourceUrl": "https://api.runpod.io/graphql",
       "cloudType": "community",
       "dataSource": "api",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-gb200-nvl72:4x:on-demand",
@@ -1505,8 +1505,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 42,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-hgx-b200:8x:on-demand",
@@ -1528,8 +1528,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 68.8,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-rtx-pro-6000-blackwell-server-edition-high-memory-:8x:on-demand",
@@ -1551,8 +1551,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 20,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-gh200:1x:on-demand",
@@ -1574,8 +1574,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 6.5,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-hgx-h100:8x:on-demand",
@@ -1597,8 +1597,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 49.24,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-l40:8x:on-demand",
@@ -1620,8 +1620,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 10,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-hgx-h200:8x:on-demand",
@@ -1643,8 +1643,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 50.44,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-l40s:8x:on-demand",
@@ -1666,8 +1666,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 18,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:north-america:nvidia-a100:8x:on-demand",
@@ -1689,8 +1689,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 21.6,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-gb200-nvl72:4x:on-demand",
@@ -1712,8 +1712,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 42,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-hgx-b200:8x:on-demand",
@@ -1735,8 +1735,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 68.8,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-rtx-pro-6000-blackwell-server-edition-high-memory-:8x:on-demand",
@@ -1758,8 +1758,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 20,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-gh200:1x:on-demand",
@@ -1781,8 +1781,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 6.5,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-hgx-h100:8x:on-demand",
@@ -1804,8 +1804,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 49.24,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-l40:8x:on-demand",
@@ -1827,8 +1827,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 10,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-hgx-h200:8x:on-demand",
@@ -1850,8 +1850,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 50.44,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-l40s:8x:on-demand",
@@ -1873,8 +1873,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 18,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "coreweave:europe:nvidia-a100:8x:on-demand",
@@ -1896,8 +1896,8 @@
       "dataSource": "pricing_page",
       "sourcePriceHr": 21.6,
       "priceBasis": "per_instance_hour",
-      "sourceSha256": "4cdf9aec58321b84f50d0cad579f216c81874d378d1087688d307224a186c44f",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be",
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:gpu-m4000-:1x:on-demand",
@@ -1920,7 +1920,7 @@
       "sourcePriceHr": 0.45,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:p4000:1x:on-demand",
@@ -1943,7 +1943,7 @@
       "sourcePriceHr": 0.51,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:p5000:1x:on-demand",
@@ -1966,7 +1966,7 @@
       "sourcePriceHr": 0.78,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:p6000:1x:on-demand",
@@ -1989,7 +1989,7 @@
       "sourcePriceHr": 1.1,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:rtx4000:1x:on-demand",
@@ -2012,7 +2012,7 @@
       "sourcePriceHr": 0.56,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:rtx5000:1x:on-demand",
@@ -2035,7 +2035,7 @@
       "sourcePriceHr": 0.82,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a4000:1x:on-demand",
@@ -2058,7 +2058,7 @@
       "sourcePriceHr": 0.76,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a5000:1x:on-demand",
@@ -2081,7 +2081,7 @@
       "sourcePriceHr": 1.38,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a6000:1x:on-demand",
@@ -2104,7 +2104,7 @@
       "sourcePriceHr": 1.89,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a100:1x:on-demand",
@@ -2127,7 +2127,7 @@
       "sourcePriceHr": 3.09,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a100-80g:1x:on-demand",
@@ -2150,7 +2150,7 @@
       "sourcePriceHr": 3.18,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:h100:1x:on-demand",
@@ -2173,7 +2173,7 @@
       "sourcePriceHr": 5.95,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a100:8x:on-demand",
@@ -2196,7 +2196,7 @@
       "sourcePriceHr": 24.72,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:a100-80g:8x:on-demand",
@@ -2219,7 +2219,7 @@
       "sourcePriceHr": 25.44,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     },
     {
       "offerId": "paperspace:h100:8x:on-demand",
@@ -2242,7 +2242,7 @@
       "sourcePriceHr": 47.6,
       "priceBasis": "per_instance_hour",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302",
-      "observedAt": "2026-11-05T16:47:15.089Z"
+      "observedAt": "2026-11-05T16:51:16.984Z"
     }
   ],
   "history": [
@@ -6004,6 +6004,1059 @@
       "cloudType": "on-demand",
       "pricePerGpuHr": 5.95,
       "observedAt": "2026-11-05T16:47:15.089Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "runpod:AMD Instinct MI300X OAM:secure",
+      "providerId": "runpod",
+      "gpuModelId": "mi300x",
+      "cloudType": "secure",
+      "pricePerGpuHr": 2.39,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A100 80GB PCIe:secure",
+      "providerId": "runpod",
+      "gpuModelId": "a100-pcie-80",
+      "cloudType": "secure",
+      "pricePerGpuHr": 1.79,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A100 80GB PCIe:community",
+      "providerId": "runpod",
+      "gpuModelId": "a100-pcie-80",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A100-SXM4-40GB:community",
+      "providerId": "runpod",
+      "gpuModelId": "a100-sxm-40",
+      "cloudType": "community",
+      "pricePerGpuHr": 1,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A100-SXM4-80GB:secure",
+      "providerId": "runpod",
+      "gpuModelId": "a100-sxm-80",
+      "cloudType": "secure",
+      "pricePerGpuHr": 1.79,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A100-SXM4-80GB:community",
+      "providerId": "runpod",
+      "gpuModelId": "a100-sxm-80",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.39,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA A40:secure",
+      "providerId": "runpod",
+      "gpuModelId": "a40",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA B200:secure",
+      "providerId": "runpod",
+      "gpuModelId": "b200-sxm",
+      "cloudType": "secure",
+      "pricePerGpuHr": 7.99,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA B200:community",
+      "providerId": "runpod",
+      "gpuModelId": "b200-sxm",
+      "cloudType": "community",
+      "pricePerGpuHr": 5.98,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA B300 SXM6 AC:secure",
+      "providerId": "runpod",
+      "gpuModelId": "b300",
+      "cloudType": "secure",
+      "pricePerGpuHr": 8.99,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA B300 SXM6 AC:community",
+      "providerId": "runpod",
+      "gpuModelId": "b300",
+      "cloudType": "community",
+      "pricePerGpuHr": 6.94,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3070:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3070",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.13,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3080:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3080",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.17,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3080 Ti:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3080-ti",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.18,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3090:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3090",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3090:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3090",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.22,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 3090 Ti:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-3090-ti",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.27,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 4070 Ti:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4070-ti",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 4080:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4080",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.27,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 4080 SUPER:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4080-super",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.28,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 4090:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4090",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.89,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 4090:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4090",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.34,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 5080:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-5080",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.39,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 5090:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-5090",
+      "cloudType": "secure",
+      "pricePerGpuHr": 1.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA GeForce RTX 5090:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-5090",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 80GB HBM3:secure",
+      "providerId": "runpod",
+      "gpuModelId": "h100-sxm",
+      "cloudType": "secure",
+      "pricePerGpuHr": 3.99,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 80GB HBM3:community",
+      "providerId": "runpod",
+      "gpuModelId": "h100-sxm",
+      "cloudType": "community",
+      "pricePerGpuHr": 2.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 NVL:secure",
+      "providerId": "runpod",
+      "gpuModelId": "h100-nvl",
+      "cloudType": "secure",
+      "pricePerGpuHr": 3.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 NVL:community",
+      "providerId": "runpod",
+      "gpuModelId": "h100-nvl",
+      "cloudType": "community",
+      "pricePerGpuHr": 2.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 PCIe:secure",
+      "providerId": "runpod",
+      "gpuModelId": "h100-pcie",
+      "cloudType": "secure",
+      "pricePerGpuHr": 2.89,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H100 PCIe:community",
+      "providerId": "runpod",
+      "gpuModelId": "h100-pcie",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.99,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H200:secure",
+      "providerId": "runpod",
+      "gpuModelId": "h200-sxm",
+      "cloudType": "secure",
+      "pricePerGpuHr": 5.29,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H200:community",
+      "providerId": "runpod",
+      "gpuModelId": "h200-sxm",
+      "cloudType": "community",
+      "pricePerGpuHr": 3.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA H200 NVL:secure",
+      "providerId": "runpod",
+      "gpuModelId": "h200-nvl",
+      "cloudType": "secure",
+      "pricePerGpuHr": 3.79,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA L4:secure",
+      "providerId": "runpod",
+      "gpuModelId": "l4",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA L40:secure",
+      "providerId": "runpod",
+      "gpuModelId": "l40",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.82,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA L40:community",
+      "providerId": "runpod",
+      "gpuModelId": "l40",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA L40S:secure",
+      "providerId": "runpod",
+      "gpuModelId": "l40s",
+      "cloudType": "secure",
+      "pricePerGpuHr": 1.09,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA L40S:community",
+      "providerId": "runpod",
+      "gpuModelId": "l40s",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.79,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 2000 Ada Generation:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-2000-ada",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.24,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 4000 Ada Generation:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4000-ada",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.28,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 4000 Ada Generation:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4000-ada",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.2,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 4000 SFF Ada Generation:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-4000-ada-sff",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.18,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 5000 Ada Generation:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-5000-ada",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.49,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 6000 Ada Generation:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-6000-ada",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.99,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX 6000 Ada Generation:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-6000-ada",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.74,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A2000:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a2000",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.12,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A4000:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a4000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A4000:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a4000",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.17,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A4500:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a4500",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A4500:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a4500",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A5000:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a5000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.27,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A5000:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a5000",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.16,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A6000:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a6000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX A6000:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-a6000",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.33,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 4000 Blackwell:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-4000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.57,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 4500 Blackwell:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-4500",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.72,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 4500 Blackwell Server Edition:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-4500-se",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.72,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 5000 Blackwell:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-5000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.96,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 5000 Blackwell:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-5000",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.82,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-6000-maxq",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.64,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-6000",
+      "cloudType": "secure",
+      "pricePerGpuHr": 2.49,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-6000",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition MIG 1g.24gb:secure",
+      "providerId": "runpod",
+      "gpuModelId": "pro-6000-mig-24gb",
+      "cloudType": "secure",
+      "pricePerGpuHr": 0.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Server Edition MIG 2g.48gb:secure",
+      "providerId": "runpod",
+      "gpuModelId": "pro-6000-mig-48gb",
+      "cloudType": "secure",
+      "pricePerGpuHr": 1.29,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Workstation Edition:secure",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-6000-wk",
+      "cloudType": "secure",
+      "pricePerGpuHr": 2.59,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:NVIDIA RTX PRO 6000 Blackwell Workstation Edition:community",
+      "providerId": "runpod",
+      "gpuModelId": "rtx-pro-6000-wk",
+      "cloudType": "community",
+      "pricePerGpuHr": 1.69,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:Tesla V100-PCIE-16GB:community",
+      "providerId": "runpod",
+      "gpuModelId": "v100",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.19,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "runpod:Tesla V100-SXM2-16GB:community",
+      "providerId": "runpod",
+      "gpuModelId": "v100-sxm2",
+      "cloudType": "community",
+      "pricePerGpuHr": 0.23,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "api",
+      "sourceUrl": "https://api.runpod.io/graphql"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-gb200-nvl72:4x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "gb200-nvl72",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 10.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-hgx-b200:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "b200-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 8.6,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-rtx-pro-6000-blackwell-server-edition-high-memory-:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "rtx-pro-6000-blackwell-server-edition-high-memory",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-gh200:1x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "gh200",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-hgx-h100:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "h100-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.155,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-l40:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "l40",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 1.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-hgx-h200:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "h200-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.305,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-l40s:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "l40s",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:north-america:nvidia-a100:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "a100-80",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.7,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-gb200-nvl72:4x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "gb200-nvl72",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 10.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-hgx-b200:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "b200-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 8.6,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-rtx-pro-6000-blackwell-server-edition-high-memory-:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "rtx-pro-6000-blackwell-server-edition-high-memory",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-gh200:1x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "gh200",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.5,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-hgx-h100:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "h100-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.155,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-l40:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "l40",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 1.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-hgx-h200:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "h200-sxm",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 6.305,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-l40s:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "l40s",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.25,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "coreweave:europe:nvidia-a100:8x:on-demand",
+      "providerId": "coreweave",
+      "gpuModelId": "a100-80",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 2.7,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://www.coreweave.com/pricing",
+      "sourceSha256": "d5a3e2c2b232a2556917a1323cbb0a9a48fd909f1a2cca0712ff6f417713c2be"
+    },
+    {
+      "offerId": "paperspace:gpu-m4000-:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "gpu-m4000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.45,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:p4000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "p4000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.51,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:p5000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "p5000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.78,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:p6000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "p6000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 1.1,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:rtx4000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "rtx4000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.56,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:rtx5000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "rtx5000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.82,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a4000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "rtx-a4000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 0.76,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a5000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "rtx-a5000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 1.38,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a6000:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "rtx-a6000",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 1.89,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a100:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "a100-unknown",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 3.09,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a100-80g:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "a100-80-unspecified",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 3.18,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:h100:1x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "h100-unspecified",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 5.95,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a100:8x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "a100-unknown",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 3.09,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:a100-80g:8x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "a100-80-unspecified",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 3.18,
+      "observedAt": "2026-11-05T16:51:16.984Z",
+      "dataSource": "pricing_page",
+      "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+      "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+    },
+    {
+      "offerId": "paperspace:h100:8x:on-demand",
+      "providerId": "paperspace",
+      "gpuModelId": "h100-unspecified",
+      "cloudType": "on-demand",
+      "pricePerGpuHr": 5.95,
+      "observedAt": "2026-11-05T16:51:16.984Z",
       "dataSource": "pricing_page",
       "sourceUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
       "sourceSha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
