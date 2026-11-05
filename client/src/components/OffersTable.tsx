@@ -519,7 +519,7 @@ function OfferRow({
       <td className="px-4 py-3 hidden lg:table-cell min-w-36" onClick={e=>e.stopPropagation()}>
         <div className="text-xs font-medium">{history.state === "empty" ? "No history yet" : history.state === "collecting" ? "First observation" : history.state === "unchanged" ? "Unchanged" : `${history.stats!.change >= 0 ? "+" : ""}${history.stats!.percent.toFixed(2)}% since first sample`}</div>
         {history.stats && <div className="text-[10px] text-muted-foreground mt-1">${history.stats.last.toFixed(3)} · {history.stats.count} sample{history.stats.count===1?"":"s"}</div>}
-        {history.firstAt && <div className="text-[10px] text-muted-foreground" title={`${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`}>{new Date(history.firstAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} – {new Date(history.lastAt!).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</div>}
+        {history.firstAt && <div className="text-[10px] text-muted-foreground" title={`${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`}>{new Date(history.firstAt).toDateString() === new Date(history.lastAt!).toDateString() ? `${new Date(history.firstAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} – ${new Date(history.lastAt!).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}` : `${new Date(history.firstAt).toLocaleDateString()} – ${new Date(history.lastAt!).toLocaleDateString()}`}</div>}
         <button onClick={onViewHistory} className="text-[11px] text-teal underline mt-1">View history →</button>
       </td>
 

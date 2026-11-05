@@ -265,3 +265,8 @@ cadence are unchanged. Offer availability never disables source/provider links.
     shared modal and evidence presentation first, run regression/type/build gates,
     verify the production preview and public deployment, and preserve a before/after
     screenshot. Rollback is a source revision; never erase collected observations.
+
+Comparison selections are reconciled against current offer IDs before counting or
+opening a dialog; disappeared IDs cannot leave an enabled empty comparison.
+History intervals show dates across different days, times within the same day,
+and full timestamps in the tooltip.
