@@ -4,21 +4,29 @@
 */
 
 import { useState } from "react";
-import { buildComparisons, formatPrice, getProvider, type ComparisonRow } from "@/lib/data";
+import {
+  buildComparisons,
+  formatPrice,
+  providerLogo,
+  type ComparisonRow,
+} from "@/lib/data";
 
 import { AvailabilityBadge } from "./AvailabilityBadge";
-import { ExternalLink, ChevronDown, ChevronUp, Trophy, TrendingDown, Zap } from "lucide-react";
+import {
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  TrendingDown,
+} from "lucide-react";
 
-const POPULAR_GPUS = ["h100-sxm", "a100-sxm-80", "rtx-4090", "h200-sxm", "b200-sxm", "l40s"];
-
-// Architecture color coding
-const ARCH_COLORS: Record<string, string> = {
-  Blackwell:     "bg-[oklch(0.68_0.18_45_/_0.1)] text-[oklch(0.5_0.15_45)]",
-  Hopper:        "bg-[oklch(0.62_0.19_218_/_0.1)] text-[oklch(0.45_0.16_218)]",
-  "Ada Lovelace":"bg-[oklch(0.60_0.18_155_/_0.1)] text-[oklch(0.42_0.15_155)]",
-  Ampere:        "bg-[oklch(0.52_0.16_255_/_0.1)] text-[oklch(0.38_0.12_255)]",
-  Volta:         "bg-[oklch(0.68_0.18_80_/_0.1)] text-[oklch(0.5_0.14_80)]",
-};
+const POPULAR_GPUS = [
+  "h100-sxm",
+  "a100-sxm-80",
+  "rtx-4090",
+  "h200-sxm",
+  "b200-sxm",
+  "l40s",
+];
 
 export function QuickComparison() {
   const comparisons = buildComparisons(POPULAR_GPUS);
@@ -33,7 +41,11 @@ export function QuickComparison() {
             row={row}
             index={idx}
             isExpanded={expandedGpu === row.gpuModelId}
-            onToggle={() => setExpandedGpu(expandedGpu === row.gpuModelId ? null : row.gpuModelId)}
+            onToggle={() =>
+              setExpandedGpu(
+                expandedGpu === row.gpuModelId ? null : row.gpuModelId
+              )
+            }
           />
         ))}
       </div>
@@ -42,15 +54,16 @@ export function QuickComparison() {
 }
 
 function ComparisonCard({
-  row, index, isExpanded, onToggle,
+  row,
+  index,
+  isExpanded,
+  onToggle,
 }: {
-  row: ComparisonRow; index: number; isExpanded: boolean; onToggle: () => void;
+  row: ComparisonRow;
+  index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
-  const lowestProvider = row.providers[0];
-
-  // Determine architecture from first provider's GPU
-  const archClass = ARCH_COLORS["Hopper"] ?? ARCH_COLORS["Ampere"];
-
   return (
     <div
       className="elevated-card rounded-xl overflow-hidden animate-fade-up"
@@ -64,15 +77,25 @@ function ComparisonCard({
         <div className="flex items-center gap-3">
           {/* VRAM badge */}
           <div className="w-10 h-10 rounded-lg bg-[oklch(0.22_0.045_255_/_0.06)] flex flex-col items-center justify-center border border-[oklch(0.22_0.045_255_/_0.08)]">
-            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">{row.vramGb || "—"}</span>
-            <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">GB</span>
+            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">
+              {row.vramGb || "—"}
+            </span>
+            <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">
+              GB
+            </span>
           </div>
           <div>
-            <h3 className="font-bold text-base text-foreground tracking-tight">{row.gpuModelName}</h3>
+            <h3 className="font-bold text-base text-foreground tracking-tight">
+              {row.gpuModelName}
+            </h3>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="font-data text-[10px] text-muted-foreground">{row.vramGb || "—"}GB VRAM</span>
+              <span className="font-data text-[10px] text-muted-foreground">
+                {row.vramGb || "—"}GB VRAM
+              </span>
               <span className="text-border">·</span>
-              <span className="font-data text-[10px] text-muted-foreground">{row.providers.length} providers</span>
+              <span className="font-data text-[10px] text-muted-foreground">
+                {row.providers.length} providers
+              </span>
             </div>
           </div>
         </div>
@@ -85,7 +108,9 @@ function ComparisonCard({
               {formatPrice(row.lowestOverall)}
             </span>
           </div>
-          <span className="font-data text-[10px] text-muted-foreground">/gpu/hr</span>
+          <span className="font-data text-[10px] text-muted-foreground">
+            /gpu/hr
+          </span>
         </div>
       </div>
 
@@ -104,20 +129,35 @@ function ComparisonCard({
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="font-data text-[10px] text-muted-foreground w-4 text-right">{i + 1}</span>
-                <span className={`text-sm font-medium ${isLowest ? "text-foreground" : "text-foreground/80"}`}>
+                <span className="font-data text-[10px] text-muted-foreground w-4 text-right">
+                  {i + 1}
+                </span>
+                <span
+                  className={`text-sm font-medium ${isLowest ? "text-foreground" : "text-foreground/80"}`}
+                >
+                  <img
+                    src={providerLogo(p.providerId)}
+                    alt=""
+                    className="inline-block w-5 h-5 object-contain mr-2"
+                    loading="lazy"
+                  />
                   {p.providerName}
                 </span>
-
               </div>
               <div className="flex items-center gap-2.5">
-                <AvailabilityBadge providerLink={p.link} state={p.availability} />
-                <span className={`font-data text-sm font-semibold w-14 text-right ${
-                  isLowest ? "text-foreground" : "text-foreground/70"
-                }`}>
+                <AvailabilityBadge
+                  providerLink={p.link}
+                  state={p.availability}
+                />
+                <span
+                  className={`font-data text-sm font-semibold w-14 text-right ${
+                    isLowest ? "text-foreground" : "text-foreground/70"
+                  }`}
+                >
                   {formatPrice(p.lowestPrice)}
                 </span>
                 <a
+                  aria-label={`Visit ${p.providerName}`}
                   href={p.link}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -139,9 +179,14 @@ function ComparisonCard({
             className="flex items-center gap-1 text-[11px] text-[oklch(0.62_0.19_218)] hover:text-[oklch(0.52_0.19_218)] transition-colors ml-auto"
           >
             {isExpanded ? (
-              <>Less <ChevronUp className="w-3 h-3" /></>
+              <>
+                Less <ChevronUp className="w-3 h-3" />
+              </>
             ) : (
-              <>{row.providers.length - 3} more <ChevronDown className="w-3 h-3" /></>
+              <>
+                {row.providers.length - 3} more{" "}
+                <ChevronDown className="w-3 h-3" />
+              </>
             )}
           </button>
         )}

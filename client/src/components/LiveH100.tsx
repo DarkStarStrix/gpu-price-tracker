@@ -1,3 +1,4 @@
+import { providerLogo } from "@/lib/data";
 import { useState } from "react";
 import { catalog, snapshotLoadError, snapshotRefreshing } from "@/lib/catalog";
 import { h100Quote, marketSeries, marketStats } from "@shared/market";
@@ -44,10 +45,19 @@ export function LiveH100() {
       {offer ? (
         <>
           <p className="text-xs mt-2">
-            Lowest current observed quote · {offer.providerName}
+            Lowest current observed quote ·{" "}
+            <img
+              src={providerLogo(offer.providerId)}
+              alt=""
+              className="inline-block w-4 h-4 object-contain mx-1"
+            />
+            {offer.providerName}
           </p>
           <div className="flex flex-wrap gap-2 mt-2 items-center">
-            <AvailabilityBadge providerLink={offer.providerLink} state={offer.availability} />
+            <AvailabilityBadge
+              providerLink={offer.providerLink}
+              state={offer.availability}
+            />
             <span className="text-[10px] text-muted-foreground">
               {billingLabel(offer)} · {cloudLabel(offer)}
             </span>

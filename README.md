@@ -1,213 +1,72 @@
 # GPU Price Observatory
 
-A public GPU price tracker with the original Data Observatory dashboard. No
-accounts, subscriptions, billing, public API server, or database are required.
-
-**Site:** https://darkstarstrix.github.io/gpu-price-tracker/
+A public GPU price tracker on [GitHub Pages](https://darkstarstrix.github.io/gpu-price-tracker/), with the original Data Observatory dashboard. No accounts, subscriptions, paid server, or database are required.
 
 ## Run locally
 
-Use Node 22 and pnpm 10.4.1:
+Use Node 22.12+ and pnpm 10.4.1:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm collect
 pnpm dev
 ```
 
-The committed `client/public/data/latest.json` also lets the dashboard start
-without provider credentials. Every price retains its actual observation time.
-The browser reads this JSON and rechecks it every minute. The Refresh button updates the published snapshot in place, preserving the selected tab and filters; it does not trigger a provider collection. Returning to the browser tab also checks for updates. The status banner shows the last successful browser check separately from the collector snapshot time.
+The committed `client/public/data/latest.json` provides real observations without credentials. To refresh it from the public providers:
 
 ```sh
+pnpm collect
 pnpm check
 pnpm test
-pnpm build
+pnpm build:pages
 pnpm preview
 ```
 
-## Data pipeline
+`pnpm build` builds for the root URL; `pnpm build:pages` builds for `/gpu-price-tracker/`. Source formatting is available with `pnpm format`; `pnpm audit:deps` checks current dependency advisories.
 
-```
-Provider APIs → scheduled collector → validated snapshot + seven-day history
-             → GitHub Pages artifact → original React dashboard
-```
+## Public data coverage
 
-- **RunPod:** public GraphQL catalog, separate Secure and Community offers. Prices
-  are the catalog's USD per GPU-hour rates; availability is a separate provider
-  stock observation for one GPU. Prices do not guarantee rentable capacity at
-  that rate. Missing stock information is `unknown`. No CPU/RAM or region is
-  invented when the catalog does not specify them.
-- **CoreWeave:** official public pricing HTML, with separate North America and
-  Europe configurations. On-demand node prices are divided by GPU count once;
-  spot, inference-only, CPU, and contact-sales entries are not mixed into them.
-- **Paperspace:** official DigitalOcean pricing tables, including only unambiguous
-  single/multi-GPU rates. The collector excludes two multi-GPU prices that conflict
-  with the page's multiplication rule, plus the combined V100 model label.
-- **Hyperstack:** official on-demand per-GPU price card; published maximum CPU/RAM values are not reported as allocated specs.
-- **Verda:** regular on-demand single-GPU instances with distinct CPU/RAM configuration identities. Discounts, confidential compute, serverless and cluster tables are excluded.
-- **Crusoe:** current on-demand GPU rates; the future December 1 column and contact-sales rows are excluded. This parser deliberately stops at the transition pending rate review.
-- **Vultr:** public plans API; full node price and VRAM are divided by GPU count. Empty location lists do not establish stock. Incomplete pagination fails collection.
-- **Nebius:** public current spot-price API plus seven days of last-price-per-hour history. Interruptible spot rates are explicitly labeled and excluded from on-demand floors and comparisons. No availability is inferred.
-- **Lambda:** authenticated API adapter available when `LAMBDA_API_KEY` is
-  configured. Its public page currently advertises rates effective November 16,
-  2026, so those are not used as current quotes. Authenticated integration remains
-  unverified. API calls use the documented `cloud.lambda.ai` endpoint.
-- **TensorDock:** API documentation requires a bearer token. An unauthenticated
-  location-discovery request returned an empty catalog, so price coverage is not
-  claimed. No verified collector is connected.
-- **Fluidstack:** the current public website does not expose a verified retail
-  price catalog. No prices are substituted from old or third-party listings.
+| Provider   | Collected data                           | Important interpretation                                                                                             |
+| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| RunPod     | Public GraphQL catalog and stock reports | Secure and Community are separate cloud tiers; catalog prices are per GPU-hour, with no asserted node configuration. |
+| CoreWeave  | Official regional on-demand price tables | Node rates are divided by GPU count once. Spot, inference, CPU and quote-only rows are excluded.                     |
+| Paperspace | Official DigitalOcean machine pricing    | Conflicting multi-GPU prices and ambiguous model labels are excluded explicitly.                                     |
+| Hyperstack | Official on-demand GPU price cards       | Maximum CPU/RAM specifications are not presented as allocated resources.                                             |
+| Verda      | Official regular single-GPU instances    | Distinct CPU/RAM configurations retain separate listing identities.                                                  |
+| Crusoe     | Official current on-demand rates         | Future December 1 prices are excluded; collection stops at that transition until the parser is reviewed.             |
+| Vultr      | Public plans endpoint                    | Node prices and total VRAM are normalized per GPU; empty locations do not prove availability.                        |
+| Nebius     | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                |
 
-Pricing pages establish **published rates**, not rentable capacity; availability
-is always `unknown` for those offers. New observations include raw USD rate,
-per-instance/per-GPU basis, retrieval time, source URL, and source-content SHA-256.
-The dashboard labels published rates and links their official sources. Excluded
-rows and reasons appear in provider profiles. Existing API snapshots and history
-remain compatible.
+The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for ownership, schema compatibility,
-failure behavior, alternatives, and qualification gates.
+Pricing pages establish a published rate, not stock. Missing stock becomes a **Check stock** link; explicit available/limited/unavailable reports keep their colored indicators. Failed or old observations remain visible in Offers with their actual timestamps and are excluded from current market floors. The freshness limit is two hours.
 
-Schemas and contracts are in `shared/catalog.ts`; adapters are in
-`scripts/providers.ts`; `scripts/collect.ts` owns snapshots and history.
+## Updates, history and comparison
 
-A successful provider response replaces that provider's whole offer set, so
-removed listings disappear. A valid empty catalog clears its offers. Failed or
-invalid responses retain the last verified offers without advancing observation
-timestamps or adding history. Only validated public fields are published;
-provider error messages and raw responses are never included in the website snapshot.
-Public pricing HTML, unauthenticated public API payloads, and HTML retrieval receipts are saved separately as a one-day
-Actions artifact, including rejected pages for reproducible parser diagnosis.
-Authenticated API responses are never archived. Invalid previous
-snapshot files stop collection rather than resetting history. Publication uses
-a temporary file plus rename.
+GitHub Actions collects every 15 minutes at minutes 2/17/32/47, commits observations, builds, and deploys Pages. Scheduled execution can be delayed by GitHub. The browser checks the published snapshot every minute and when returning to the tab. The Refresh button checks the published snapshot; it does not start a provider scrape. Browser check time and collector observation time are separate.
 
-The UI marks data older than two hours or from a failed source as stale/retained,
-shows unknown availability for those rows, and excludes them from overview
-floors/comparisons/provider price summaries. Unknown specs display a dash.
-History uses exact timestamps and separate offer identities; no synthetic
-curves or reliability scores are generated. Nebius provider history makes replay immediately available. Other trends require at least two collected timestamps. Alerts live in this browser's local storage and
-are checked only while the page is open; no background emails are sent.
+The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, crosshair, brush, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
-## Watching movement
+Pool replay shows recorded listing additions/removals, price changes, stock changes and counts. Filters include GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
 
-The Trends tab retains the original chart style and adds billing/GPU selectors,
-Replay/Pause, a timestamp scrubber, and Return to latest. Time axes use elapsed
-clock time. Replay reveals recorded samples; it never adds jitter to flat prices.
-Nebius history is explicitly labeled as provider hourly-last prices, timestamped
-at interval end, rather than our own retrospective observations.
+Price alerts are local to this browser and evaluated while the app is open. Invalid saved entries are discarded individually. Failed browser storage is reported without claiming the alert was saved. No email or background notifications are sent. CSV export protects spreadsheet cells from formula injection.
 
-The shifting-pool panel tracks **observed listings**, not physical fleet size.
-For each successful refresh it stores counts by reported availability plus added,
-removed, repriced and availability-changed listings against the previous success.
-The first observation is a baseline. Failed refreshes add no movement events;
-pricing-page listings remain availability unknown. Seven days are retained.
-Published per-GPU rates with unknown node size are labeled as such and export no
-node price. Their internal one-GPU normalization is not a rentable-node claim.
+## Ownership and failure behavior
 
-Additional source qualification on November 5: Cudo requires quotes; GMI exposes
-“from” prices without a qualified on-demand contract; Oblivus has inconsistent
-H100 rates across card/modal and unclear stock/configuration units; Genesis failed
-TLS retrieval. These are not included in verified coverage. This is broad public
-coverage, not an exhaustive worldwide inventory.
+- `shared/catalog.ts` owns snapshot validation, prices, timestamps and provenance.
+- `scripts/http.ts` owns bounded provider requests; adapters own extraction and units.
+- `scripts/collect.ts` owns provider replacement, seven-day history and local atomic publication.
+- `client/src/lib/catalog.ts` owns browser loading, refresh serialization and subscriptions.
+- `shared/market.ts`, `shared/movement.ts` and `shared/offer-view.ts` own market calculations and filters.
+- `ProviderIdentity` owns the common official logo, billing, cloud tier and source treatment.
 
-## Deploy and refresh
+Success replaces a provider's full listing set, including an authoritative empty set. Failure preserves the last verified offers without advancing their timestamps or inventing history. Malformed previous snapshots stop collection. Provider exception text is not published. Public source payloads and receipts are retained separately as a one-day Actions artifact, including rejected pages for diagnosis.
 
-The workflow `.github/workflows/pages.yml` runs checks, collects prices, commits
-validated observations to `main`, builds, and deploys an artifact to Pages.
-It runs on pushes to `main`, manual dispatch, and at minutes 2, 17, 32, and 47 every hour (UTC).
-GitHub schedules are best effort and can be delayed; observation ages, rather
-than workflow or build time, determine freshness. The two-hour stale threshold
-makes missed or delayed collections visible.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts, failure modes and release gates. Official logo source URLs are recorded in `client/public/images/providers/SOURCES.json`. The decorative GPU illustration is a refined derivative of the user-supplied drawing, not an engineering specification.
 
-1. In repository **Settings → Pages**, choose **GitHub Actions** as the source.
-2. Ensure Actions has permission to write repository contents. The workflow
-   requests `contents: write` only for the collecting job and `pages: write` /
-   `id-token: write` only for deployment.
-3. Optionally configure repository Actions secret `LAMBDA_API_KEY`. Do not put
-   secrets in Vite environment variables or the browser. Local collection can
-   read a key exported in your shell; `.env` files are not automatically loaded.
-4. Run **Refresh prices and deploy Pages** once and verify its completed run.
+## GitHub Pages deployment
 
-`pnpm build:pages` builds for `/gpu-price-tracker/`. `dist/` is the only published
-artifact; scripts, dependencies, and any local credentials stay out of it.
-Concurrent workflow runs are serialized. If committing observations conflicts
-with another push, the run stops and the previous deployed site stays available.
-The scheduled job persists history before deployment; a deployment failure does
-not erase collected observations. GitHub retains the job logs separately.
+1. In repository **Settings → Pages**, select **GitHub Actions** as the source.
+2. Push verified changes to `main`, or run **Refresh prices and deploy Pages** manually.
+3. Check both the build and deploy jobs in Actions; a local build alone does not publish the site.
 
-The old `gh-pages` branch is retained as the prior static-demo rollback. It is
-not the source for the new scheduled deployment once Actions is configured.
-The original full-stack source and migrations remain recoverable in Git history.
-
-## Provider references
-
-- [RunPod GraphQL GPU catalog](https://docs.runpod.io/sdks/graphql/manage-pods)
-- [CoreWeave published pricing](https://www.coreweave.com/pricing)
-- [Paperspace published pricing](https://docs.digitalocean.com/products/paperspace/pricing/)
-- [Lambda instance-types API](https://docs.lambda.ai/public-cloud/cloud-api/)
-- [GitHub Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
-
-## Availability, pool filters, and Prime Intellect
-
-Availability colors retain text labels: green is provider-reported available,
-amber limited, red unavailable, and gray unknown/stale. A published price never
-implies stock. Billing badges (on-demand / spot, interruptible) and cloud badges
-(Secure Cloud / Community Cloud / unspecified) are separate attributes.
-
-The pool inventory has GPU, billing, cloud tier, availability, and region filters,
-scoped to the selected provider. Inventory filters apply to current listings;
-the movement timeline explicitly remains the whole provider's recorded history.
-
-Prime Intellect is integrated behind the optional GitHub Actions secret
-`PRIME_API_KEY`. Until configured it shows credentials required. Its documented
-availability API returned HTTP 403 without authentication. Only one-GPU
-on-demand configurations are currently collected, keeping node and GPU-hour units
-unambiguous; missing stock remains unknown. `isSpot` is a capability flag and is
-not treated as a spot price. Pagination is bounded and must be complete. This
-adapter has fixture/contract coverage but authenticated integration remains
-unverified until a token is configured. Tokens and authenticated responses never
-enter the frontend or public evidence artifacts.
-
-API contract: https://docs.primeintellect.ai/api-reference/availability/get-gpu-availability
-
-The local GPU illustration is an AI-refined derivative of the user-supplied
-chassis drawing, used decoratively rather than as an engineering specification.
-All banner graphics are shipped with the site rather than remote CDN URLs.
-
-
-## Market view
-
-The hero shows the lowest fresh observed H100 SXM quote, with separate on-demand
-and spot selectors, source, observation time and reported stock. It updates from
-the subscribed snapshot; unavailable listings do not set that floor, while limited
-and unknown listings remain eligible and explicitly labeled.
-
-Trends uses a stock-style single-listing chart with 1H/24H/7D ranges, a hover
-crosshair, zoom brush and sampled high/low/change. Historical series keep listing
-identity rather than splicing the cheapest provider at each point. Retained
-history is rolling seven days; unavailable older data is not invented. Between
-observations prices are unknown. Provider hourly-last samples are labeled.
-
-Offers keep all availability states visible by default. Limited stock is not
-sold out. Explicit Open provider and Alert actions stay in a sticky action column;
-Compare remains visible and requires 2–3 selections with accessible checkboxes.
-
-## Stock evidence and comparison
-
-“Check stock” means the source supplies a price but no current capacity report;
-it opens the provider directly. It does not mean sold out. Known available,
-limited and unavailable reports keep their status. The page reports stock coverage
-separately from price coverage. Internal JSON/CSV retains the original unknown
-state for reproducible analysis.
-
-The offer history cell shows a latest recorded price, sample count and observed
-interval, with separate first/unchanged/changed states. View history opens that
-exact listing's market chart. Comparison and alert dialogs are portaled outside
-animated page containers and support keyboard navigation, Escape, body-scroll
-locking and focus restoration. Comparison uses factual values and flags differing
-GPU models/billing rather than generating a synthetic quality score.
-
-The active provider view omits Prime, Lambda, TensorDock and Fluidstack as requested;
-their optional adapters/profiles remain dormant, without fabricated observations.
+The workflow uses Node 22, a frozen pnpm lockfile, type checking, tests, collection and a Pages build. Only the build job can commit observations; only the deployment job receives Pages/OIDC write permissions. Collection needs no Actions secrets. Keep the committed snapshot and fixtures: they are data and parser evidence, not build output.

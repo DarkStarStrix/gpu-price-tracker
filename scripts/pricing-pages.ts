@@ -1,3 +1,4 @@
+import { fetchPublicText } from "./http";
 import { load } from "cheerio";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -262,37 +263,7 @@ export async function fetchPricingPage(
   at: string,
   parse: (html: string, at: string) => SourceResult
 ): Promise<SourceResult> {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      "User-Agent": "gpu-price-tracker/2.0 (public pricing collector)",
-      Accept: "text/html",
-    },
-  });
-  if (
-    !response.ok ||
-    !response.headers.get("content-type")?.includes("text/html")
-  )
-    throw new Error("Pricing page HTTP failure");
-  if (Number(response.headers.get("content-length")) > 2_000_000)
-    throw new Error("Pricing page exceeds limit");
-  if (!response.body) throw new Error("Pricing page has no body");
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > 2_000_000) {
-      await reader.cancel();
-      throw new Error("Pricing page exceeds limit");
-    }
-    chunks.push(value);
-  }
-  const html = new TextDecoder("utf-8", { fatal: true }).decode(
-    Buffer.concat(chunks)
-  );
+  const html = await fetchPublicText(url, "text/html");
   // Only public HTML goes into short-lived source artifacts; never authenticated API bodies.
   await mkdir("work/provider-evidence", { recursive: true });
   await writeFile(`work/provider-evidence/${id}.html`, html);

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -69,8 +68,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 :root {
@@ -123,7 +122,7 @@
   --teal: oklch(0.62 0.19 218);
   --teal-light: oklch(0.72 0.14 218);
   --coral: oklch(0.68 0.18 45);
-  --sage: oklch(0.60 0.18 155);
+  --sage: oklch(0.6 0.18 155);
   --amber: oklch(0.68 0.18 80);
   --paper: oklch(0.977 0.005 85);
   --paper-warm: oklch(0.96 0.008 85);
@@ -131,9 +130,15 @@
 
   /* Elevation shadows */
   --shadow-xs: 0 1px 2px oklch(0.22 0.045 255 / 0.04);
-  --shadow-sm: 0 2px 6px oklch(0.22 0.045 255 / 0.06), 0 1px 2px oklch(0.22 0.045 255 / 0.04);
-  --shadow-md: 0 4px 16px oklch(0.22 0.045 255 / 0.08), 0 2px 4px oklch(0.22 0.045 255 / 0.04);
-  --shadow-lg: 0 8px 32px oklch(0.22 0.045 255 / 0.10), 0 4px 8px oklch(0.22 0.045 255 / 0.06);
+  --shadow-sm:
+    0 2px 6px oklch(0.22 0.045 255 / 0.06),
+    0 1px 2px oklch(0.22 0.045 255 / 0.04);
+  --shadow-md:
+    0 4px 16px oklch(0.22 0.045 255 / 0.08),
+    0 2px 4px oklch(0.22 0.045 255 / 0.04);
+  --shadow-lg:
+    0 8px 32px oklch(0.22 0.045 255 / 0.1),
+    0 4px 8px oklch(0.22 0.045 255 / 0.06);
   --shadow-teal: 0 4px 20px oklch(0.62 0.19 218 / 0.18);
   --shadow-coral: 0 4px 20px oklch(0.68 0.18 45 / 0.18);
 
@@ -146,55 +151,113 @@
 /* ─── Keyframe Animations ─────────────────────────────────────────────────── */
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideRight {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.6; transform: scale(0.85); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-4px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes scan-line {
-  0%   { transform: translateY(-100%); opacity: 0; }
-  10%  { opacity: 0.4; }
-  90%  { opacity: 0.4; }
-  100% { transform: translateY(400%); opacity: 0; }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(400%);
+    opacity: 0;
+  }
 }
 
 @keyframes draw-line {
-  from { stroke-dashoffset: 1000; }
-  to   { stroke-dashoffset: 0; }
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes count-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
@@ -213,8 +276,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "calt" 1;
   }
 
   button:not(:disabled),
@@ -236,8 +302,13 @@
   }
 
   /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
   ::-webkit-scrollbar-thumb {
     background: oklch(0.82 0.008 85);
     border-radius: 3px;
@@ -258,20 +329,33 @@
     padding-right: 1rem;
   }
 
-  .flex { min-height: 0; min-width: 0; }
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
 
   @media (min-width: 640px) {
-    .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
   }
   @media (min-width: 1024px) {
-    .container { padding-left: 2.5rem; padding-right: 2.5rem; max-width: 1480px; }
+    .container {
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+      max-width: 1480px;
+    }
   }
 
   /* ── Graph paper background ── */
   .graph-paper {
     background-color: var(--paper);
-    background-image:
-      radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle,
+      var(--dot-color) 1px,
+      transparent 1px
+    );
     background-size: var(--grid-size) var(--grid-size);
   }
 
@@ -285,7 +369,7 @@
 
   /* ── Grain texture overlay ── */
   .grain::after {
-    content: '';
+    content: "";
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -310,7 +394,10 @@
     background: var(--card);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    transition: box-shadow 220ms ease-out, transform 220ms ease-out, border-color 220ms ease-out;
+    transition:
+      box-shadow 220ms ease-out,
+      transform 220ms ease-out,
+      border-color 220ms ease-out;
   }
   .elevated-card:hover {
     box-shadow: var(--shadow-md);
@@ -327,14 +414,14 @@
 
   /* ── Data value typography ── */
   .data-value {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
 
   /* ── Mono label ── */
   .mono-label {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -343,7 +430,7 @@
 
   /* ── Category badge ── */
   .category-badge {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -358,7 +445,7 @@
     text-decoration: none;
   }
   .link-underline::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -367,7 +454,9 @@
     background: currentColor;
     transition: width 220ms ease-out;
   }
-  .link-underline:hover::after { width: 100%; }
+  .link-underline:hover::after {
+    width: 100%;
+  }
 
   /* ── Shimmer loading ── */
   .shimmer {
@@ -396,14 +485,30 @@
   }
 
   /* Staggered delays */
-  .delay-0   { animation-delay: 0ms; }
-  .delay-60  { animation-delay: 60ms; }
-  .delay-120 { animation-delay: 120ms; }
-  .delay-180 { animation-delay: 180ms; }
-  .delay-240 { animation-delay: 240ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-360 { animation-delay: 360ms; }
-  .delay-420 { animation-delay: 420ms; }
+  .delay-0 {
+    animation-delay: 0ms;
+  }
+  .delay-60 {
+    animation-delay: 60ms;
+  }
+  .delay-120 {
+    animation-delay: 120ms;
+  }
+  .delay-180 {
+    animation-delay: 180ms;
+  }
+  .delay-240 {
+    animation-delay: 240ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-360 {
+    animation-delay: 360ms;
+  }
+  .delay-420 {
+    animation-delay: 420ms;
+  }
 
   /* ── Pulse dot ── */
   .pulse-dot {
@@ -412,12 +517,17 @@
 
   /* ── Scan line effect ── */
   .scan-line::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, oklch(0.62 0.19 218 / 0.3), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(0.62 0.19 218 / 0.3),
+      transparent
+    );
     animation: scan-line 4s ease-in-out infinite;
     pointer-events: none;
   }
@@ -426,7 +536,8 @@
   .section-rule {
     border: none;
     height: 1px;
-    background: linear-gradient(90deg,
+    background: linear-gradient(
+      90deg,
       transparent 0%,
       var(--border) 20%,
       var(--border) 80%,
@@ -440,27 +551,37 @@
     position: relative;
   }
   .accent-bar::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     width: 3px;
-    background: linear-gradient(180deg, var(--teal), oklch(0.62 0.19 218 / 0.3));
+    background: linear-gradient(
+      180deg,
+      var(--teal),
+      oklch(0.62 0.19 218 / 0.3)
+    );
     border-radius: 0 2px 2px 0;
   }
 
   /* ── Price tag ── */
   .price-tag {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
   }
 
   /* ── Availability indicator ── */
-  .avail-available { color: oklch(0.50 0.18 155); }
-  .avail-limited   { color: oklch(0.55 0.16 80); }
-  .avail-unavailable { color: oklch(0.52 0.18 25); }
+  .avail-available {
+    color: oklch(0.5 0.18 155);
+  }
+  .avail-limited {
+    color: oklch(0.55 0.16 80);
+  }
+  .avail-unavailable {
+    color: oklch(0.52 0.18 25);
+  }
 
   /* ── Floating label ── */
   .float-label {
@@ -475,7 +596,7 @@
   }
   .rule-label::before,
   .rule-label::after {
-    content: '';
+    content: "";
     flex: 1;
     height: 1px;
     background: var(--border);
@@ -486,7 +607,7 @@
     position: relative;
   }
   .tab-active-indicator::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -505,42 +626,87 @@
 /* ─── Utility Layer ───────────────────────────────────────────────────────── */
 
 @layer utilities {
-  .font-display { font-family: 'DM Sans', system-ui, sans-serif; }
-  .font-data    { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .font-display {
+    font-family: "DM Sans", system-ui, sans-serif;
+  }
+  .font-data {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
 
-  .text-navy    { color: oklch(0.22 0.045 255); }
-  .text-teal    { color: oklch(0.62 0.19 218); }
-  .text-coral   { color: oklch(0.68 0.18 45); }
-  .text-sage    { color: oklch(0.60 0.18 155); }
-  .text-amber   { color: oklch(0.68 0.18 80); }
+  .text-navy {
+    color: oklch(0.22 0.045 255);
+  }
+  .text-teal {
+    color: oklch(0.62 0.19 218);
+  }
+  .text-coral {
+    color: oklch(0.68 0.18 45);
+  }
+  .text-sage {
+    color: oklch(0.6 0.18 155);
+  }
+  .text-amber {
+    color: oklch(0.68 0.18 80);
+  }
 
-  .bg-teal-subtle  { background: oklch(0.62 0.19 218 / 0.07); }
-  .bg-coral-subtle { background: oklch(0.68 0.18 45 / 0.07); }
-  .bg-sage-subtle  { background: oklch(0.60 0.18 155 / 0.07); }
-  .bg-amber-subtle { background: oklch(0.68 0.18 80 / 0.07); }
-  .bg-navy-subtle  { background: oklch(0.22 0.045 255 / 0.05); }
+  .bg-teal-subtle {
+    background: oklch(0.62 0.19 218 / 0.07);
+  }
+  .bg-coral-subtle {
+    background: oklch(0.68 0.18 45 / 0.07);
+  }
+  .bg-sage-subtle {
+    background: oklch(0.6 0.18 155 / 0.07);
+  }
+  .bg-amber-subtle {
+    background: oklch(0.68 0.18 80 / 0.07);
+  }
+  .bg-navy-subtle {
+    background: oklch(0.22 0.045 255 / 0.05);
+  }
 
-  .border-teal  { border-color: oklch(0.62 0.19 218 / 0.3); }
-  .border-coral { border-color: oklch(0.68 0.18 45 / 0.3); }
+  .border-teal {
+    border-color: oklch(0.62 0.19 218 / 0.3);
+  }
+  .border-coral {
+    border-color: oklch(0.68 0.18 45 / 0.3);
+  }
 
-  .shadow-teal  { box-shadow: var(--shadow-teal); }
-  .shadow-coral { box-shadow: var(--shadow-coral); }
+  .shadow-teal {
+    box-shadow: var(--shadow-teal);
+  }
+  .shadow-coral {
+    box-shadow: var(--shadow-coral);
+  }
 
   /* Tabular numbers for all mono */
-  .tabular { font-variant-numeric: tabular-nums; }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Text balance */
-  .text-balance { text-wrap: balance; }
+  .text-balance {
+    text-wrap: balance;
+  }
 
   /* Gradient text */
   .gradient-text-teal {
-    background: linear-gradient(135deg, oklch(0.62 0.19 218), oklch(0.52 0.16 255));
+    background: linear-gradient(
+      135deg,
+      oklch(0.62 0.19 218),
+      oklch(0.52 0.16 255)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .gradient-text-coral {
-    background: linear-gradient(135deg, oklch(0.68 0.18 45), oklch(0.62 0.19 218));
+    background: linear-gradient(
+      135deg,
+      oklch(0.68 0.18 45),
+      oklch(0.62 0.19 218)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

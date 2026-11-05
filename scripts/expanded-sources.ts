@@ -1,3 +1,4 @@
+import { fetchPublicText } from "./http";
 import { load } from "cheerio";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -398,31 +399,7 @@ export function parseNebius(
   return { offers, history };
 }
 async function publicJson(id: string, url: string) {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "gpu-price-tracker/2.0 (public pricing collector)",
-    },
-  });
-  if (!response.ok) throw new Error("Public API HTTP failure");
-  if (!response.body) throw new Error("Public API has no body");
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let bytes = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytes += value.byteLength;
-    if (bytes > 2_000_000) {
-      await reader.cancel();
-      throw new Error("Public API response exceeds limit");
-    }
-    chunks.push(value);
-  }
-  const body = new TextDecoder("utf-8", { fatal: true }).decode(
-    Buffer.concat(chunks)
-  );
+  const body = await fetchPublicText(url, "application/json");
   await mkdir("work/provider-evidence", { recursive: true });
   await writeFile(`work/provider-evidence/${id}.json`, body);
   return JSON.parse(body);

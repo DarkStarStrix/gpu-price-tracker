@@ -1,272 +1,88 @@
-# Scheduled provider ingestion
+# GPU Price Observatory architecture
 
 ## 1. Objective and constraints
 
-Collect current, first-party GPU prices for the existing dashboard using GitHub
-Actions and Pages. Preserve the original UI, existing RunPod observations, and
-seven-day history. No paid server, GPU allocation, account creation, or private
-credential discovery. Connected public sources now include RunPod, CoreWeave, Paperspace, Hyperstack, Verda, Crusoe, Vultr and Nebius;
-Lambda remains authenticated because its public table currently advertises rates
-that take effect November 16, 2026, rather than current prices. TensorDock's
-unauthenticated locations request returned an empty list; it does not qualify
-price coverage. Fluidstack has no verified current public catalog.
+Aggregate first-party GPU prices and observed availability on a free GitHub Pages site. Preserve the original desktop dashboard, real timestamps, listing identity and seven-day history. Collection is scheduled, not an always-on backend. No SaaS account system, paid compute, database or private provider credentials are needed.
 
 ## 2. Current-system model
 
-Provider adapters return normalized offers. The collector validates them,
-replaces successful provider catalogs, retains failed providers' previous
-observations, appends actual history, and atomically writes `latest.json`.
-A single serialized workflow persists the JSON to Git, builds the React
-frontend, and publishes only `dist`. The browser never handles provider secrets.
+```mermaid
+flowchart LR
+  A[Eight public providers] --> B[Bounded HTTP transport]
+  B --> C[Provider adapters]
+  C --> D[Schema validation and provider replacement]
+  D --> E[Snapshot and history in Git]
+  E --> F[Pages build and deployment]
+  F --> G[Browser catalog store]
+  G --> H[Original dashboard]
+  B --> I[Short-lived public source evidence]
+```
+
+The collector owns writes. The workflow serializes publication. The browser is a read-only consumer apart from local price-alert storage. A snapshot is installed as a whole after validation; consumers subscribe to a revision rather than fetching independently.
 
 ## 3. Evidence and ranked bottlenecks
 
-1. Coverage baseline before the public-source extension: only RunPod was observed. Official CoreWeave HTML and
-   Paperspace pricing tables were fetched successfully on November 5, 2026.
-2. Semantic fidelity: the old schema calls every source an API and cannot express
-   a published rate without implying the same evidence as a stock API.
-3. Parsing ambiguity: CoreWeave contains separate region tables, mobile copies,
-   spot rates, and inference rates. Paperspace's two multi-GPU rows conflict with
-   its explicit single-price-times-GPU-count rule. These must not become offers.
-4. Access: Lambda and TensorDock credentials are absent. Counts and fixture tests
-   cannot establish their authenticated integration.
+The cleanup baseline contained eight working public providers, four disconnected adapters, unused generated UI/theme scaffolding, duplicated HTTP readers and dependency advisories. Alert storage trusted arbitrary parsed JSON; CSV escaping covered formula prefixes only in the first character. These paths have explicit regression coverage after cleanup.
 
-## 4. Competing designs
+Remaining operational constraints are provider HTML drift, delayed GitHub schedules, seven-day storage growth, and stock information that most price catalogs do not supply. A successful fetch cannot establish rentable capacity. Recharts 2 is retained for chart compatibility; its dependency graph is audited, but migration to its maintained major is separate work.
 
-| Design                                | Benefit                                          | Limitation                                                    |
-| ------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
-| Keep API-only pipeline                | Smallest system                                  | Leaves publicly available rates uncollected                   |
-| Extend adapters and evidence contract | Reuses publication/recovery; adds usable sources | HTML structure requires regression fixtures and failure gates |
-| Always-on crawler/database/API        | Interactive collection and richer storage        | Hosting and operational work exceed this task's needs         |
+## 4. Competing hypotheses and designs
 
-Choose the adapter extension. Do not introduce a scheduler, database, or second
-publication path.
+| Design                                          | Evidence and tradeoff                                                                  | Decision                                      |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Keep dormant adapters and generated wrappers    | Adds secret/configuration paths without current data or UI behavior                    | Remove unused implementations and assets.     |
+| Consolidate transport and provider presentation | Three real transport callers and three offer-display callers repeat the same contracts | Use one implementation at each existing seam. |
+| Add a hosted backend or replace the UI stack    | Does not resolve missing provider stock contracts; adds hosting and migration cost     | Outside the free Pages objective.             |
 
 ## 5. Chosen architecture and rationale
 
-```mermaid
-flowchart LR
-  A[Public APIs] --> C[Source adapters]
-  B[Official pricing HTML] --> C
-  C --> D[Normalized offers and source evidence]
-  D --> E[Validation and provider replacement]
-  E --> F[Snapshot and actual history in Git]
-  F --> G[Pages build]
-  G --> H[Original dashboard]
-  B --> I[Raw public source artifact with one-day retention]
-```
+The collector and browser store remain deep modules with small interfaces. Source adapters vary behind the `Source.fetch(at)` seam; normalized results hide extraction details from publication. The HTTP module provides bounded reads behind one interface for all public provider adapters. ProviderIdentity concentrates logo, billing, cloud tier and source display so one fix benefits offer rows, pool cards and comparison headers.
 
-The source adapter owns extraction and units. The collector owns validation,
-provider state, historical persistence, and atomic local publication. GitHub
-Actions owns execution serialization and deployment. UI helpers own freshness
-and display, never price inference.
+Depth is judged by behavior exercised through the interface, not file size. These shared implementations provide leverage for callers and locality for maintenance. Pass-through theme, toast, tooltip and class-name wrappers were removed because they had no active callers requiring that behavior.
 
-## 6. Component and interface contracts
+## 6. Module and interface contracts
 
-- `Source.fetch(at)` returns offers, optional public source evidence, and explicit
-  exclusions. Provider exceptions never become public messages or artifacts.
-- An offer has USD per GPU-hour, full node price, GPU count, observed time, source
-  URL, and source kind (`api` or `pricing_page`). New pricing-page observations
-  require the raw price, its per-instance/per-GPU basis, and the content SHA-256.
-- Published pricing-page offers always have `unknown` availability. Fetching a
-  public page establishes that its rate was observed, not rentable capacity or
-  the time the provider last changed its price.
-- CoreWeave publishes on-demand node rates: divide by the listed GPU count once.
-  Preserve region and configuration in identity. Ignore mobile duplicates, spot,
-  inference-only rates, CPU products, and contact-sales rows.
-- Paperspace single-machine rates are direct node rates. Multi-GPU rows must
-  agree with the page's explicit multiplication rule; conflicts are recorded as
-  exclusions. No machine specs or physical variants are guessed from generic
-  type names. An ambiguous combined V100 label is excluded.
-- Schema version 1 remains readable: new API metadata fields are optional for
-  preserved observations. Pricing-page fields are required conditionally.
-  Existing history is retained and new history points carry source metadata.
+| Module                | Interface and owner                      | Invariants and failure behavior                                                                                                                                                                                   |
+| --------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public transport      | `fetchPublicText(url, accept, options)`  | Fixed provider URLs; 20-second timeout; 2 MB advertised/streamed limit; expected content type and valid UTF-8. Fail before parsing on violation.                                                                  |
+| Provider adapters     | `Source.fetch(at)`                       | Return exact listing identity, normalized USD/GPU-hour, optional known node configuration, source evidence, exclusions and provider hourly history. Do not infer stock from price.                                |
+| Schema                | `snapshotSchema`, `offerSchema`          | Finite positive prices; node/per-GPU agreement; unique IDs; no future observations/history; pricing-page provenance must match source evidence.                                                                   |
+| Collector             | `collect(previous, adapters, at)`        | Validate before replacing provider data. Retain failed providers' prices/timestamps; append no failed samples. Success replaces all listings, even with an empty result. Invalid previous state fails explicitly. |
+| Browser catalog       | `loadCatalog`, subscription and revision | One in-flight request for timer/focus/manual refresh. Validate before install, reject backwards snapshots, retain loaded data on error, report refresh state.                                                     |
+| Market/filter helpers | Pure snapshot queries                    | Preserve exact offer identity, physical variant and billing type. Stale/failed sources do not establish a current floor or fresh stock.                                                                           |
+| Price alerts          | `usePriceAlerts`                         | Validate each stored entry and new target; no inherited-key lookups; persist before reporting save success; keep earlier state if storage fails.                                                                  |
+| CSV                   | `toCSV(rows)`                            | Quote every cell; escape quotes; neutralize formula/control prefixes including hidden leading whitespace.                                                                                                         |
+| Provider display      | `ProviderIdentity({offer})`              | Local official provider asset, billing distinct from cloud tier, linked evidence. No invented availability.                                                                                                       |
+
+RunPod provides a per-GPU catalog rate and a separate one-GPU stock report; neither asserts a full rentable node configuration. CoreWeave and Vultr node prices are divided once. Pricing-page observations require raw price, basis, retrieval timestamp, source URL and content hash. Nebius hourly history stays labeled `provider_hourly_last`, separate from collector observations. Unsupported pagination, ambiguous models, contradictory rates and effective-date transitions fail closed or produce explicit row exclusions.
 
 ## 7. Runtime dynamics
 
-Collection is scheduled every 15 minutes, with push and manual triggers. Source HTTP requests have finite
-timeouts and size limits, with no browser execution or automatic parser repair.
-Only public HTML and unauthenticated public API payloads are archived as a workflow artifact; authenticated responses are
-not archived. Git persistence precedes Pages deployment. Browser revalidation
-continues every minute; it does not launch ingestion.
+The Actions workflow runs on main pushes, manual dispatch and quarter-hour schedules. Its concurrency group serializes refresh/deploy runs. Build has contents-write permission solely to preserve the snapshot; deploy separately receives Pages/OIDC permissions. No provider secrets are configured or referenced.
+
+The collector retains a rolling seven-day window and deduplicates history by offer ID and observation timestamp. It writes a temporary snapshot then renames it locally. Git commit/push and Pages deployment are subsequent operations, not part of that local atomic write. A failed push/build/deploy fails its workflow step; local success does not prove remote publication.
+
+The browser polls every minute and on visibility/focus return, preserving mounted tabs and filters. A failed refresh keeps visible data with an error status. Selection stores IDs and reconciles them against current listings. Dialogs portal to the body, trap focus, restore focus/scroll and cancel pending dismissal timers on unmount.
 
 ## 8. Failure modes and mitigations
 
-- Changed headers/regions/row structure, unexpected prices, empty HTML extraction,
-  or duplicate identities fail the source and preserve its prior timestamps.
-- Explicit quote-required and contradictory rows are excluded with stable reason
-  codes rather than guessed prices. Supported non-conflicting rows remain usable.
-- Source evidence accompanies the accepted catalog; failed attempts do not replace
-  evidence for retained prices. Stale or failed sources do not feed current floors.
-- Future-effective published rates are not current offers. Missing credentials
-  remain `not_configured`; absent collectors remain `not_connected`.
-- Concurrent Git writes can stop a run; no force push is used. A failed deployment
-  leaves collected observations in Git and the last deployed site available.
+- Provider/network/schema failure: retain last verified observations with failed source status; overview excludes them and Offers can inspect them.
+- Missing stock: show a stock-check action, preserving limited/available/unavailable only when explicitly reported.
+- No history or unchanged prices: display sample count/interval and collecting/unchanged state; never synthetic movement.
+- Malformed or inaccessible alert storage: isolate invalid entries and show unsuccessful writes; browsing remains usable.
+- Spreadsheet formula injection: neutralize untrusted exported string prefixes before quoting.
+- Oversized/truncated/non-UTF-8 provider input: bounded transport fails and cancels oversized streams.
+- Dependency advisories: use a committed frozen lockfile and `pnpm audit:deps`; a clean audit is a time-specific advisory result, not proof of no vulnerabilities.
+- Official HTML changes or Crusoe's effective-date transition: fixtures and explicit parser assertions expose drift; real collection remains a required release check.
 
 ## 9. Verification and promotion gates
 
-Before publication: existing RunPod/recovery tests pass, recorded-source fixtures
-produce independent expected prices and counts, mutations reject header/region/
-unit drift, contact-sales/mobile/spot/inference/CPU rows never leak into offers,
-Paperspace conflicts stay excluded, and new metadata survives collection/history.
-The initial qualification on November 5 passed 31 tests, and a fresh collection produced
-69 RunPod, 18 CoreWeave, and 15 Paperspace offers. CoreWeave exclusions: six
-contact-sales rows. Paperspace exclusions: one ambiguous model and two conflicting
-multi-GPU prices. Captured original response hashes and URLs are in
-`scripts/fixtures/retrieval-receipts.json`; the HTML fixtures contain factual table
-excerpts. A fixture regression reproduced and prevented the omitted-H100 selector
-failure. Model tests prevent GB200/GH200 from aliasing B200/H200.
+Run `pnpm check`, `pnpm test`, `pnpm audit:deps` and `pnpm build:pages`. Type checks reject unused locals and parameters. Tests exercise parser provenance/units, invalid data, replacement/removal, retained failure timestamps, history identity, billing separation, freshness, browser refresh serialization, comparison selection, dialog lifecycle, local storage, CSV and HTTP limits.
 
-Then fetch fresh official pages, verify representative raw-to-normalized values,
-run type checking and the Pages build, and inspect the preserved UI. Finally
-require a successful GitHub workflow and a public snapshot with matching provider
-counts and source hashes. Live HTTP proves retrieval; fixtures prove controlled
-semantics; neither proves authenticated integration or guaranteed capacity.
+Before publication, collect against all active providers and inspect statuses and retained history. Verify official logos and provider labels, comparison, alerts, filters and charts in the production build. Promotion requires both Actions jobs to succeed and the published snapshot/assets to match the deployed build. Do not equate fixtures or local tests with provider integration or a successful live deployment.
 
 ## 10. Migration and execution plan
 
-Add the evidence contract and public adapters first; retain existing identities
-and RunPod behavior. Save minimal factual HTML fixtures and retrieval receipts.
-Run adversarial tests, live collection, build, and UI checks. Deploy through the
-existing workflow and verify the public artifact. Rollback is the previous source
-commit and its snapshot; do not erase Git history. The next independent boundary
-is authenticated Lambda/TensorDock qualification after credentials are supplied.
+Snapshot schema remains version 1; optional fields and existing historical identities remain compatible. Disconnected Prime Intellect/Lambda/TensorDock/Fluidstack implementations and their unused logos/secret configuration are removed. Existing committed data and fixtures are preserved; successful collection now publishes only the eight active source statuses while retaining earlier history within the rolling window.
 
-## Authoritative references
-
-- https://www.coreweave.com/pricing
-- https://docs.digitalocean.com/products/paperspace/pricing/
-- https://docs.lambda.ai/public-cloud/cloud-api/
-- https://lambda.com/instances
-- https://dashboard.tensordock.com/api/docs/fetch-hostnodes
-- https://fluidstack.io/
-- HGX H100/H200 variant normalization:
-  https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html
-
-## Movement extension — November 5, 2026
-
-The measured objective is broader qualified coverage plus visible real price and
-listing-pool changes, preserving the existing interface and free deployment.
-Animating invented price fluctuations was rejected. A database/live-server rewrite
-adds no necessary signal; the existing collector owns the required state.
-
-Adapters now return optional historical price points. Nebius imports public
-`METHOD_LAST_PRICE` / `GRANULARITY_HOUR_1` series for the preceding seven days.
-The unfinished current-hour bucket is excluded. These are interval-end provider summaries, labeled `provider_hourly_last`;
-collector observations use `collector`. USD/GPU-hour, source identity, current SKU
-membership, nonfuture timestamps, positive prices, and complete pagination are
-validated before any provider state changes. Source errors retain old data.
-`billingModel=spot` is excluded from on-demand floors and comparisons. Historical
-import failure fails the whole Nebius refresh; it cannot silently truncate history.
-
-`configurationKnown=false` marks a quoted per-GPU rate whose node configuration
-is not established. GPU count and total remain a one-GPU normalization internally;
-the UI and CSV explicitly suppress any claim that this is an actual node price.
-HTML provenance rules remain unchanged. Vultr node prices/VRAM are divided once.
-Crusoe's reviewed current column is valid only before December 1, 2026; its adapter
-fails closed at that transition. Hyperstack maximum CPU/RAM are not allocations.
-
-The collector alone owns `poolHistory`. Each successful provider snapshot records
-observed-listing counts by availability and changes relative to its last success:
-added IDs, removed IDs, changed prices and changed reported availability. A first
-observation is a zero-delta baseline. Older snapshots can migrate from their
-actual last-success timestamp and retained offers. Failed refreshes create no
-pool observation or removal. Counts are not fleet GPU counts. Seven days persist.
-
-The frontend replays discrete verified timestamps with a fixed elapsed-time axis,
-manual playback and scrubbing; no interpolation fabricates observations. Price
-lines keep gaps. Pool lines use step transitions. Motion is user initiated and
-price transitions respect reduced-motion preferences. Both panels return to latest.
-
-Promotion gates: factual source fixtures, invalid header/unit/page/future-date
-mutations, pool baseline/removal/change/failure tests, existing recovery tests,
-type checking, production build, live collection, browser interaction, successful
-Actions deployment and public snapshot verification. No authenticated provider
-integration or physical capacity guarantee follows from these checks.
-
-Additional primary source references:
-- https://www.hyperstack.cloud/gpu-pricing
-- https://verda.com/pricing
-- https://www.crusoe.ai/cloud/pricing
-- https://api.vultr.com/v2/plans?per_page=500
-- https://docs.nebius.com/signup-billing/spot-prices
-- https://api.nebius.cloud/billing/v1alpha1/spot-price
-
-Browser refresh uses an observable catalog revision so every mounted dashboard reads the validated snapshot after a successful request. Manual, periodic and focus refreshes share one in-flight request. The browser uses a cache-busting query, no-store caching and a 20-second timeout. Schema-invalid, failed or older snapshots retain the last validated data and expose refresh failure. Checks update in place and preserve local tab/filter state; last checked time is distinct from source observation time.
-
-Availability and pool presentation extension: current inventory selectors live in
-`shared/offer-view.ts` and apply the same freshness contract as offer badges.
-Historical pool totals are not re-filtered using today's listings, since doing
-so would misrepresent past membership; the timeline explicitly retains provider
-scope. Billing and cloud security tier are displayed separately. Prime's adapter
-requests single-GPU configurations, validates USD prices, maps explicit stock,
-and requires complete stable pagination. The optional PRIME_API_KEY is passed
-only to the collector. Unknown stock and missing credentials never become green
-availability. Multi-GPU and spot Prime pricing remain unqualified. Local banner
-assets replace remote placeholders; generated art is decorative.
-
-Market presentation uses pure quote/history/stat selectors in shared/market.ts.
-H100 floors require freshness and separate billing; limited/unknown capacity does
-not disappear from aggregation. Chart samples are isolated by exact offer ID,
-sorted by actual time and bounded by selected range. Sampled high/low are not
-intraperiod market extrema; no OHLC or trading volume is inferred. Removed listing
-history remains selectable while retained. The backend retention and collection
-cadence are unchanged. Offer availability never disables source/provider links.
-
-## Evidence and interaction audit — November 5
-
-1. **Objective and constraints.** Make stock and history useful, repair the visible
-   comparison failure, and preserve the original dashboard, actual observations,
-   free Pages/Actions deployment, source timestamps and price units. The user
-   subsequently excluded Prime, Lambda, TensorDock and Fluidstack from active
-   coverage; no credentials are requested or provisioned.
-2. **Current-system model.** Adapters own price/stock extraction; collector owns
-   per-provider replacement and rolling history; the subscribed catalog owns page
-   updates; offer presentation owns epistemic labels; dialogs own viewport focus.
-3. **Evidence and bottlenecks.** Most sources provide prices without stock. RunPod
-   missing/null stock stays unknown internally. Flat sparklines hide both actual
-   sample counts and unchanged rates. A live browser reproduction showed Compare
-   dimming only the Offers section while its content was offscreen: `.animate-fade-up`
-   retains a CSS transform, containing fixed descendants. Earlier AX-only checking
-   found the drawer content but failed to establish visible behavior.
-4. **Hypotheses.** Ranked comparison causes were transformed ancestors, selection
-   loss at refresh, and minimum-selection blocking. The browser screenshot plus
-   CSS containment evidence confirmed the first; selected IDs and drawer contents
-   remained present. A flat line was confirmed as unchanged observations, not a
-   missing backend sample. Repo Actions secrets list is empty. Lambda advertises
-   future Nov 16 rates; TensorDock hostnodes returned 401; Prime returned 403;
-   Fluidstack's current public site supplies no qualified price/stock catalog.
-5. **Alternatives.** Recoloring unknown stock green fails truthfulness. Hiding all
-   such listings destroys useful rate coverage. An always-on scraping/backend
-   rewrite cannot establish stock the provider does not expose. Choose explicit
-   provider stock-check actions, numeric history summaries, and body-level dialogs.
-6. **Components and contracts.** Availability remains available/limited/unavailable/
-   unknown in persisted JSON; unknown renders as a `Check stock` link, with a reason,
-   or `Stock not reported` where no URL exists. Known stock retains its provider
-   report. Current stock coverage is reported separately from price coverage.
-   History summaries retain offer identity, actual sample count, latest price,
-   interval and net change. Missing/one-sample/flat histories have distinct states.
-   View history opens the selected listing's chart, including its billing type.
-7. **Runtime dynamics.** Shared Modal portals into document.body, outside page
-   transforms. It traps Tab focus, handles Escape/backdrop, locks body scroll and
-   restores previous focus/scroll. Comparison shows raw values, billing, configuration,
-   source, timestamp and stock evidence; no synthetic availability/quality radar.
-8. **Failure behavior.** No provider report is promoted into verified stock. Failed
-   source freshness still forces a stock check. Missing specs are Not reported.
-   Different GPU models or billing types prompt a comparability notice. Providers
-   without a successful observation are omitted from active profiles; optional
-   unconfigured adapters and past evidence are retained rather than deleted.
-9. **Verification gates.** DOM integration mounts under a transformed ancestor and
-   asserts the real dialog is under body, focus trapping, close and scroll restoration.
-   History tests cover missing/first/unchanged/changing data. Browser acceptance
-   requires a fully visible comparison at multiple scroll positions, usable close/
-   Escape, working exact-listing history navigation and provider stock links.
-10. **Migration and execution.** No persisted-schema or ingestion changes. Apply
-    shared modal and evidence presentation first, run regression/type/build gates,
-    verify the production preview and public deployment, and preserve a before/after
-    screenshot. Rollback is a source revision; never erase collected observations.
-
-Comparison selections are reconciled against current offer IDs before counting or
-opening a dialog; disappeared IDs cannot leave an enabled empty comparison.
-History intervals show dates across different days, times within the same day,
-and full timestamps in the tooltip.
+Deploy through the existing workflow after local gates. Rollback uses a reviewed revert of application/config changes while preserving newer observations; never reset the data history to roll back the UI. Future provider additions must establish first-party units, effective dates, availability semantics and complete pagination before joining the source registry.

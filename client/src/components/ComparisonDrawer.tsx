@@ -1,3 +1,4 @@
+import { ProviderIdentity } from "./ProviderIdentity";
 import { X, ExternalLink } from "lucide-react";
 import type { GpuOffer } from "@shared/catalog";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
@@ -76,7 +77,7 @@ export function ComparisonDrawer({
                 </th>
                 {offers.map(o => (
                   <th key={o.offerId} className="p-3 text-left min-w-44">
-                    <p className="text-base">{o.providerName}</p>
+                    <ProviderIdentity offer={o} />
                     <p className="font-normal mt-1">{o.gpuModelName}</p>
                   </th>
                 ))}

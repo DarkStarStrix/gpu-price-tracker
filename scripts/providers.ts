@@ -1,10 +1,10 @@
+import { fetchPublicText } from "./http";
 import { z } from "zod";
 import { offerSchema, type GpuOffer } from "../shared/catalog";
 
 import { gpuId } from "./gpu";
 export { gpuId } from "./gpu";
 import type { SourceResult } from "../shared/catalog";
-import { primeSource } from "./prime";
 import { expandedSources } from "./expanded-sources";
 import { publicPricingSources } from "./pricing-pages";
 
@@ -61,6 +61,7 @@ export function parseRunpod(payload: unknown, observedAt: string): GpuOffer[] {
           gpuModelId: gpuId(gpu.displayName, gpu.memoryInGb),
           gpuModelName: gpu.displayName,
           gpuCount: 1,
+          configurationKnown: false,
           vramPerGpuGb: gpu.memoryInGb || null,
           vcpus: null,
           ramGb: null,
@@ -78,62 +79,6 @@ export function parseRunpod(payload: unknown, observedAt: string): GpuOffer[] {
     })
   );
 }
-const lambdaSchema = z.object({
-  data: z.record(
-    z.string(),
-    z.object({
-      instance_type: z.object({
-        name: z.string(),
-        gpu_description: z.string(),
-        price_cents_per_hour: z.number().positive(),
-        specs: z.object({
-          gpus: z.number().int().positive(),
-          memory_gib: z.number().positive(),
-          vcpus: z.number().positive(),
-        }),
-      }),
-      regions_with_capacity_available: z.array(z.object({ name: z.string() })),
-    })
-  ),
-});
-export function parseLambda(payload: unknown, observedAt: string): GpuOffer[] {
-  return Object.entries(lambdaSchema.parse(payload).data).map(([id, row]) => {
-    const item = row.instance_type;
-    const nodePrice = item.price_cents_per_hour / 100;
-    return offerSchema.parse({
-      offerId: `lambda:${id}`,
-      providerId: "lambda",
-      providerName: "Lambda",
-      gpuModelId: gpuId(item.gpu_description, null),
-      gpuModelName: item.gpu_description,
-      gpuCount: item.specs.gpus,
-      vramPerGpuGb: null,
-      vcpus: item.specs.vcpus,
-      ramGb: item.specs.memory_gib,
-      region:
-        row.regions_with_capacity_available.map(r => r.name).join(", ") ||
-        "No reported capacity",
-      pricePerGpuHr: nodePrice / item.specs.gpus,
-      totalNodePriceHr: nodePrice,
-      availability: row.regions_with_capacity_available.length
-        ? "available"
-        : "unavailable",
-      providerLink: "https://lambda.ai/pricing",
-      sourceUrl: "https://cloud.lambda.ai/api/v1/instance-types",
-      cloudType: "on-demand",
-      dataSource: "api",
-      observedAt,
-    });
-  });
-}
-async function request(url: string, options: RequestInit = {}) {
-  const response = await fetch(url, {
-    ...options,
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!response.ok) throw new Error(`Provider HTTP ${response.status}`);
-  return response.json();
-}
 export interface Source {
   id: string;
   name: string;
@@ -141,7 +86,7 @@ export interface Source {
   connected: boolean;
   fetch: (at: string) => Promise<SourceResult>;
 }
-export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
+export function sources(): Source[] {
   return [
     {
       id: "runpod",
@@ -150,43 +95,24 @@ export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
       connected: true,
       fetch: async at => ({
         offers: parseRunpod(
-          await request("https://api.runpod.io/graphql", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              query: `{ gpuTypes { id displayName memoryInGb secureCloud communityCloud securePrice communityPrice secure: lowestPrice(input: {gpuCount: 1, secureCloud: true}) { uninterruptablePrice stockStatus } community: lowestPrice(input: {gpuCount: 1, secureCloud: false}) { uninterruptablePrice stockStatus } } }`,
-            }),
-          }),
-          at
-        ),
-      }),
-    },
-    {
-      id: "lambda",
-      name: "Lambda",
-      configured: Boolean(env.LAMBDA_API_KEY),
-      connected: true,
-      fetch: async at => ({
-        offers: parseLambda(
-          await request("https://cloud.lambda.ai/api/v1/instance-types", {
-            headers: { Authorization: `Bearer ${env.LAMBDA_API_KEY}` },
-          }),
+          JSON.parse(
+            await fetchPublicText(
+              "https://api.runpod.io/graphql",
+              "application/json",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: `{ gpuTypes { id displayName memoryInGb secureCloud communityCloud securePrice communityPrice secure: lowestPrice(input: {gpuCount: 1, secureCloud: true}) { uninterruptablePrice stockStatus } community: lowestPrice(input: {gpuCount: 1, secureCloud: false}) { uninterruptablePrice stockStatus } } }`,
+                }),
+              }
+            )
+          ),
           at
         ),
       }),
     },
     ...publicPricingSources(),
     ...expandedSources(),
-    primeSource(env),
-    ...[
-      ["tensordock", "TensorDock"],
-      ["fluidstack", "FluidStack"],
-    ].map(([id, name]) => ({
-      id,
-      name,
-      configured: false,
-      connected: false,
-      fetch: async () => ({ offers: [] }),
-    })),
   ];
 }

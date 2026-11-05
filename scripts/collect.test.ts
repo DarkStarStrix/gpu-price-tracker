@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseRunpod, parseLambda, gpuId, type Source } from "./providers";
+import { parseRunpod, gpuId, type Source } from "./providers";
 import { collect } from "./collect";
 import { isStale, isCurrent, snapshotSchema } from "../shared/catalog";
 import fixture from "./fixtures/runpod.json";
@@ -24,7 +24,10 @@ describe("provider contracts", () => {
     expect(
       a100.every(
         o =>
-          o.vcpus === null && o.ramGb === null && o.region === "Not specified"
+          o.vcpus === null &&
+          o.ramGb === null &&
+          o.region === "Not specified" &&
+          o.configurationKnown === false
       )
     ).toBe(true);
     expect(gpuId("NVIDIA H100 PCIe", 80)).not.toBe(gpuId("H100 SXM", 80));
@@ -57,29 +60,6 @@ describe("provider contracts", () => {
     const invalid = structuredClone(fixture);
     invalid.data.gpuTypes[0].securePrice = -1;
     expect(() => parseRunpod(invalid, at)).toThrow();
-  });
-  it("converts Lambda cents per node-hour to dollars per GPU-hour once", () => {
-    const [offer] = parseLambda(
-      {
-        data: {
-          eight: {
-            instance_type: {
-              name: "eight",
-              gpu_description: "H100 SXM",
-              price_cents_per_hour: 2400,
-              specs: { gpus: 8, memory_gib: 1800, vcpus: 208 },
-            },
-            regions_with_capacity_available: [{ name: "us-west-1" }],
-          },
-        },
-      },
-      at
-    );
-    expect(offer.pricePerGpuHr).toBe(3);
-    expect(offer.totalNodePriceHr).toBe(24);
-    expect(offer.gpuCount).toBe(8);
-    expect(offer.region).toBe("us-west-1");
-    expect(offer.vramPerGpuGb).toBeNull();
   });
 });
 describe("snapshot publication", () => {

@@ -1,7 +1,0 @@
-node_modules
-dist
-.manus-logs
-.git
-*.md
-drizzle/migrations
-screenshots

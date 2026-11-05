@@ -12,6 +12,7 @@ let root: Root;
 afterEach(async () => {
   if (root) await act(() => root.unmount());
   document.body.innerHTML = "";
+  vi.useRealTimers();
 });
 function mount() {
   const trigger = document.createElement("button");
@@ -100,4 +101,57 @@ describe("dialogs escape dashboard transforms", () => {
     expect(document.body.textContent).toBe("CompareLimited");
     expect(document.querySelector("a")).toBeNull();
   });
+});
+
+it("cancels saved-alert dismissal after the modal unmounts", async () => {
+  vi.useFakeTimers();
+  mount();
+  const close = vi.fn();
+  const save = vi.fn();
+  await act(() =>
+    root.render(
+      <PriceAlertModal
+        gpuModelId="h100"
+        gpuModelName="H100"
+        currentPrice={3}
+        existingAlert={undefined}
+        onSave={save}
+        onClear={() => {}}
+        onClose={close}
+      />
+    )
+  );
+  const button = Array.from(document.querySelectorAll("button")).find(b =>
+    b.textContent?.includes("Set Alert")
+  )!;
+  await act(() => button.click());
+  expect(save).toHaveBeenCalledWith("h100", 2.7);
+  await act(() => root.render(null));
+  await act(() => vi.advanceTimersByTime(1000));
+  expect(close).not.toHaveBeenCalled();
+});
+it("keeps the alert dialog open and reports an unsuccessful save", async () => {
+  mount();
+  const close = vi.fn();
+  await act(() =>
+    root.render(
+      <PriceAlertModal
+        gpuModelId="h100"
+        gpuModelName="H100"
+        currentPrice={3}
+        existingAlert={undefined}
+        onSave={() => false}
+        onClear={() => {}}
+        onClose={close}
+      />
+    )
+  );
+  const button = Array.from(document.querySelectorAll("button")).find(b =>
+    b.textContent?.includes("Set Alert")
+  )!;
+  await act(() => button.click());
+  expect(document.querySelector('[role="alert"]')?.textContent).toContain(
+    "Could not save"
+  );
+  expect(close).not.toHaveBeenCalled();
 });

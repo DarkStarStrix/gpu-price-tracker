@@ -1,12 +1,8 @@
+import { ProviderIdentity } from "./ProviderIdentity";
 import { useState } from "react";
 import { catalog } from "@/lib/catalog";
 import { isCurrent } from "@shared/catalog";
-import {
-  filterPool,
-  billingLabel,
-  cloudLabel,
-  type PoolFilters,
-} from "@shared/offer-view";
+import { filterPool, type PoolFilters } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 export function PoolInventory({ provider }: { provider: string }) {
   const empty: PoolFilters = {
@@ -88,7 +84,8 @@ export function PoolInventory({ provider }: { provider: string }) {
       <p className="text-xs text-muted-foreground mb-4">
         These filters apply to current listings. The timeline below shows the
         whole selected provider. Green means reported available; amber is
-        limited, red unavailable, stock-check links mean no current stock report.
+        limited, red unavailable, stock-check links mean no current stock
+        report.
       </p>
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
         {visible.map(o => (
@@ -100,23 +97,13 @@ export function PoolInventory({ provider }: { provider: string }) {
               <strong className="text-xs truncate" title={o.gpuModelName}>
                 {o.gpuModelName}
               </strong>
-              <AvailabilityBadge providerLink={o.providerLink}
+              <AvailabilityBadge
+                providerLink={o.providerLink}
                 state={isCurrent(catalog, o) ? o.availability : "unknown"}
               />
             </div>
-            <div className="flex flex-wrap gap-1 mt-2 text-[10px] font-data">
-              <span
-                className={
-                  o.billingModel === "spot"
-                    ? "rounded bg-purple-100 text-purple-800 px-2 py-1"
-                    : "rounded bg-teal/10 text-teal px-2 py-1"
-                }
-              >
-                {billingLabel(o)}
-              </span>
-              <span className="rounded bg-muted px-2 py-1">
-                {cloudLabel(o)}
-              </span>
+            <div className="mt-3">
+              <ProviderIdentity offer={o} />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               ${o.pricePerGpuHr.toFixed(3)} / GPU-hr · {o.region}

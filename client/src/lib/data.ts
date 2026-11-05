@@ -3,37 +3,29 @@ import { isCurrent, type Snapshot, type GpuOffer } from "@shared/catalog";
 /*
   GPU Provider Price Tracker — Data Layer
   Contains all provider data, GPU models, normalization logic, and utility functions.
-  Data sourced from provider pricing pages (Lambda, RunPod, CoreWeave, TensorDock, FluidStack, Paperspace).
+  Provider metadata and projections of the validated, current catalog.
 */
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type ProviderCategory = "stable" | "marketplace" | "shifting_pool";
 export type AvailabilityState =
-  | "available"
-  | "limited"
-  | "unavailable"
-  | "unknown";
-export type BillingModel = "on-demand" | "spot" | "reserved";
+  "available" | "limited" | "unavailable" | "unknown";
+export type BillingModel = "on-demand" | "spot";
 
 export interface Provider {
   id: string;
   name: string;
   category: ProviderCategory;
   website: string;
-  regions: string[];
   billingModel: BillingModel;
   notes: string;
-  logo?: string;
 }
 
 export interface GpuModel {
   id: string;
   name: string;
-  aliases: string[];
   vramGb: number;
-  architecture: string;
-  generation: "current" | "previous" | "legacy";
 }
 
 export type Offer = GpuOffer;
@@ -69,7 +61,6 @@ export const GPU_MODELS: GpuModel[] = [];
 export const PROVIDERS: Provider[] = [
   ...(
     [
-      ["prime", "Prime Intellect", "https://primeintellect.ai"],
       ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],
       ["verda", "Verda", "https://verda.com"],
       ["crusoe", "Crusoe", "https://www.crusoe.ai"],
@@ -81,68 +72,34 @@ export const PROVIDERS: Provider[] = [
     name,
     website,
     category: "stable" as const,
-    regions: [],
     billingModel: id === "nebius" ? ("spot" as const) : ("on-demand" as const),
     notes:
-      id === "prime"
-        ? "Authenticated single-GPU on-demand availability. Set PRIME_API_KEY in GitHub Actions secrets to connect."
-        : id === "nebius"
-          ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
-          : "Official current USD on-demand rates. Capacity is not checked.",
+      id === "nebius"
+        ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
+        : "Official current USD on-demand rates. Capacity is not checked.",
   })),
-  {
-    id: "lambda",
-    name: "Lambda",
-    category: "stable",
-    website: "https://lambda.ai",
-    regions: ["US-East", "US-West", "US-South", "EU-Central"],
-    billingModel: "on-demand",
-    notes:
-      "Lambda Cloud instance catalog. Credentials required for collection.",
-  },
   {
     id: "runpod",
     name: "RunPod",
     category: "shifting_pool",
     website: "https://www.runpod.io",
-    regions: ["US", "EU", "CA"],
     billingModel: "on-demand",
     notes:
       "Public Secure and Community catalog rates. Capacity reported separately.",
-  },
-  {
-    id: "tensordock",
-    name: "TensorDock",
-    category: "marketplace",
-    website: "https://www.tensordock.com",
-    regions: ["US", "EU", "Asia"],
-    billingModel: "on-demand",
-    notes: "Provider profile retained. Price collection is not connected.",
   },
   {
     id: "coreweave",
     name: "CoreWeave",
     category: "stable",
     website: "https://www.coreweave.com",
-    regions: ["US-East", "US-West", "EU-West"],
     billingModel: "on-demand",
     notes: "Official published on-demand rates. Capacity is not checked.",
-  },
-  {
-    id: "fluidstack",
-    name: "FluidStack",
-    category: "shifting_pool",
-    website: "https://www.fluidstack.io",
-    regions: ["US", "EU", "Asia"],
-    billingModel: "on-demand",
-    notes: "Provider profile retained. Price collection is not connected.",
   },
   {
     id: "paperspace",
     name: "Paperspace",
     category: "stable",
     website: "https://www.paperspace.com",
-    regions: ["US-East", "US-West", "EU"],
     billingModel: "on-demand",
     notes: "Official machine pricing tables. Capacity is not checked.",
   },
@@ -169,10 +126,7 @@ export function configureCatalog(snapshot: Snapshot) {
             {
               id: o.gpuModelId,
               name: o.gpuModelName,
-              aliases: [],
               vramGb: o.vramPerGpuGb ?? 0,
-              architecture: "Not specified",
-              generation: "current" as const,
             },
           ])
       ).values()
@@ -183,7 +137,11 @@ export function configureCatalog(snapshot: Snapshot) {
 // ─── Utility Functions ───────────────────────────────────────────────────────
 
 export function providerLogo(id: string): string {
-  const extensions: Record<string, string> = {prime: "jpg", hyperstack: "webp", vultr: "ico", paperspace: "webp"};
+  const extensions: Record<string, string> = {
+    hyperstack: "webp",
+    vultr: "ico",
+    paperspace: "webp",
+  };
   return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
 }
 
@@ -199,11 +157,6 @@ export function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 
-export function formatPriceCompact(price: number): string {
-  if (price >= 10) return `$${price.toFixed(1)}`;
-  return `$${price.toFixed(2)}`;
-}
-
 export function categoryLabel(cat: ProviderCategory): string {
   switch (cat) {
     case "stable":
@@ -212,17 +165,6 @@ export function categoryLabel(cat: ProviderCategory): string {
       return "Marketplace";
     case "shifting_pool":
       return "Shifting Pool";
-  }
-}
-
-export function categoryColor(cat: ProviderCategory): string {
-  switch (cat) {
-    case "stable":
-      return "bg-teal/15 text-teal";
-    case "marketplace":
-      return "bg-coral/15 text-coral";
-    case "shifting_pool":
-      return "bg-limited/15 text-limited";
   }
 }
 
@@ -236,19 +178,6 @@ export function availabilityLabel(state: AvailabilityState): string {
       return "Unavailable";
     case "unknown":
       return "Unknown";
-  }
-}
-
-export function availabilityColor(state: AvailabilityState): string {
-  switch (state) {
-    case "available":
-      return "text-available";
-    case "limited":
-      return "text-limited";
-    case "unavailable":
-      return "text-unavailable";
-    case "unknown":
-      return "text-muted-foreground";
   }
 }
 
@@ -276,10 +205,10 @@ export function buildComparisons(gpuModelIds?: string[]): ComparisonRow[] {
 
       const providers = Array.from(providerMap.values())
         .map(offer => {
-          const provider = getProvider(offer.providerId)!;
+          const provider = getProvider(offer.providerId);
           return {
             providerId: offer.providerId,
-            providerName: provider.name,
+            providerName: provider?.name ?? offer.providerName,
             lowestPrice: offer.pricePerGpuHr,
             availability: offer.availability,
             link: offer.providerLink,

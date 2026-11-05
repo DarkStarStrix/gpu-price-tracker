@@ -140,8 +140,11 @@ export function PriceMarket({
       >
         {listings.map(o => (
           <option key={o.offerId} value={o.offerId}>
-            {o.providerName} · {o.region} · {cloudLabel(o)} · {o.gpuCount}× · $
-            {o.pricePerGpuHr.toFixed(3)} current quoted rate
+            {o.providerName} · {o.region} · {cloudLabel(o)} ·{" "}
+            {o.configurationKnown === false
+              ? "Per-GPU rate"
+              : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
+            · ${o.pricePerGpuHr.toFixed(3)} current quoted rate
           </option>
         ))}
         {historical.map(h => (

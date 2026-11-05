@@ -104,7 +104,11 @@ function ReplayControls({
     </div>
   );
 }
-export function PriceTrends({initialOfferId=""}:{initialOfferId?:string}) {
+export function PriceTrends({
+  initialOfferId = "",
+}: {
+  initialOfferId?: string;
+}) {
   return (
     <section className="mb-10">
       <PriceMarket initialOfferId={initialOfferId} />
@@ -209,7 +213,7 @@ function PoolMovement() {
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             {(["available", "limited", "unavailable", "unknown"] as const).map(
-              (key, i) => (
+              key => (
                 <Line
                   key={key}
                   dataKey={key}
