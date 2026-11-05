@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { buildComparisons, formatPrice, getProvider, type ComparisonRow } from "@/lib/data";
-import { ReliabilityDots } from "./ReliabilityDots";
+
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ExternalLink, ChevronDown, ChevronUp, Trophy, TrendingDown, Zap } from "lucide-react";
 
@@ -46,7 +46,6 @@ function ComparisonCard({
 }: {
   row: ComparisonRow; index: number; isExpanded: boolean; onToggle: () => void;
 }) {
-  const bestValueProvider = row.bestValue ? getProvider(row.bestValue.providerId) : null;
   const lowestProvider = row.providers[0];
 
   // Determine architecture from first provider's GPU
@@ -65,13 +64,13 @@ function ComparisonCard({
         <div className="flex items-center gap-3">
           {/* VRAM badge */}
           <div className="w-10 h-10 rounded-lg bg-[oklch(0.22_0.045_255_/_0.06)] flex flex-col items-center justify-center border border-[oklch(0.22_0.045_255_/_0.08)]">
-            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">{row.vramGb}</span>
+            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">{row.vramGb || "—"}</span>
             <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">GB</span>
           </div>
           <div>
             <h3 className="font-bold text-base text-foreground tracking-tight">{row.gpuModelName}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="font-data text-[10px] text-muted-foreground">{row.vramGb}GB VRAM</span>
+              <span className="font-data text-[10px] text-muted-foreground">{row.vramGb || "—"}GB VRAM</span>
               <span className="text-border">·</span>
               <span className="font-data text-[10px] text-muted-foreground">{row.providers.length} providers</span>
             </div>
@@ -109,7 +108,7 @@ function ComparisonCard({
                 <span className={`text-sm font-medium ${isLowest ? "text-foreground" : "text-foreground/80"}`}>
                   {p.providerName}
                 </span>
-                <ReliabilityDots score={p.reliabilityScore} size={4} />
+
               </div>
               <div className="flex items-center gap-2.5">
                 <AvailabilityBadge state={p.availability} />
@@ -134,14 +133,6 @@ function ComparisonCard({
 
       {/* Footer */}
       <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between">
-        {bestValueProvider && (
-          <div className="flex items-center gap-1.5">
-            <Trophy className="w-3 h-3 text-[oklch(0.68_0.18_80)]" />
-            <span className="text-[11px] text-muted-foreground">
-              Best value: <strong className="text-foreground font-medium">{bestValueProvider.name}</strong>
-            </span>
-          </div>
-        )}
         {row.providers.length > 3 && (
           <button
             onClick={onToggle}

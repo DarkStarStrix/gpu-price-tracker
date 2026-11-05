@@ -1,2 +1,0 @@
-# Intentionally empty — Railway will use Dockerfile instead of Nixpacks
-# because a Dockerfile is present in the repo root.

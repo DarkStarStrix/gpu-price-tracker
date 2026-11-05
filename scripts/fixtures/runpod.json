@@ -1,0 +1,40 @@
+{
+  "data": {
+    "gpuTypes": [
+      {
+        "id": "NVIDIA A100 80GB PCIe",
+        "displayName": "A100 PCIe",
+        "memoryInGb": 80,
+        "secureCloud": true,
+        "communityCloud": true,
+        "securePrice": 1.79,
+        "communityPrice": 1.19,
+        "secure": {
+          "uninterruptablePrice": 1.79,
+          "stockStatus": "Low"
+        },
+        "community": {
+          "uninterruptablePrice": null,
+          "stockStatus": null
+        }
+      },
+      {
+        "id": "NVIDIA H100 80GB HBM3",
+        "displayName": "H100 SXM",
+        "memoryInGb": 80,
+        "secureCloud": true,
+        "communityCloud": true,
+        "securePrice": 3.99,
+        "communityPrice": 2.69,
+        "secure": {
+          "uninterruptablePrice": 3.99,
+          "stockStatus": "Low"
+        },
+        "community": {
+          "uninterruptablePrice": null,
+          "stockStatus": null
+        }
+      }
+    ]
+  }
+}

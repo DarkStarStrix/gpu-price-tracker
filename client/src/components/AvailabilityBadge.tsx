@@ -29,6 +29,7 @@ const stateStyles: Record<AvailabilityState, {
     text: "text-[oklch(0.48_0.14_80)]",
     pulse: false,
   },
+  unknown: {container: "bg-muted border border-border", dot: "bg-muted-foreground", text: "text-muted-foreground", pulse: false},
   unavailable: {
     container: "bg-[oklch(0.58_0.22_25_/_0.07)] border border-[oklch(0.58_0.22_25_/_0.2)]",
     dot: "bg-[oklch(0.58_0.22_25)]",

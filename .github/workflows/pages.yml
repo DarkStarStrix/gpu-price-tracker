@@ -1,18 +1,25 @@
-name: Deploy static demo to GitHub Pages
+name: Refresh prices and deploy Pages
 
 on:
+  push:
+    branches: [main]
+    paths-ignore: ["client/public/data/latest.json"]
+  schedule:
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  group: pages-refresh
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -24,11 +31,25 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm test
+      - name: Collect public price observations
+        run: pnpm collect
+        env:
+          LAMBDA_API_KEY: ${{ secrets.LAMBDA_API_KEY }}
+      - name: Preserve observations and history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add client/public/data/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "data: refresh observed GPU prices"
+            git push origin HEAD:main
+          fi
       - run: pnpm build:pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: dist/public
+          path: dist
 
   deploy:
     needs: build
@@ -40,6 +61,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy verified snapshot and dashboard
         id: deployment
         uses: actions/deploy-pages@v4

@@ -5,9 +5,8 @@
 
 import { buildProviderSummaries, formatPrice, type ProviderCategory } from "@/lib/data";
 import { CategoryBadge } from "./CategoryBadge";
-import { ReliabilityDots } from "./ReliabilityDots";
 import { ExternalLink, MapPin, Cpu, Globe, Shield, Zap, BarChart2, Clock } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { catalog } from "@/lib/catalog";
 
 function timeAgo(date: Date | null | undefined): string {
   if (!date) return "never";
@@ -39,21 +38,8 @@ const PROVIDER_ACCENT: Record<string, string> = {
   paperspace: "from-[oklch(0.62_0.19_218)] to-[oklch(0.60_0.18_155)]",
 };
 
-// Map provider IDs to poll log source names
-const PROVIDER_SOURCE_MAP: Record<string, string> = {
-  lambda:     "lambda",
-  runpod:     "runpod",
-  tensordock: "vastai",  // Vast.ai data feeds tensordock slot
-  coreweave:  "static",
-  fluidstack: "static",
-  paperspace: "static",
-};
-
 export function ProviderCards() {
   const summaries = buildProviderSummaries();
-  const { data: pollStatus = {} } = trpc.gpu.providerPollStatus.useQuery(undefined, {
-    refetchInterval: 60_000,
-  });
 
   return (
     <section className="mb-10">
@@ -95,27 +81,9 @@ export function ProviderCards() {
                 </a>
               </div>
 
-              {/* Reliability bar */}
-              <div className="px-5 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-3 h-3 text-muted-foreground" />
-                    <span className="mono-label text-muted-foreground">Reliability</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ReliabilityDots score={summary.provider.reliabilityScore} size={5} />
-                    <span className="font-data text-xs font-medium text-foreground">
-                      {Math.round(summary.provider.reliabilityScore * 100)}%
-                    </span>
-                  </div>
-                </div>
-                {/* Progress bar */}
-                <div className="h-1 bg-[oklch(0.92_0.006_85)] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full bg-gradient-to-r ${accentGradient} rounded-full transition-all duration-700`}
-                    style={{ width: `${summary.provider.reliabilityScore * 100}%` }}
-                  />
-                </div>
+              <div className="px-5 pb-4 text-xs text-muted-foreground">
+                {catalog.sources.find(s => s.id === summary.provider.id)?.status.replaceAll("_", " ") ?? "not connected"}
+                <p className="mt-1">{catalog.sources.find(s => s.id === summary.provider.id)?.message}</p>
               </div>
 
               <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent mb-4" />
@@ -191,7 +159,7 @@ export function ProviderCards() {
                 <div className="flex items-center gap-1 shrink-0">
                   <Clock className="w-3 h-3 text-muted-foreground" />
                   <span className="font-data text-[10px] text-muted-foreground whitespace-nowrap">
-                    {timeAgo(pollStatus[PROVIDER_SOURCE_MAP[summary.provider.id] ?? ""] as Date | null)}
+                    {timeAgo(catalog.sources.find(s => s.id === summary.provider.id)?.lastSuccessAt as unknown as Date | null)}
                   </span>
                 </div>
               </div>

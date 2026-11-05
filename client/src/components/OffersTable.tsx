@@ -1,35 +1,31 @@
 /*
-  OffersTable — Live GPU offers table wired to tRPC backend.
+  OffersTable — Live GPU offers table loaded from the published snapshot.
   Features: sorting, filtering, comparison selection (2-3 GPUs), price alert coral glow.
 */
 
 import { useState, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { formatPrice, GPU_TFLOPS } from "@/lib/data";
+import { catalog, sparklines } from "@/lib/catalog";
+import { isCurrent } from "@shared/catalog";
+
+import { formatPrice } from "@/lib/data";
 import { Sparkline } from "./Sparkline";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { CategoryBadge } from "./CategoryBadge";
-import { ReliabilityDots } from "./ReliabilityDots";
 import { ComparisonDrawer } from "./ComparisonDrawer";
 import { PriceAlertModal } from "./PriceAlertModal";
-import { ProGate } from "./ProGate";
+
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
-import type { GpuOffer } from "../../../drizzle/schema";
-import { Link } from "wouter";
+import type { GpuOffer } from "@shared/catalog";
+
 import {
   ExternalLink, ArrowUpDown, ArrowUp, ArrowDown,
   X, Search, SlidersHorizontal, GitCompare, Bell,
   Loader2, Download, Lock,
 } from "lucide-react";
 
-type SortKey = "price" | "gpu" | "provider" | "vram" | "availability" | "efficiency";
+type SortKey = "price" | "gpu" | "provider" | "vram" | "availability";
 type SortDir = "asc" | "desc";
 
-const PROVIDER_RELIABILITY: Record<string, number> = {
-  lambda: 0.96, runpod: 0.91, coreweave: 0.97,
-  tensordock: 0.82, fluidstack: 0.87, paperspace: 0.88,
-};
 
 interface Filters {
   gpuModel: string;
@@ -40,26 +36,9 @@ interface Filters {
 }
 
 export function OffersTable() {
-  const { isAuthenticated } = useAuth();
-  const { data: offers = [], isLoading } = trpc.gpu.offers.useQuery();
-
-  // Plan check — used to gate sparklines and CSV
-  const planQuery = trpc.subscription.myPlan.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-    staleTime: 60_000,
-  });
-  const isPro = planQuery.data?.isPro ?? false;
-
-  // Fetch real sparklines only for Pro users — avoids FORBIDDEN error for free users
-  const offerIds = (offers as GpuOffer[]).map(o => o.offerId);
-  const { data: sparklineMap = {} } = trpc.gpu.sparklines.useQuery(
-    { offerIds },
-    {
-      enabled: isPro && offerIds.length > 0,
-      retry: false,
-    }
-  );
+  const offers = catalog.offers;
+  const isLoading = false;
+  const sparklineMap = sparklines();
 
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -93,7 +72,7 @@ export function OffersTable() {
     let result = [...offers] as GpuOffer[];
     if (filters.gpuModel)     result = result.filter(o => o.gpuModelId === filters.gpuModel);
     if (filters.provider)     result = result.filter(o => o.providerId === filters.provider);
-    if (filters.availability) result = result.filter(o => o.availability === filters.availability);
+    if (filters.availability) result = result.filter(o => (!isCurrent(catalog, o) ? "unknown" : o.availability) === filters.availability);
     if (filters.maxPrice !== null) result = result.filter(o => o.pricePerGpuHr <= filters.maxPrice!);
     if (filters.search) {
       const q = filters.search.toLowerCase();
@@ -109,14 +88,7 @@ export function OffersTable() {
         case "price":        cmp = a.pricePerGpuHr - b.pricePerGpuHr; break;
         case "gpu":          cmp = a.gpuModelName.localeCompare(b.gpuModelName); break;
         case "provider":     cmp = a.providerName.localeCompare(b.providerName); break;
-        case "vram":         cmp = a.vramPerGpuGb - b.vramPerGpuGb; break;
-        case "efficiency": {
-          const tflopsA = GPU_TFLOPS[a.gpuModelId] ?? 0;
-          const tflopsB = GPU_TFLOPS[b.gpuModelId] ?? 0;
-          const effA = tflopsA > 0 ? a.pricePerGpuHr / tflopsA : Infinity;
-          const effB = tflopsB > 0 ? b.pricePerGpuHr / tflopsB : Infinity;
-          cmp = effA - effB; break;
-        }
+        case "vram":         cmp = (a.vramPerGpuGb ?? -1) - (b.vramPerGpuGb ?? -1); break;
         case "availability": {
           const order: Record<string, number> = { available: 0, limited: 1, unavailable: 2 };
           cmp = (order[a.availability] ?? 3) - (order[b.availability] ?? 3); break;
@@ -134,25 +106,25 @@ export function OffersTable() {
 
   const clearFilters = () => setFilters({ gpuModel: "", provider: "", availability: "", search: "", maxPrice: null });
 
-  const selectedOffers = offers.filter(o => selectedIds.includes(o.offerId)) as GpuOffer[];
+  const selectedOffers = offers.filter(o => selectedIds.includes(o.offerId)).map(o => ({...o, availability: !isCurrent(catalog, o) ? "unknown" as const : o.availability}));
   const alertCount = Object.keys(alerts).length;
 
   // CSV export of current filtered view
   function exportCSV() {
-    const headers = ["GPU","VRAM (GB)","Provider","Region","Config","$/GPU/hr","$/Node/hr","Availability","Cloud Type","Data Source"];
+    const headers = ["GPU","VRAM (GB)","Provider","Region","Config","$/GPU/hr","$/Node/hr","Availability","Cloud Type","Data Source","Observed at","Source URL"];
     const rows = filteredOffers.map(o => [
       o.gpuModelName,
-      o.vramPerGpuGb,
+      o.vramPerGpuGb ?? "",
       o.providerName,
       o.region,
-      `${o.gpuCount}x GPU / ${o.vcpus} vCPU / ${o.ramGb}GB RAM`,
+      `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
       o.pricePerGpuHr.toFixed(4),
       o.totalNodePriceHr.toFixed(4),
-      o.availability,
+      !isCurrent(catalog, o) ? "unknown (retained)" : o.availability,
       o.cloudType ?? "",
-      o.dataSource,
+      o.dataSource, o.observedAt, o.sourceUrl,
     ]);
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? "").replace(/^[=+@-]/, "\'$&").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -181,7 +153,7 @@ export function OffersTable() {
           <p className="text-sm text-muted-foreground mt-1">
             {isLoading ? (
               <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Loader2 className="w-3 h-3 animate-spin" /> Loading live data…
+                <Loader2 className="w-3 h-3 animate-spin" /> Loading snapshot…
               </span>
             ) : (
               <>
@@ -250,7 +222,7 @@ export function OffersTable() {
           </button>
 
           {/* CSV Export — inline locked button, same height as Filters */}
-          {isPro ? (
+
             <button
               onClick={exportCSV}
               disabled={isLoading}
@@ -260,17 +232,7 @@ export function OffersTable() {
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </button>
-          ) : (
-            <Link href="/pricing">
-              <button
-                title="Pro feature — upgrade to export CSV"
-                className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground/60 rounded-lg cursor-pointer hover:border-[oklch(0.62_0.19_218_/_0.4)] hover:text-[oklch(0.62_0.19_218)] transition-all duration-200"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                Export CSV
-              </button>
-            </Link>
-          )}
+
         </div>
       </div>
 
@@ -309,6 +271,7 @@ export function OffersTable() {
             <option value="available">Available</option>
             <option value="limited">Limited</option>
             <option value="unavailable">Unavailable</option>
+            <option value="unknown">Unknown</option>
           </select>
           <div className="flex items-center gap-2">
             <label className="mono-label text-muted-foreground">Max $/hr</label>
@@ -342,10 +305,9 @@ export function OffersTable() {
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden lg:table-cell">Config</th>
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Region</th>
               <SortHeader label="$/GPU/hr" sortKey="price" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right" />
-              <SortHeader label="$/TFLOP" sortKey="efficiency" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right hidden xl:table-cell" />
               <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">7d</th>
               <SortHeader label="Avail." sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Reliability</th>
+              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Observed</th>
               <th className="px-4 py-3 w-16" />
             </tr>
           </thead>
@@ -355,7 +317,7 @@ export function OffersTable() {
                 <td colSpan={11} className="px-4 py-16 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-6 h-6 text-[oklch(0.62_0.19_218)] animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading live pricing data…</p>
+                    <p className="text-sm text-muted-foreground">Loading observed pricing data…</p>
                   </div>
                 </td>
               </tr>
@@ -367,7 +329,7 @@ export function OffersTable() {
                 rank={idx}
                 isSelected={selectedIds.includes(offer.offerId)}
                 onToggleSelect={() => toggleSelect(offer.offerId)}
-                isAlertTriggered={isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)}
+                isAlertTriggered={isCurrent(catalog, offer) && isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)}
                 onSetAlert={() => setAlertTarget(offer)}
                 hasAlert={!!getAlert(offer.gpuModelId)}
                 dbSparkline={sparklineMap[offer.offerId]}
@@ -388,19 +350,19 @@ export function OffersTable() {
         </table>
       </div>
 
-      {/* Comparison Drawer — Pro only */}
+      {/* Comparison Drawer — available to everyone */}
       {showComparison && selectedOffers.length >= 2 && (
-        <ProGate featureName="GPU Comparison">
+
           <ComparisonDrawer
             offers={selectedOffers}
             onClose={() => setShowComparison(false)}
           />
-        </ProGate>
+
       )}
 
-      {/* Price Alert Modal — Pro only */}
+      {/* Price Alert Modal — available to everyone */}
       {alertTarget && (
-        <ProGate featureName="Price Alerts">
+
           <PriceAlertModal
             gpuModelId={alertTarget.gpuModelId}
             gpuModelName={alertTarget.gpuModelName}
@@ -410,7 +372,7 @@ export function OffersTable() {
             onClear={clearAlert}
             onClose={() => setAlertTarget(null)}
           />
-        </ProGate>
+
       )}
     </section>
   );
@@ -453,19 +415,9 @@ function OfferRow({
   hasAlert: boolean;
   dbSparkline?: number[];
 }) {
-  const reliability = PROVIDER_RELIABILITY[offer.providerId] ?? 0.85;
   const isTopOffer = rank < 3;
 
-  // Use real DB sparkline when available, fall back to synthetic
-  const sparkData = useMemo(() => {
-    if (dbSparkline && dbSparkline.length >= 2) return dbSparkline;
-    const base = offer.pricePerGpuHr;
-    const seed = offer.offerId.charCodeAt(0);
-    return Array.from({ length: 14 }, (_, i) => {
-      const noise = Math.sin(seed + i * 1.7) * 0.04 * base;
-      return Math.round((base + noise) * 100) / 100;
-    });
-  }, [offer.offerId, offer.pricePerGpuHr, dbSparkline]);
+  const sparkData = dbSparkline ?? [];
 
   // Coral glow styles when alert is triggered
   const alertGlowClass = isAlertTriggered
@@ -516,7 +468,7 @@ function OfferRow({
 
       {/* VRAM */}
       <td className="px-4 py-3 font-data text-sm text-foreground hidden sm:table-cell">
-        {offer.vramPerGpuGb} <span className="text-muted-foreground text-[10px]">GB</span>
+        {offer.vramPerGpuGb ?? "—"} <span className="text-muted-foreground text-[10px]">GB</span>
       </td>
 
       {/* Provider */}
@@ -532,7 +484,7 @@ function OfferRow({
       {/* Config */}
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className="font-data text-xs text-muted-foreground">
-          {offer.gpuCount}× GPU · {offer.vcpus} vCPU · {offer.ramGb}GB
+          {offer.gpuCount}× GPU · {offer.vcpus ?? "—"} vCPU · {offer.ramGb ?? "—"}GB
         </span>
       </td>
 
@@ -555,34 +507,19 @@ function OfferRow({
         )}
       </td>
 
-      {/* $/TFLOP efficiency */}
-      <td className="px-4 py-3 text-right hidden xl:table-cell">
-        {(() => {
-          const tflops = GPU_TFLOPS[offer.gpuModelId];
-          if (!tflops) return <span className="font-data text-[10px] text-muted-foreground">—</span>;
-          const eff = offer.pricePerGpuHr / tflops;
-          return (
-            <div>
-              <div className="font-data text-sm font-medium text-foreground">${eff.toFixed(4)}</div>
-              <div className="font-data text-[10px] text-muted-foreground">{tflops.toLocaleString()} TF</div>
-            </div>
-          );
-        })()}
-      </td>
-
       {/* Sparkline */}
       <td className="px-4 py-3 text-center hidden lg:table-cell">
-        <Sparkline data={sparkData} width={68} height={20} />
+        {sparkData.length >= 2 ? <Sparkline data={sparkData} width={68} height={20} /> : <span title="History starts with collected observations">—</span>}
       </td>
 
       {/* Availability */}
       <td className="px-4 py-3 hidden sm:table-cell">
-        <AvailabilityBadge state={offer.availability as any} />
+        <AvailabilityBadge state={!isCurrent(catalog, offer) ? "unknown" : offer.availability} />
       </td>
 
-      {/* Reliability */}
+      {/* Observation freshness */}
       <td className="px-4 py-3 hidden md:table-cell">
-        <ReliabilityDots score={reliability} size={5} />
+        <span className="font-data text-[10px]" title={offer.observedAt}>{!isCurrent(catalog, offer) ? "Stale / retained" : "Observed"}<br />{new Date(offer.observedAt).toLocaleString()}</span>
       </td>
 
       {/* Actions */}
@@ -595,7 +532,7 @@ function OfferRow({
                 ? "text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.1)]"
                 : "text-muted-foreground hover:text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.08)]"
             }`}
-            title="Set price alert"
+            title="Set a local alert (checked while the page is open)"
           >
             <Bell className="w-3.5 h-3.5" />
           </button>
@@ -604,7 +541,7 @@ function OfferRow({
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-teal-subtle text-[oklch(0.62_0.19_218)] transition-all duration-150 hover:scale-110"
-            title={`Open ${offer.providerName}`}
+            title={`Open ${offer.providerName} · Source: ${offer.sourceUrl}`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
           </a>

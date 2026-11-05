@@ -1,35 +1,37 @@
 /*
   ComparisonDrawer — GPU side-by-side comparison panel
   Triggered from OffersTable when 2-3 GPUs are selected.
-  Shows: spec table, price bars, radar chart (VRAM, reliability, price, availability).
+  Shows: spec table, price bars, radar chart (VRAM, price, availability).
 */
 
 import { useEffect, useRef } from "react";
-import { X, Zap, Cpu, MemoryStick, DollarSign, ExternalLink } from "lucide-react";
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  ResponsiveContainer, Tooltip,
+  X,
+  Zap,
+  Cpu,
+  MemoryStick,
+  DollarSign,
+  ExternalLink,
+} from "lucide-react";
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  ResponsiveContainer,
+  Tooltip,
 } from "recharts";
-import type { GpuOffer } from "../../../drizzle/schema";
+import type { GpuOffer } from "@shared/catalog";
 
 // ─── Provider metadata ────────────────────────────────────────────────────────
 
 const PROVIDER_COLORS: Record<string, string> = {
-  lambda:     "oklch(0.62 0.19 218)",
-  runpod:     "oklch(0.60 0.18 155)",
-  coreweave:  "oklch(0.65 0.18 270)",
+  lambda: "oklch(0.62 0.19 218)",
+  runpod: "oklch(0.60 0.18 155)",
+  coreweave: "oklch(0.65 0.18 270)",
   tensordock: "oklch(0.68 0.18 35)",
   fluidstack: "oklch(0.65 0.18 300)",
   paperspace: "oklch(0.62 0.15 195)",
-};
-
-const PROVIDER_RELIABILITY: Record<string, number> = {
-  lambda:     0.96,
-  runpod:     0.91,
-  coreweave:  0.97,
-  tensordock: 0.82,
-  fluidstack: 0.87,
-  paperspace: 0.88,
 };
 
 // ─── Radar data builder ───────────────────────────────────────────────────────
@@ -37,30 +39,47 @@ const PROVIDER_RELIABILITY: Record<string, number> = {
 function buildRadarData(offers: GpuOffer[]) {
   if (offers.length === 0) return [];
 
-  const maxVram  = Math.max(...offers.map(o => o.vramPerGpuGb));
+  const maxVram = Math.max(...offers.map(o => o.vramPerGpuGb ?? 0));
   const maxPrice = Math.max(...offers.map(o => o.pricePerGpuHr));
   const maxVcpus = Math.max(...offers.map(o => o.vcpus || 1));
-  const maxRam   = Math.max(...offers.map(o => o.ramGb || 1));
+  const maxRam = Math.max(...offers.map(o => o.ramGb || 1));
 
-  const axes = ["VRAM", "Price Value", "Reliability", "vCPUs", "RAM", "Availability"];
+  const axes = ["VRAM", "Price Value", "vCPUs", "RAM", "Availability"].filter(
+    axis =>
+      axis === "VRAM"
+        ? offers.every(o => o.vramPerGpuGb !== null)
+        : axis === "vCPUs"
+          ? offers.every(o => o.vcpus !== null)
+          : axis === "RAM"
+            ? offers.every(o => o.ramGb !== null)
+            : axis === "Availability"
+              ? offers.every(o => o.availability !== "unknown")
+              : true
+  );
 
   return axes.map(axis => {
     const entry: Record<string, number | string> = { axis };
     offers.forEach(o => {
-      const key = `${o.providerName} ${o.gpuModelName}`;
-      const reliability = PROVIDER_RELIABILITY[o.providerId] ?? 0.85;
-      const avail = o.availability === "available" ? 1 : o.availability === "limited" ? 0.5 : 0;
+      const key = o.offerId;
+
+      const avail =
+        o.availability === "available"
+          ? 1
+          : o.availability === "limited"
+            ? 0.5
+            : 0;
 
       switch (axis) {
         case "VRAM":
-          entry[key] = Math.round((o.vramPerGpuGb / maxVram) * 100);
+          entry[key] = Math.round(
+            ((o.vramPerGpuGb ?? 0) / (maxVram || 1)) * 100
+          );
           break;
         case "Price Value":
           // Inverted: lower price = higher score
-          entry[key] = Math.round(((maxPrice - o.pricePerGpuHr) / maxPrice) * 100);
-          break;
-        case "Reliability":
-          entry[key] = Math.round(reliability * 100);
+          entry[key] = Math.round(
+            ((maxPrice - o.pricePerGpuHr) / maxPrice) * 100
+          );
           break;
         case "vCPUs":
           entry[key] = Math.round(((o.vcpus || 0) / maxVcpus) * 100);
@@ -86,8 +105,13 @@ function RadarTooltip({ active, payload, label }: any) {
       <div className="font-medium text-foreground mb-1">{label}</div>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-muted-foreground truncate max-w-[120px]">{p.name}</span>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: p.color }}
+          />
+          <span className="text-muted-foreground truncate max-w-[120px]">
+            {p.name}
+          </span>
           <span className="font-data text-foreground ml-auto">{p.value}</span>
         </div>
       ))}
@@ -97,7 +121,11 @@ function RadarTooltip({ active, payload, label }: any) {
 
 // ─── Spec Row ─────────────────────────────────────────────────────────────────
 
-function SpecRow({ label, values, format }: {
+function SpecRow({
+  label,
+  values,
+  format,
+}: {
   label: string;
   values: (string | number)[];
   format?: (v: string | number) => string;
@@ -105,9 +133,16 @@ function SpecRow({ label, values, format }: {
   const fmt = format ?? String;
   return (
     <tr className="border-b border-border/50 last:border-0">
-      <td className="py-2 pr-4 text-xs text-muted-foreground whitespace-nowrap font-medium">{label}</td>
+      <td className="py-2 pr-4 text-xs text-muted-foreground whitespace-nowrap font-medium">
+        {label}
+      </td>
       {values.map((v, i) => (
-        <td key={i} className="py-2 px-3 text-xs font-data text-foreground text-center">{fmt(v)}</td>
+        <td
+          key={i}
+          className="py-2 px-3 text-xs font-data text-foreground text-center"
+        >
+          {fmt(v)}
+        </td>
       ))}
     </tr>
   );
@@ -134,7 +169,9 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
@@ -156,7 +193,9 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-[var(--paper)/95%] backdrop-blur-sm">
           <div>
-            <div className="mono-label text-[oklch(0.62_0.19_218)] mb-0.5">Side-by-Side Analysis</div>
+            <div className="mono-label text-[oklch(0.62_0.19_218)] mb-0.5">
+              Side-by-Side Analysis
+            </div>
             <h2 className="text-lg font-bold text-foreground">
               GPU Comparison
               <span className="ml-2 font-data text-sm text-muted-foreground font-normal">
@@ -173,25 +212,35 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
         </div>
 
         <div className="p-6 space-y-8">
-
           {/* ── Price bars ──────────────────────────────────────────────────── */}
           <div>
-            <div className="mono-label text-muted-foreground mb-3">Price per GPU / hr</div>
+            <div className="mono-label text-muted-foreground mb-3">
+              Price per GPU / hr
+            </div>
             <div className="space-y-3">
               {offers.map(o => {
-                const color = PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
+                const color =
+                  PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
                 const pct = (o.pricePerGpuHr / maxPrice) * 100;
                 return (
                   <div key={o.offerId} className="flex items-center gap-3">
                     <div className="w-36 text-xs text-muted-foreground truncate">
-                      <span className="font-medium text-foreground">{o.providerName}</span>
+                      <span className="font-medium text-foreground">
+                        {o.providerName}
+                      </span>
                       <br />
-                      <span className="font-data text-[10px]">{o.gpuModelName}</span>
+                      <span className="font-data text-[10px]">
+                        {o.gpuModelName} · {o.cloudType}
+                      </span>
                     </div>
                     <div className="flex-1 h-6 bg-[oklch(0.93_0.006_85)] rounded-md overflow-hidden">
                       <div
                         className="h-full rounded-md flex items-center px-2 transition-all duration-700"
-                        style={{ width: `${pct}%`, background: color, minWidth: "2rem" }}
+                        style={{
+                          width: `${pct}%`,
+                          background: color,
+                          minWidth: "2rem",
+                        }}
                       >
                         <span className="font-data text-[10px] text-white font-semibold whitespace-nowrap">
                           ${o.pricePerGpuHr.toFixed(2)}/hr
@@ -206,48 +255,69 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
 
           {/* ── Radar chart ─────────────────────────────────────────────────── */}
           <div>
-            <div className="mono-label text-muted-foreground mb-3">Multi-Dimensional Analysis</div>
+            <div className="mono-label text-muted-foreground mb-3">
+              Multi-Dimensional Analysis
+            </div>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} margin={{ top: 8, right: 32, bottom: 8, left: 32 }}>
-                  <PolarGrid
-                    stroke="oklch(0.85 0.008 85)"
-                    strokeDasharray="3 3"
-                  />
-                  <PolarAngleAxis
-                    dataKey="axis"
-                    tick={{ fontSize: 10, fill: "oklch(0.55 0.01 85)", fontFamily: "IBM Plex Mono, monospace" }}
-                  />
-                  <Tooltip content={<RadarTooltip />} />
-                  {offers.map(o => {
-                    const color = PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
-                    const key = `${o.providerName} ${o.gpuModelName}`;
-                    return (
-                      <Radar
-                        key={o.offerId}
-                        name={key}
-                        dataKey={key}
-                        stroke={color}
-                        fill={color}
-                        fillOpacity={0.12}
-                        strokeWidth={2}
-                        dot={{ r: 3, fill: color }}
-                      />
-                    );
-                  })}
-                </RadarChart>
-              </ResponsiveContainer>
+              {radarData.length < 3 ? (
+                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                  Not enough provider-reported specifications for this chart.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart
+                    data={radarData}
+                    margin={{ top: 8, right: 32, bottom: 8, left: 32 }}
+                  >
+                    <PolarGrid
+                      stroke="oklch(0.85 0.008 85)"
+                      strokeDasharray="3 3"
+                    />
+                    <PolarAngleAxis
+                      dataKey="axis"
+                      tick={{
+                        fontSize: 10,
+                        fill: "oklch(0.55 0.01 85)",
+                        fontFamily: "IBM Plex Mono, monospace",
+                      }}
+                    />
+                    <Tooltip content={<RadarTooltip />} />
+                    {offers.map(o => {
+                      const color =
+                        PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
+                      const key = o.offerId;
+                      return (
+                        <Radar
+                          key={o.offerId}
+                          name={`${o.providerName} ${o.gpuModelName} · ${o.cloudType}`}
+                          dataKey={key}
+                          stroke={color}
+                          fill={color}
+                          fillOpacity={0.12}
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: color }}
+                        />
+                      );
+                    })}
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             {/* Legend */}
             <div className="flex flex-wrap gap-3 justify-center mt-2">
               {offers.map(o => {
-                const color = PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
+                const color =
+                  PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
                 return (
                   <div key={o.offerId} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ background: color }}
+                    />
                     <span className="text-xs text-muted-foreground">
-                      {o.providerName} <span className="font-data">{o.gpuModelName}</span>
+                      {o.providerName}{" "}
+                      <span className="font-data">{o.gpuModelName}</span>
                     </span>
                   </div>
                 );
@@ -257,16 +327,27 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
 
           {/* ── Spec table ──────────────────────────────────────────────────── */}
           <div>
-            <div className="mono-label text-muted-foreground mb-3">Specifications</div>
+            <div className="mono-label text-muted-foreground mb-3">
+              Specifications
+            </div>
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-[oklch(0.96_0.004_85)]">
-                    <th className="py-2 px-4 text-left text-xs text-muted-foreground font-medium w-32">Spec</th>
+                    <th className="py-2 px-4 text-left text-xs text-muted-foreground font-medium w-32">
+                      Spec
+                    </th>
                     {offers.map(o => (
-                      <th key={o.offerId} className="py-2 px-3 text-center text-xs font-medium text-foreground">
-                        <div>{o.providerName}</div>
-                        <div className="font-data text-[10px] text-muted-foreground font-normal">{o.gpuModelName}</div>
+                      <th
+                        key={o.offerId}
+                        className="py-2 px-3 text-center text-xs font-medium text-foreground"
+                      >
+                        <div>
+                          {o.providerName} · {o.cloudType}
+                        </div>
+                        <div className="font-data text-[10px] text-muted-foreground font-normal">
+                          {o.gpuModelName}
+                        </div>
                       </th>
                     ))}
                   </tr>
@@ -279,7 +360,7 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
                   />
                   <SpecRow
                     label="VRAM"
-                    values={offers.map(o => o.vramPerGpuGb)}
+                    values={offers.map(o => o.vramPerGpuGb ?? "—")}
                     format={v => `${v} GB`}
                   />
                   <SpecRow
@@ -288,12 +369,9 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
                   />
                   <SpecRow
                     label="RAM"
-                    values={offers.map(o => o.ramGb ? `${o.ramGb} GB` : "—")}
+                    values={offers.map(o => (o.ramGb ? `${o.ramGb} GB` : "—"))}
                   />
-                  <SpecRow
-                    label="Region"
-                    values={offers.map(o => o.region)}
-                  />
+                  <SpecRow label="Region" values={offers.map(o => o.region)} />
                   <SpecRow
                     label="Cloud Type"
                     values={offers.map(o => o.cloudType ?? "on-demand")}
@@ -302,10 +380,7 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
                     label="Availability"
                     values={offers.map(o => o.availability)}
                   />
-                  <SpecRow
-                    label="Reliability"
-                    values={offers.map(o => `${Math.round((PROVIDER_RELIABILITY[o.providerId] ?? 0.85) * 100)}%`)}
-                  />
+
                   <SpecRow
                     label="Data Source"
                     values={offers.map(o => o.dataSource)}
@@ -330,7 +405,6 @@ export function ComparisonDrawer({ offers, onClose }: Props) {
               </a>
             ))}
           </div>
-
         </div>
       </div>
     </div>

@@ -12,10 +12,9 @@ import { OffersTable } from "@/components/OffersTable";
 import { ProviderCards } from "@/components/ProviderCards";
 import { PriceTrends } from "@/components/PriceTrends";
 import { Activity, RefreshCw, ChevronRight, ArrowRight, Settings, User, Zap } from "lucide-react";
-import { Link } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { catalog, snapshotLoadError } from "@/lib/catalog";
+import { formatPrice } from "@/lib/data";
+import { isStale, isCurrent } from "@shared/catalog";
 
 // Generated assets
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/hero-grid-bg-NQsreG7zHjL8KoMjMjEHPf.webp";
@@ -27,18 +26,21 @@ type Tab = "overview" | "offers" | "providers" | "trends";
 
 const TABS: { id: Tab; label: string; desc: string }[] = [
   { id: "overview",   label: "Overview",   desc: "Market snapshot" },
-  { id: "offers",     label: "All Offers", desc: "36 live offers" },
-  { id: "providers",  label: "Providers",  desc: "6 platforms" },
+  { id: "offers",     label: "All Offers", desc: "Observed offers" },
+  { id: "providers",  label: "Providers",  desc: "Connections" },
   { id: "trends",     label: "Trends",     desc: "7-day history" },
 ];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [scrolled, setScrolled] = useState(false);
-  const [lastRefresh] = useState(() => new Date());
-  const { isAuthenticated } = useAuth();
-  const planQuery = trpc.subscription.myPlan.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 60_000 });
-  const isPro = planQuery.data?.isPro ?? false;
+  const offers = catalog.offers;
+  const freshOffers = offers.filter(o => isCurrent(catalog, o));
+  const providerCount = new Set(offers.map(o => o.providerId)).size;
+  const floor = (id: string) => {
+    const prices = freshOffers.filter(o => o.gpuModelId === id && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
+    return prices.length ? `${formatPrice(Math.min(...prices))}/hr` : "—";
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -99,7 +101,7 @@ export default function Home() {
           <div className="flex items-center gap-1.5 animate-fade-in delay-240">
             {/* Clock + Refresh — always visible */}
             <span className="font-data text-[10px] text-muted-foreground hidden lg:block mr-1">
-              {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {new Date(catalog.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
             <button
               title="Refresh data"
@@ -110,51 +112,7 @@ export default function Home() {
               <span className="hidden md:inline">Refresh</span>
             </button>
 
-            {/* Pro / Upgrade badge */}
-            <Link
-              href="/pricing"
-              title={isPro ? "Pro plan active" : "Upgrade to Pro"}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border rounded-md transition-all duration-200"
-              style={isPro
-                ? { color: "oklch(0.62 0.19 218)", borderColor: "oklch(0.62 0.19 218 / 0.35)", background: "oklch(0.62 0.19 218 / 0.08)" }
-                : { color: "oklch(0.45 0.04 255)", borderColor: "oklch(0.895 0.008 85)", background: "transparent" }
-              }
-            >
-              <Zap className="w-3 h-3" />
-              <span className="hidden sm:inline">{isPro ? "Pro" : "Upgrade"}</span>
-            </Link>
-
-            {/* Auth button */}
-            {isAuthenticated ? (
-              <Link
-                href="/account"
-                title="Account & billing"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
-              >
-                <User className="w-3 h-3" />
-                <span className="hidden sm:inline">Account</span>
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                title="Sign in"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md font-medium transition-all duration-200"
-                style={{ background: "oklch(0.62 0.19 218)", color: "#fff", border: "none" }}
-              >
-                <User className="w-3 h-3" />
-                <span className="hidden sm:inline">Sign in</span>
-              </Link>
-            )}
-
-            {/* API Keys — icon only on small, label on md+ */}
-            <Link
-              href="/settings"
-              title="Manage API keys"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
-            >
-              <Settings className="w-3 h-3" />
-              <span className="hidden md:inline">API Keys</span>
-            </Link>
+            <a href="https://github.com/DarkStarStrix/gpu-price-tracker" className="text-xs text-muted-foreground hover:text-foreground px-2">GitHub</a>
           </div>
         </div>
       </header>
@@ -174,6 +132,16 @@ export default function Home() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      <div className="container pt-4">
+        <div className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card" role="status">
+          {snapshotLoadError && "Snapshot refresh failed; showing the last validated data. "}
+          Scheduled hourly · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
+          {catalog.sources.some(s => s.status === "error") && " A provider refresh failed; retained prices are marked below."}
+          {offers.some(o => isStale(o.observedAt)) && " Some observations are over 2 hours old."}
+          {" "}Availability can change between observations. Local alerts only check while this page is open.
+        </div>
       </div>
 
       {/* ── Hero Section ────────────────────────────────────────────────── */}
@@ -217,7 +185,7 @@ export default function Home() {
               <div className="flex items-center gap-2 mb-5 animate-slide-right">
                 <span className="mono-label text-[oklch(0.62_0.19_218)]">Market Intelligence</span>
                 <span className="w-8 h-px bg-[oklch(0.62_0.19_218_/_0.4)]" />
-                <span className="mono-label text-muted-foreground">6 Providers · 36 Offers</span>
+                <span className="mono-label text-muted-foreground">{providerCount} Providers · {offers.length} Offers</span>
               </div>
 
               {/* Headline */}
@@ -227,9 +195,8 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md animate-fade-up delay-120">
-                Normalized pricing across Lambda, RunPod, CoreWeave, TensorDock,
-                FluidStack, and Paperspace. Compare H100, A100, RTX 4090, and
-                more — with reliability scores and live availability.
+                Normalized GPU pricing from connected provider APIs. Compare hourly rates,
+                cloud tiers, and reported availability — with a source and observation time for every offer.
               </p>
 
               {/* CTA row */}
@@ -253,9 +220,9 @@ export default function Home() {
               {/* Inline stats row */}
               <div className="mt-8 flex items-center gap-6 animate-fade-up delay-240">
                 {[
-                  { label: "H100 floor", value: "$1.99/hr" },
-                  { label: "B200 floor", value: "$5.74/hr" },
-                  { label: "RTX 4090 floor", value: "$0.34/hr" },
+                  { label: "H100 floor", value: floor("h100-sxm") },
+                  { label: "B200 floor", value: floor("b200-sxm") },
+                  { label: "RTX 4090 floor", value: floor("rtx-4090") },
                 ].map((stat) => (
                   <div key={stat.label} className="flex flex-col">
                     <span className="font-data text-base font-semibold text-foreground">{stat.value}</span>
@@ -288,12 +255,12 @@ export default function Home() {
                 <div className="mono-label text-[oklch(0.62_0.19_218)] mb-3">Methodology</div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">How We Track Prices</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
-                  We aggregate pricing from provider APIs and public pricing pages, normalize GPU naming
-                  conventions (e.g., "H100 SXM5" → "H100 SXM"), standardize billing units to per-GPU/hr,
-                  and compute reliability scores from infrastructure stability signals and historical availability windows.
+                  A scheduled collector reads connected provider APIs and publishes a validated snapshot.
+                  Prices are normalized to USD per GPU-hour; node prices retain their GPU count.
+                  History contains actual observations only. Failed refreshes retain their original timestamps.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {["Lambda API", "RunPod Pricing", "CoreWeave Docs", "TensorDock API", "FluidStack Pricing", "Paperspace Pricing"].map(src => (
+                  {catalog.sources.filter(s => s.status === "ok").map(s => s.name + " API").map(src => (
                     <span key={src} className="category-badge bg-[oklch(0.22_0.045_255_/_0.06)] text-[oklch(0.42_0.04_255)]">
                       {src}
                     </span>
@@ -338,7 +305,7 @@ export default function Home() {
                   <div className="mono-label text-[oklch(0.62_0.19_218)] mb-1">Network Map</div>
                   <h2 className="text-2xl font-bold text-foreground">Provider Profiles</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    6 GPU cloud platforms — reliability, inventory, and pricing
+                    Provider connections, observed inventory, and pricing
                   </p>
                 </div>
               </div>
@@ -360,16 +327,14 @@ export default function Home() {
                 <div>
                   <div className="mono-label text-[oklch(0.62_0.19_218)] mb-1">Historical Data</div>
                   <h2 className="text-2xl font-bold text-foreground">Price Trends</h2>
-                  <p className="text-sm text-muted-foreground mt-1">7-day price history across providers</p>
+                  <p className="text-sm text-muted-foreground mt-1">Up to 7 days of collected observations</p>
                 </div>
               </div>
             </div>
             <PriceTrends />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <strong className="text-foreground font-medium">Note:</strong> Historical data is based on periodic observations.
-                Marketplace providers (TensorDock) show higher volatility due to dynamic supply-demand pricing.
-                Stable providers (Lambda, CoreWeave) maintain more consistent rates with SLA-backed infrastructure.
+                <strong className="text-foreground font-medium">Note:</strong> History starts with this deployment and grows with each successful collection. No synthetic trends are generated.
               </p>
             </div>
           </div>
@@ -386,7 +351,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Compute market intelligence for ML engineers. Normalized pricing,
-              reliability scores, and live availability across major GPU cloud providers.
+              source timestamps, and observed availability from connected providers.
             </p>
           </div>
           <div>
@@ -404,15 +369,15 @@ export default function Home() {
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">GPU Models</span>
-                <span className="font-data text-foreground">13</span>
+                <span className="font-data text-foreground">{new Set(offers.map(o => o.gpuModelId)).size}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Total Offers</span>
-                <span className="font-data text-foreground">36</span>
+                <span className="font-data text-foreground">{offers.length}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Regions</span>
-                <span className="font-data text-foreground">US, EU, Asia</span>
+                <span className="font-data text-foreground">Provider reported</span>
               </div>
             </div>
           </div>

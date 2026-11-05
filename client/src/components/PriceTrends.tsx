@@ -4,7 +4,7 @@
 */
 
 import { useState, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
+import { catalog } from "@/lib/catalog";
 import { formatPrice } from "@/lib/data";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -26,65 +26,16 @@ const PROVIDER_COLORS = [
   "oklch(0.58 0.16 300)",  // purple
 ];
 
-const TIME_LABELS = ["7d", "6d", "5d", "4d", "3d", "2d", "1d", "12h", "10h", "8h", "6h", "4h", "2h", "Now"];
-
 export function PriceTrends() {
   const [selectedGpu, setSelectedGpu] = useState("h100-sxm");
-
-  // Try to get live history; fall back to synthetic sparklines from offers
-  const { data: history = [] } = trpc.gpu.priceHistory.useQuery({ gpuModelId: selectedGpu, days: 7 });
-  const { data: allOffers = [] } = trpc.gpu.offers.useQuery();
-
   const { chartData, providerNames } = useMemo(() => {
-    const gpuOffers = allOffers.filter(o => o.gpuModelId === selectedGpu);
-
-    if (history.length > 0) {
-      // Real DB history: group by provider, build time series
-      const providerMap: Record<string, { name: string; prices: Record<string, number> }> = {};
-      for (const snap of history) {
-        if (!providerMap[snap.providerId]) {
-          providerMap[snap.providerId] = { name: snap.providerId, prices: {} };
-        }
-        const label = new Date(snap.snapshotAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        providerMap[snap.providerId].prices[label] = snap.pricePerGpuHr;
-      }
-      const timeLabels = Array.from(new Set(history.map(s =>
-        new Date(s.snapshotAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      )));
-      const data = timeLabels.map(label => {
-        const point: Record<string, string | number> = { time: label };
-        for (const [, prov] of Object.entries(providerMap)) {
-          if (prov.prices[label] !== undefined) point[prov.name] = prov.prices[label];
-        }
-        return point;
-      });
-      const names = Object.values(providerMap).map(p => p.name);
-      return { chartData: data, providerNames: names };
-    }
-
-    // Synthetic fallback: generate sparklines from current offer prices
-    const providerData: Record<string, { name: string; prices: number[] }> = {};
-    for (const offer of gpuOffers) {
-      if (!providerData[offer.providerId]) {
-        const base = offer.pricePerGpuHr;
-        const seed = offer.offerId.charCodeAt(0);
-        const prices = Array.from({ length: 14 }, (_, i) => {
-          const noise = Math.sin(seed + i * 1.7) * 0.04 * base;
-          return Math.round((base + noise) * 100) / 100;
-        });
-        providerData[offer.providerId] = { name: offer.providerName, prices };
-      }
-    }
-    const names = Object.values(providerData).map(p => p.name);
-    const data = TIME_LABELS.map((label, i) => {
-      const point: Record<string, string | number> = { time: label };
-      for (const [, prov] of Object.entries(providerData)) {
-        if (prov.prices[i] !== undefined) point[prov.name] = prov.prices[i];
-      }
-      return point;
-    });
-    return { chartData: data, providerNames: names };
-  }, [selectedGpu, history, allOffers]);
+    const history = catalog.history.filter(h => h.gpuModelId === selectedGpu);
+    const names = [...new Set(history.map(h => h.offerId))];
+    const times = [...new Set(history.map(h => h.observedAt))].sort();
+    const points = new Map(times.map(time => [time, {time} as Record<string, string | number>]));
+    for (const h of history) points.get(h.observedAt)![h.offerId] = h.pricePerGpuHr;
+    return {chartData: [...points.values()], providerNames: names};
+  }, [selectedGpu, catalog.history]);
 
   const gpuModelName = CHART_GPUS.find(g => g.id === selectedGpu)?.label ?? selectedGpu;
 
@@ -102,7 +53,7 @@ export function PriceTrends() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <p className="text-sm text-muted-foreground mt-1">
-            7-day price history for <strong className="text-foreground">{gpuModelName}</strong> across providers
+            Collected price history for <strong className="text-foreground">{gpuModelName}</strong> across providers
           </p>
         </div>
         <div className="flex gap-1 p-1 bg-[oklch(0.94_0.006_85)] rounded-lg">
@@ -124,7 +75,7 @@ export function PriceTrends() {
 
       {/* Chart */}
       <div className="bg-card border border-border rounded-xl p-5 shadow-[var(--shadow-sm)]">
-        <ResponsiveContainer width="100%" height={340}>
+        {chartData.length < 2 ? <div className="h-[340px] flex items-center justify-center text-sm text-muted-foreground text-center px-6">History is collecting. This GPU needs at least two successful observations before a trend is shown.</div> : <ResponsiveContainer width="100%" height={340}>
           <LineChart data={chartData} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
             <CartesianGrid
               strokeDasharray="4 4"
@@ -133,6 +84,7 @@ export function PriceTrends() {
             />
             <XAxis
               dataKey="time"
+              tickFormatter={value => new Date(value).toLocaleString([], {month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"})}
               tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", fill: "oklch(0.55 0.025 255)" }}
               axisLine={{ stroke: "oklch(0.9 0.008 85)" }}
               tickLine={false}
@@ -195,7 +147,8 @@ export function PriceTrends() {
             {providerNames.map((name, i) => (
               <Line
                 key={name}
-                type="monotone"
+                type="linear"
+                name={catalog.offers.find(o => o.offerId === name) ? `${catalog.offers.find(o => o.offerId === name)!.providerName} · ${catalog.offers.find(o => o.offerId === name)!.cloudType}` : name}
                 dataKey={name}
                 stroke={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
                 strokeWidth={2}
@@ -206,7 +159,7 @@ export function PriceTrends() {
               />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer>}
       </div>
     </section>
   );

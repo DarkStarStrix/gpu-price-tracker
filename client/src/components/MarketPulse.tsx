@@ -4,7 +4,7 @@
 */
 
 import { useEffect, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { catalog, eligibleOffers } from "@/lib/catalog";
 import { Activity, TrendingDown, Server, Cpu } from "lucide-react";
 
 function useCountUp(target: number, duration = 800, delay = 0) {
@@ -27,14 +27,17 @@ function useCountUp(target: number, duration = 800, delay = 0) {
 }
 
 export function MarketPulse() {
-  const { data: stats } = trpc.gpu.marketStats.useQuery();
+  const offers = eligibleOffers();
+  const prices = offers.filter(o => o.gpuModelId === "h100-sxm" && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
+  const stats = {totalOffers: catalog.offers.length, availableOffers: offers.filter(o => o.availability === "available" || o.availability === "limited").length,
+    providerCount: new Set(offers.map(o => o.providerId)).size, gpuModelCount: new Set(offers.map(o => o.gpuModelId)).size, h100Floor: prices.length ? Math.min(...prices) : null};
 
   const metrics = {
-    totalOffers:     stats?.totalOffers ?? 36,
-    availableOffers: stats?.availableOffers ?? 30,
-    providers:       stats?.providerCount ?? 6,
-    gpuModels:       stats?.gpuModelCount ?? 13,
-    lowestH100:      stats?.h100Floor ?? 1.99,
+    totalOffers:     stats.totalOffers,
+    availableOffers: stats.availableOffers,
+    providers:       stats.providerCount,
+    gpuModels:       stats.gpuModelCount,
+    lowestH100:      stats.h100Floor,
     h100Spread:      null as number | null,
   };
 
@@ -66,7 +69,8 @@ export function MarketPulse() {
         prefix="$"
         divisor={100}
         decimals={2}
-        subtext={metrics.h100Spread ? `${metrics.h100Spread}% spread vs ceiling` : ""}
+        subtext="Fresh observations · USD / GPU-hour"
+        missing={metrics.lowestH100 === null}
         accent="sage"
         delay={160}
       />
@@ -85,7 +89,7 @@ export function MarketPulse() {
 
 function MetricCard({
   icon, label, value, suffix = "", prefix = "", subtext, accent, delay = 0,
-  divisor = 1, decimals = 0,
+  divisor = 1, decimals = 0, missing = false,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -95,6 +99,7 @@ function MetricCard({
   subtext: string;
   accent: string;
   delay?: number;
+  missing?: boolean;
   divisor?: number;
   decimals?: number;
 }) {
@@ -130,7 +135,7 @@ function MetricCard({
       <div className="flex items-baseline gap-0.5">
         {prefix && <span className="font-data text-lg text-muted-foreground">{prefix}</span>}
         <span className="font-data text-3xl font-semibold text-foreground tracking-tight counter-animate">
-          {displayValue}
+          {missing ? "—" : displayValue}
         </span>
         {suffix && <span className="font-data text-sm text-muted-foreground ml-1">{suffix}</span>}
       </div>
