@@ -152,8 +152,15 @@ function vitePluginManusDebugCollector(): Plugin {
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
-export default defineConfig({
-  plugins,
+export default defineConfig(({ mode }) => ({
+  plugins: mode === "pages" ? [react(), tailwindcss(), {
+    name: "pages-without-analytics",
+    transformIndexHtml: {
+      order: "pre",
+      handler: html => html.replace(/<script\s+defer[\s\S]*?<\/script>/, "")
+        .replace('/src/main.tsx', '/src/pages.tsx'),
+    },
+  }] : plugins,
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -163,7 +170,7 @@ export default defineConfig({
   },
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
-  publicDir: path.resolve(import.meta.dirname, "client", "public"),
+  publicDir: mode === "pages" ? false : path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
@@ -184,4 +191,4 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-});
+}));
