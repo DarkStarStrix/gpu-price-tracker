@@ -48,7 +48,7 @@ export function OffersTable() {
   const [filters, setFilters] = useState<Filters>({
     billing: "", cloud: "", gpuModel: "", provider: "", availability: "", search: "", maxPrice: null,
   });
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
 
   // Comparison state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -180,10 +180,12 @@ export function OffersTable() {
           )}
 
           {/* Compare button */}
-          {selectedIds.length > 0 && (
+          {(
             <button
+              disabled={selectedIds.length < 2}
+              title="Select 2–3 offers using their checkboxes"
               onClick={() => setShowComparison(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200"
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200"
             >
               <GitCompare className="w-3.5 h-3.5" />
               Compare {selectedIds.length}
@@ -248,7 +250,7 @@ export function OffersTable() {
         </p>
       )}
 
-      <p className="text-xs text-muted-foreground mb-3">Availability: green = available · amber = limited · red = unavailable · gray = unknown or stale. Billing and cloud tier are separate attributes.</p>
+      <p className="text-xs text-muted-foreground mb-3">Availability: green = available · amber = limited · red = unavailable · gray = unknown or stale. Limited means low reported stock, not sold out. Every listing keeps an Open provider link so you can check current capacity. Billing and cloud tier are separate attributes.</p>
       {/* Filter bar */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-2.5 mb-5 p-4 bg-card border border-border rounded-xl animate-scale-in">
@@ -314,9 +316,9 @@ export function OffersTable() {
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Region</th>
               <SortHeader label="$/GPU/hr" sortKey="price" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right" />
               <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">7d</th>
-              <SortHeader label="Avail." sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
+              <SortHeader label="Avail." sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Observed</th>
-              <th className="px-4 py-3 w-16" />
+              <th className="px-4 py-3 text-right mono-label sticky right-0 bg-card border-l border-border">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -448,14 +450,8 @@ function OfferRow({
       onClick={onToggleSelect}
     >
       {/* Selection checkbox */}
-      <td className="px-3 py-3" onClick={e => { e.stopPropagation(); onToggleSelect(); }}>
-        <div className={`w-4 h-4 rounded border-2 transition-all duration-150 flex items-center justify-center ${
-          isSelected
-            ? "bg-[oklch(0.62_0.19_218)] border-[oklch(0.62_0.19_218)]"
-            : "border-border hover:border-[oklch(0.72_0.12_218)]"
-        }`}>
-          {isSelected && <span className="text-white text-[8px] font-bold">✓</span>}
-        </div>
+      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+        <input type="checkbox" aria-label={`Compare ${offer.providerName} ${offer.gpuModelName} ${offer.cloudType}`} checked={isSelected} onChange={onToggleSelect} className="w-4 h-4 accent-teal cursor-pointer"/>
       </td>
 
       {/* GPU */}
@@ -522,7 +518,7 @@ function OfferRow({
       </td>
 
       {/* Availability */}
-      <td className="px-4 py-3 hidden sm:table-cell">
+      <td className="px-4 py-3">
         <AvailabilityBadge state={!isCurrent(catalog, offer) ? "unknown" : offer.availability} />
       </td>
 
@@ -532,27 +528,27 @@ function OfferRow({
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
+      <td className="px-3 py-3 text-center sticky right-0 bg-card border-l border-border" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-1 justify-end">
           <button
             onClick={onSetAlert}
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 hover:scale-110 ${
+            className={`inline-flex items-center gap-1 justify-center px-2 h-8 border border-border rounded-lg transition-all duration-150 hover:scale-110 ${
               hasAlert
                 ? "text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.1)]"
                 : "text-muted-foreground hover:text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.08)]"
             }`}
             title="Set a local alert (checked while the page is open)"
           >
-            <Bell className="w-3.5 h-3.5" />
+            <Bell className="w-3.5 h-3.5" /><span className="text-xs">Alert</span>
           </button>
           <a
             href={offer.providerLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-teal-subtle text-[oklch(0.62_0.19_218)] transition-all duration-150 hover:scale-110"
+            className="inline-flex items-center justify-center gap-1 px-3 h-8 border border-teal/30 rounded-lg bg-teal/10 whitespace-nowrap hover:bg-teal-subtle text-[oklch(0.62_0.19_218)] transition-all duration-150 hover:scale-110"
             title={`Open ${offer.providerName} · Source: ${offer.sourceUrl}`}
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Open provider</span><ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
       </td>

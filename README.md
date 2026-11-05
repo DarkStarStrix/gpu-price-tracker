@@ -175,3 +175,21 @@ API contract: https://docs.primeintellect.ai/api-reference/availability/get-gpu-
 The local GPU illustration is an AI-refined derivative of the user-supplied
 chassis drawing, used decoratively rather than as an engineering specification.
 All banner graphics are shipped with the site rather than remote CDN URLs.
+
+
+## Market view
+
+The hero shows the lowest fresh observed H100 SXM quote, with separate on-demand
+and spot selectors, source, observation time and reported stock. It updates from
+the subscribed snapshot; unavailable listings do not set that floor, while limited
+and unknown listings remain eligible and explicitly labeled.
+
+Trends uses a stock-style single-listing chart with 1H/24H/7D ranges, a hover
+crosshair, zoom brush and sampled high/low/change. Historical series keep listing
+identity rather than splicing the cheapest provider at each point. Retained
+history is rolling seven days; unavailable older data is not invented. Between
+observations prices are unknown. Provider hourly-last samples are labeled.
+
+Offers keep all availability states visible by default. Limited stock is not
+sold out. Explicit Open provider and Alert actions stay in a sticky action column;
+Compare remains visible and requires 2–3 selections with accessible checkboxes.

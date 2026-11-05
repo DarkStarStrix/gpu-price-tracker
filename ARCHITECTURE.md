@@ -204,3 +204,11 @@ and requires complete stable pagination. The optional PRIME_API_KEY is passed
 only to the collector. Unknown stock and missing credentials never become green
 availability. Multi-GPU and spot Prime pricing remain unqualified. Local banner
 assets replace remote placeholders; generated art is decorative.
+
+Market presentation uses pure quote/history/stat selectors in shared/market.ts.
+H100 floors require freshness and separate billing; limited/unknown capacity does
+not disappear from aggregation. Chart samples are isolated by exact offer ID,
+sorted by actual time and bounded by selected range. Sampled high/low are not
+intraperiod market extrema; no OHLC or trading volume is inferred. Removed listing
+history remains selectable while retained. The backend retention and collection
+cadence are unchanged. Offer availability never disables source/provider links.

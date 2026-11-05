@@ -1,5 +1,6 @@
+import { PriceMarket } from "./PriceMarket";
 import { PoolInventory } from "./PoolInventory";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Play, Pause, SkipForward } from "lucide-react";
 import { catalog } from "@/lib/catalog";
 import { getProvider } from "@/lib/data";
@@ -12,19 +13,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  ReferenceLine,
 } from "recharts";
 
-const COLORS = [
-  "#1596a5",
-  "#e28050",
-  "#456db7",
-  "#559575",
-  "#b69032",
-  "#9765bd",
-  "#c66484",
-  "#61849a",
-];
 const timeLabel = (v: number) =>
   new Date(v).toLocaleString([], {
     month: "short",
@@ -115,162 +105,9 @@ function ReplayControls({
   );
 }
 export function PriceTrends() {
-  const [billing, setBilling] = useState("spot");
-  const [selectedGpu, setSelectedGpu] = useState("h100-sxm");
-  const models = [
-    ...new Set(
-      catalog.history
-        .filter(h => (h.billingModel ?? "on-demand") === billing)
-        .map(h => h.gpuModelId)
-    ),
-  ].sort();
-  const gpu = models.includes(selectedGpu) ? selectedGpu : models[0];
-  const { data, names, times } = useMemo(() => {
-    const history = catalog.history.filter(
-      h => h.gpuModelId === gpu && (h.billingModel ?? "on-demand") === billing
-    );
-    const times = [...new Set(history.map(h => Date.parse(h.observedAt)))].sort(
-      (a, b) => a - b
-    );
-    const points = new Map(
-      times.map(time => [time, { time } as Record<string, number>])
-    );
-    for (const h of history)
-      points.get(Date.parse(h.observedAt))![h.offerId] = h.pricePerGpuHr;
-    return {
-      data: [...points.values()],
-      times,
-      names: [...new Set(history.map(h => h.offerId))],
-    };
-  }, [gpu, billing, catalog.history]);
-  const replay = useReplay(times.length, `${gpu}:${billing}`);
-  const reducedMotion =
-    typeof matchMedia !== "undefined" &&
-    matchMedia("(prefers-reduced-motion: reduce)").matches;
   return (
     <section className="mb-10">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-        <div>
-          <h3 className="font-semibold">Price movement</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Seven days of recorded USD / GPU-hour prices
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <select
-            aria-label="Price billing model"
-            className="bg-card border border-border rounded-md p-2 text-xs"
-            value={billing}
-            onChange={e => setBilling(e.target.value)}
-          >
-            <option value="on-demand">On-demand</option>
-            <option value="spot">Spot · interruptible</option>
-          </select>
-          <select
-            aria-label="Chart GPU model"
-            className="bg-card border border-border rounded-md p-2 text-xs"
-            value={gpu ?? ""}
-            onChange={e => setSelectedGpu(e.target.value)}
-          >
-            {models.map(id => (
-              <option key={id} value={id}>
-                {`${catalog.offers.find(o => o.gpuModelId === id)?.gpuModelName ?? id} · ${id}`}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="bg-card border border-border rounded-xl p-5 shadow-[var(--shadow-sm)]">
-        <ReplayControls replay={replay} times={times} />
-        {times.length < 2 ? (
-          <div className="h-72 flex items-center justify-center text-sm text-muted-foreground">
-            Waiting for two verified observations of this GPU.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={340}>
-            <LineChart
-              data={data.slice(0, replay.index + 1)}
-              margin={{ top: 12, right: 20, bottom: 4, left: 4 }}
-            >
-              <CartesianGrid
-                strokeDasharray="4 4"
-                vertical={false}
-                stroke="#e5e6e2"
-              />
-              <XAxis
-                dataKey="time"
-                type="number"
-                domain={[times[0], times[times.length - 1]]}
-                tickFormatter={timeLabel}
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-              />
-              <YAxis
-                tickFormatter={v => `$${v.toFixed(1)}`}
-                tick={{ fontSize: 10 }}
-                width={44}
-                domain={[
-                  0,
-                  Math.ceil(
-                    Math.max(
-                      ...catalog.history
-                        .filter(
-                          h =>
-                            h.gpuModelId === gpu &&
-                            (h.billingModel ?? "on-demand") === billing
-                        )
-                        .map(h => h.pricePerGpuHr)
-                    ) * 1.1
-                  ),
-                ]}
-              />
-              <Tooltip
-                labelFormatter={v => timeLabel(Number(v))}
-                formatter={(v: number) => `$${v.toFixed(3)} / GPU-hr`}
-                contentStyle={{ borderRadius: 10, fontSize: 11 }}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
-                iconType="line"
-              />
-              {!replay.live && (
-                <ReferenceLine
-                  x={times[replay.index]}
-                  stroke="#1596a5"
-                  strokeDasharray="4 4"
-                />
-              )}
-              {names.map((id, i) => {
-                const o = catalog.offers.find(o => o.offerId === id);
-                return (
-                  <Line
-                    key={id}
-                    dataKey={id}
-                    name={
-                      o
-                        ? `${o.providerName} · ${o.region} · ${o.cloudType}`
-                        : id
-                    }
-                    type="linear"
-                    connectNulls={false}
-                    stroke={COLORS[i % COLORS.length]}
-                    strokeWidth={2}
-                    dot={data.length < 4}
-                    isAnimationActive={!replay.playing && !reducedMotion}
-                    animationDuration={300}
-                  />
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-        <p className="text-xs text-muted-foreground mt-4">
-          {billing === "spot"
-            ? "Nebius history uses the provider’s last price in each hourly interval, timestamped at interval end. Spot instances are interruptible; availability is unknown."
-            : "Collector observations only. Gaps remain gaps; unchanged prices remain flat."}{" "}
-          Replay advances recorded timestamps, not a forecast.
-        </p>
-      </div>
+      <PriceMarket />
       <PoolMovement />
     </section>
   );

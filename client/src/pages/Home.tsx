@@ -6,6 +6,7 @@
 */
 
 import { useState, useEffect } from "react";
+import { LiveH100 } from "@/components/LiveH100";
 import { MarketPulse } from "@/components/MarketPulse";
 import { QuickComparison } from "@/components/QuickComparison";
 import { OffersTable } from "@/components/OffersTable";
@@ -19,7 +20,6 @@ import { isStale, isCurrent } from "@shared/catalog";
 // Generated assets
 const HERO_BG = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.jpg`;
-const PRICE_WAVE = `${import.meta.env.BASE_URL}images/market-wave.svg`;
 const CONSTELLATION = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 
 type Tab = "overview" | "offers" | "providers" | "trends";
@@ -201,6 +201,8 @@ export default function Home() {
                 cloud tiers, and reported availability — with a source and observation time for every offer.
               </p>
 
+              <LiveH100 />
+
               {/* CTA row */}
               <div className="mt-7 flex items-center gap-3 animate-fade-up delay-180">
                 <button
@@ -222,7 +224,6 @@ export default function Home() {
               {/* Inline stats row */}
               <div className="mt-8 flex items-center gap-6 animate-fade-up delay-240">
                 {[
-                  { label: "H100 floor", value: floor("h100-sxm") },
                   { label: "B200 floor", value: floor("b200-sxm") },
                   { label: "RTX 4090 floor", value: floor("rtx-4090") },
                 ].map((stat) => (
@@ -318,21 +319,7 @@ export default function Home() {
 
         {activeTab === "trends" && (
           <div className="animate-fade-up">
-            {/* Wave banner */}
-            <div className="relative mb-8 rounded-xl overflow-hidden border border-border">
-              <img
-                src={PRICE_WAVE}
-                alt="Price wave visualization"
-                className="w-full h-36 object-cover object-center opacity-45"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[var(--paper)] via-[var(--paper)/60%] to-transparent flex items-center px-8">
-                <div>
-                  <div className="mono-label text-[oklch(0.62_0.19_218)] mb-1">Historical Data</div>
-                  <h2 className="text-2xl font-bold text-foreground">Price Trends</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Up to 7 days of collected observations</p>
-                </div>
-              </div>
-            </div>
+            <div className="flex items-baseline justify-between mb-5"><h2 className="text-2xl font-bold">Market history</h2><span className="text-xs text-muted-foreground">Recorded prices · rolling seven-day history</span></div>
             <PriceTrends />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
