@@ -22,12 +22,27 @@ Open the preview at `/gpu-price-tracker/`. The Pages build uses this project
 subpath for assets and has no client-side routes requiring server rewrites.
 The regular `pnpm build` / `pnpm start` full-stack commands remain available.
 
-## Publishing
+## Current publication
 
-In repository Settings → Pages, set the source to **GitHub Actions**. A push to
-`main` or a manual run of **Deploy static demo to GitHub Pages** checks types,
-builds the demo, and deploys it. No API keys or database secrets
-are required. Do not place credentials in client-side Vite variables.
+Pages currently publishes the root of the `gh-pages` branch. That branch contains
+only the verified build and `.nojekyll`; application source stays on `main`.
+GitHub did not register the custom Actions workflow during initial setup, so the
+initial publication uses GitHub's branch-based Pages build instead.
+
+To update this deployment, run `pnpm build:pages`, replace the generated files on
+`gh-pages` with `dist/public`, retain `.nojekyll`, and push that branch. Never
+publish the repository root, server bundle, or environment files.
+
+## Optional Actions deployment
+
+A manual workflow, **Deploy static demo to GitHub Pages**, is included for future
+use. Once GitHub recognizes it, change Settings → Pages → Source to **GitHub
+Actions**, then run that workflow on `main`. It checks types, builds the static
+demo, and deploys it. To automate future updates, add a push trigger for `main`
+after the first successful workflow deployment.
+
+No API keys or database secrets are required. Do not place credentials in
+client-side Vite variables.
 
 ## Existing backend test limitation
 
