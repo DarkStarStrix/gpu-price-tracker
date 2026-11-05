@@ -1,34 +1,11 @@
 import { z } from "zod";
 import { offerSchema, type GpuOffer } from "../shared/catalog";
 
-export function gpuId(name: string, vram: number | null): string {
-  const n = name
-    .toLowerCase()
-    .replace(/nvidia|amd|geforce|tesla|instinct/g, "")
-    .trim();
-  if (/a100/.test(n))
-    return /sxm/.test(n)
-      ? `a100-sxm-${vram ?? n.match(/(\d+)\s*gb/)?.[1] ?? "unknown"}`
-      : /pcie/.test(n)
-        ? `a100-pcie-${vram ?? "unknown"}`
-        : `a100-${vram ?? "unknown"}`;
-  if (/h100/.test(n))
-    return /pcie/.test(n)
-      ? "h100-pcie"
-      : /nvl/.test(n)
-        ? "h100-nvl"
-        : /sxm/.test(n)
-          ? "h100-sxm"
-          : "h100-unspecified";
-  if (/h200/.test(n))
-    return /nvl/.test(n)
-      ? "h200-nvl"
-      : /sxm/.test(n)
-        ? "h200-sxm"
-        : "h200-unspecified";
-  if (/b200/.test(n)) return "b200-sxm";
-  return n.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
+import { gpuId } from "./gpu";
+export { gpuId } from "./gpu";
+import type { SourceResult } from "../shared/catalog";
+import { publicPricingSources } from "./pricing-pages";
+
 const nullableNumber = z.number().finite().nonnegative().nullable();
 const capacitySchema = z
   .object({
@@ -140,7 +117,7 @@ export function parseLambda(payload: unknown, observedAt: string): GpuOffer[] {
         ? "available"
         : "unavailable",
       providerLink: "https://lambda.ai/pricing",
-      sourceUrl: "https://cloud.lambdalabs.com/api/v1/instance-types",
+      sourceUrl: "https://cloud.lambda.ai/api/v1/instance-types",
       cloudType: "on-demand",
       dataSource: "api",
       observedAt,
@@ -160,7 +137,7 @@ export interface Source {
   name: string;
   configured: boolean;
   connected: boolean;
-  fetch: (at: string) => Promise<GpuOffer[]>;
+  fetch: (at: string) => Promise<SourceResult>;
 }
 export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
   return [
@@ -169,8 +146,8 @@ export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
       name: "RunPod",
       configured: true,
       connected: true,
-      fetch: async at =>
-        parseRunpod(
+      fetch: async at => ({
+        offers: parseRunpod(
           await request("https://api.runpod.io/graphql", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -180,31 +157,32 @@ export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
           }),
           at
         ),
+      }),
     },
     {
       id: "lambda",
       name: "Lambda",
       configured: Boolean(env.LAMBDA_API_KEY),
       connected: true,
-      fetch: async at =>
-        parseLambda(
-          await request("https://cloud.lambdalabs.com/api/v1/instance-types", {
+      fetch: async at => ({
+        offers: parseLambda(
+          await request("https://cloud.lambda.ai/api/v1/instance-types", {
             headers: { Authorization: `Bearer ${env.LAMBDA_API_KEY}` },
           }),
           at
         ),
+      }),
     },
+    ...publicPricingSources(),
     ...[
       ["tensordock", "TensorDock"],
-      ["coreweave", "CoreWeave"],
       ["fluidstack", "FluidStack"],
-      ["paperspace", "Paperspace"],
     ].map(([id, name]) => ({
       id,
       name,
       configured: false,
       connected: false,
-      fetch: async () => [],
+      fetch: async () => ({ offers: [] }),
     })),
   ];
 }

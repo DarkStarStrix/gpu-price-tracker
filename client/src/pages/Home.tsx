@@ -140,7 +140,7 @@ export default function Home() {
           Scheduled hourly · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
           {catalog.sources.some(s => s.status === "error") && " A provider refresh failed; retained prices are marked below."}
           {offers.some(o => isStale(o.observedAt)) && " Some observations are over 2 hours old."}
-          {" "}Availability can change between observations. Local alerts only check while this page is open.
+          {" "}Published rates do not establish availability. Availability can change between observations. Local alerts only check while this page is open.
         </div>
       </div>
 
@@ -195,7 +195,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md animate-fade-up delay-120">
-                Normalized GPU pricing from connected provider APIs. Compare hourly rates,
+                Normalized GPU pricing from official provider sources. Compare hourly rates,
                 cloud tiers, and reported availability — with a source and observation time for every offer.
               </p>
 
@@ -255,12 +255,12 @@ export default function Home() {
                 <div className="mono-label text-[oklch(0.62_0.19_218)] mb-3">Methodology</div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">How We Track Prices</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
-                  A scheduled collector reads connected provider APIs and publishes a validated snapshot.
+                  A scheduled collector reads provider APIs and official pricing tables, then publishes a validated snapshot.
                   Prices are normalized to USD per GPU-hour; node prices retain their GPU count.
                   History contains actual observations only. Failed refreshes retain their original timestamps.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {catalog.sources.filter(s => s.status === "ok").map(s => s.name + " API").map(src => (
+                  {catalog.sources.filter(s => s.status === "ok").map(s => s.name + (s.evidence ? " pricing" : " API")).map(src => (
                     <span key={src} className="category-badge bg-[oklch(0.22_0.045_255_/_0.06)] text-[oklch(0.42_0.04_255)]">
                       {src}
                     </span>

@@ -1,7 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { snapshotSchema, offerSchema, type Snapshot } from "../shared/catalog";
+import {
+  snapshotSchema,
+  offerSchema,
+  type Snapshot,
+  evidenceSchema,
+  exclusionSchema,
+} from "../shared/catalog";
 import { sources, type Source } from "./providers";
 
 export async function collect(
@@ -30,6 +36,8 @@ export async function collect(
       checkedAt: at,
       lastSuccessAt: old?.lastSuccessAt ?? null,
       status: source.connected ? "not_configured" : "not_connected",
+      evidence: old?.evidence,
+      exclusions: old?.exclusions,
       message: source.connected
         ? "Collector credentials not configured"
         : "No verified collector connected",
@@ -38,7 +46,25 @@ export async function collect(
     if (source.connected && source.configured) {
       try {
         const received = await source.fetch(at);
-        const checked = received.map(o => offerSchema.parse(o));
+        const checked = received.offers.map(o => offerSchema.parse(o));
+        const evidence = received.evidence
+          ? evidenceSchema.parse(received.evidence)
+          : undefined;
+        if (evidence && evidence.retrievedAt !== at)
+          throw new Error("Source retrieval time mismatch");
+        const exclusions = (received.exclusions ?? []).map(row =>
+          exclusionSchema.parse(row)
+        );
+        if (
+          checked.some(
+            o =>
+              o.dataSource === "pricing_page" &&
+              (!evidence ||
+                evidence.contentSha256 !== o.sourceSha256 ||
+                evidence.sourceUrl !== o.sourceUrl)
+          )
+        )
+          throw new Error("Source evidence mismatch");
         if (
           checked.some(
             o => o.providerId !== source.id || o.observedAt !== at
@@ -50,7 +76,9 @@ export async function collect(
         offers = checked;
         status.status = "ok";
         status.lastSuccessAt = at;
-        status.message = `${offers.length} offers observed`;
+        status.evidence = evidence;
+        status.exclusions = exclusions;
+        status.message = `${offers.length} offers observed${exclusions.length ? `; ${exclusions.length} rows excluded (see evidence)` : ""}`;
         history.push(
           ...offers.map(o => ({
             offerId: o.offerId,
@@ -59,6 +87,9 @@ export async function collect(
             cloudType: o.cloudType,
             pricePerGpuHr: o.pricePerGpuHr,
             observedAt: o.observedAt,
+            dataSource: o.dataSource,
+            sourceUrl: o.sourceUrl,
+            sourceSha256: o.sourceSha256,
           }))
         );
       } catch {

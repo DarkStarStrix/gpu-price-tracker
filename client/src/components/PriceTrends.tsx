@@ -148,7 +148,7 @@ export function PriceTrends() {
               <Line
                 key={name}
                 type="linear"
-                name={catalog.offers.find(o => o.offerId === name) ? `${catalog.offers.find(o => o.offerId === name)!.providerName} · ${catalog.offers.find(o => o.offerId === name)!.cloudType}` : name}
+                name={catalog.offers.find(o => o.offerId === name) ? `${catalog.offers.find(o => o.offerId === name)!.providerName} · ${catalog.offers.find(o => o.offerId === name)!.cloudType} · ${catalog.offers.find(o => o.offerId === name)!.region} · ${catalog.offers.find(o => o.offerId === name)!.gpuCount}×` : name}
                 dataKey={name}
                 stroke={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
                 strokeWidth={2}

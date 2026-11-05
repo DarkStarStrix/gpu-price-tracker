@@ -5,12 +5,12 @@ import { isStale, isCurrent, snapshotSchema } from "../shared/catalog";
 import fixture from "./fixtures/runpod.json";
 const at = "2026-11-05T12:00:00.000Z";
 const later = "2026-11-05T13:00:00.000Z";
-const source = (fetch: Source["fetch"]): Source => ({
+const source = (fetch: (at: string) => Promise<typeof offers>): Source => ({
   id: "runpod",
   name: "RunPod",
   configured: true,
   connected: true,
-  fetch,
+  fetch: async at => ({ offers: await fetch(at) }),
 });
 const offers = parseRunpod(fixture, at);
 

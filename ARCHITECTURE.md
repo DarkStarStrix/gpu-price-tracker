@@ -1,0 +1,144 @@
+# Scheduled provider ingestion
+
+## 1. Objective and constraints
+
+Collect current, first-party GPU prices for the existing dashboard using GitHub
+Actions and Pages. Preserve the original UI, existing RunPod observations, and
+seven-day history. No paid server, GPU allocation, account creation, or private
+credential discovery. This change adds public CoreWeave and Paperspace sources;
+Lambda remains authenticated because its public table currently advertises rates
+that take effect November 16, 2026, rather than current prices. TensorDock's
+unauthenticated locations request returned an empty list; it does not qualify
+price coverage. Fluidstack has no verified current public catalog.
+
+## 2. Current-system model
+
+Provider adapters return normalized offers. The collector validates them,
+replaces successful provider catalogs, retains failed providers' previous
+observations, appends actual history, and atomically writes `latest.json`.
+A single serialized workflow persists the JSON to Git, builds the React
+frontend, and publishes only `dist`. The browser never handles provider secrets.
+
+## 3. Evidence and ranked bottlenecks
+
+1. Coverage: only RunPod is currently observed. Official CoreWeave HTML and
+   Paperspace pricing tables were fetched successfully on November 5, 2026.
+2. Semantic fidelity: the old schema calls every source an API and cannot express
+   a published rate without implying the same evidence as a stock API.
+3. Parsing ambiguity: CoreWeave contains separate region tables, mobile copies,
+   spot rates, and inference rates. Paperspace's two multi-GPU rows conflict with
+   its explicit single-price-times-GPU-count rule. These must not become offers.
+4. Access: Lambda and TensorDock credentials are absent. Counts and fixture tests
+   cannot establish their authenticated integration.
+
+## 4. Competing designs
+
+| Design                                | Benefit                                          | Limitation                                                    |
+| ------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| Keep API-only pipeline                | Smallest system                                  | Leaves publicly available rates uncollected                   |
+| Extend adapters and evidence contract | Reuses publication/recovery; adds usable sources | HTML structure requires regression fixtures and failure gates |
+| Always-on crawler/database/API        | Interactive collection and richer storage        | Hosting and operational work exceed this task's needs         |
+
+Choose the adapter extension. Do not introduce a scheduler, database, or second
+publication path.
+
+## 5. Chosen architecture and rationale
+
+```mermaid
+flowchart LR
+  A[Public APIs] --> C[Source adapters]
+  B[Official pricing HTML] --> C
+  C --> D[Normalized offers and source evidence]
+  D --> E[Validation and provider replacement]
+  E --> F[Snapshot and actual history in Git]
+  F --> G[Pages build]
+  G --> H[Original dashboard]
+  B --> I[Raw public source artifact with one-day retention]
+```
+
+The source adapter owns extraction and units. The collector owns validation,
+provider state, historical persistence, and atomic local publication. GitHub
+Actions owns execution serialization and deployment. UI helpers own freshness
+and display, never price inference.
+
+## 6. Component and interface contracts
+
+- `Source.fetch(at)` returns offers, optional public source evidence, and explicit
+  exclusions. Provider exceptions never become public messages or artifacts.
+- An offer has USD per GPU-hour, full node price, GPU count, observed time, source
+  URL, and source kind (`api` or `pricing_page`). New pricing-page observations
+  require the raw price, its per-instance/per-GPU basis, and the content SHA-256.
+- Published pricing-page offers always have `unknown` availability. Fetching a
+  public page establishes that its rate was observed, not rentable capacity or
+  the time the provider last changed its price.
+- CoreWeave publishes on-demand node rates: divide by the listed GPU count once.
+  Preserve region and configuration in identity. Ignore mobile duplicates, spot,
+  inference-only rates, CPU products, and contact-sales rows.
+- Paperspace single-machine rates are direct node rates. Multi-GPU rows must
+  agree with the page's explicit multiplication rule; conflicts are recorded as
+  exclusions. No machine specs or physical variants are guessed from generic
+  type names. An ambiguous combined V100 label is excluded.
+- Schema version 1 remains readable: new API metadata fields are optional for
+  preserved observations. Pricing-page fields are required conditionally.
+  Existing history is retained and new history points carry source metadata.
+
+## 7. Runtime dynamics
+
+Existing hourly and manual triggers remain. Source HTTP requests have finite
+timeouts and size limits, with no browser execution or automatic parser repair.
+Only public HTML is archived as a workflow artifact; authenticated responses are
+not archived. Git persistence precedes Pages deployment. Browser revalidation
+continues every 15 minutes; it does not launch ingestion.
+
+## 8. Failure modes and mitigations
+
+- Changed headers/regions/row structure, unexpected prices, empty HTML extraction,
+  or duplicate identities fail the source and preserve its prior timestamps.
+- Explicit quote-required and contradictory rows are excluded with stable reason
+  codes rather than guessed prices. Supported non-conflicting rows remain usable.
+- Source evidence accompanies the accepted catalog; failed attempts do not replace
+  evidence for retained prices. Stale or failed sources do not feed current floors.
+- Future-effective published rates are not current offers. Missing credentials
+  remain `not_configured`; absent collectors remain `not_connected`.
+- Concurrent Git writes can stop a run; no force push is used. A failed deployment
+  leaves collected observations in Git and the last deployed site available.
+
+## 9. Verification and promotion gates
+
+Before publication: existing RunPod/recovery tests pass, recorded-source fixtures
+produce independent expected prices and counts, mutations reject header/region/
+unit drift, contact-sales/mobile/spot/inference/CPU rows never leak into offers,
+Paperspace conflicts stay excluded, and new metadata survives collection/history.
+Local qualification on November 5: 31 tests pass, and a fresh collection produced
+69 RunPod, 18 CoreWeave, and 15 Paperspace offers. CoreWeave exclusions: six
+contact-sales rows. Paperspace exclusions: one ambiguous model and two conflicting
+multi-GPU prices. Captured original response hashes and URLs are in
+`scripts/fixtures/retrieval-receipts.json`; the HTML fixtures contain factual table
+excerpts. A fixture regression reproduced and prevented the omitted-H100 selector
+failure. Model tests prevent GB200/GH200 from aliasing B200/H200.
+
+Then fetch fresh official pages, verify representative raw-to-normalized values,
+run type checking and the Pages build, and inspect the preserved UI. Finally
+require a successful GitHub workflow and a public snapshot with matching provider
+counts and source hashes. Live HTTP proves retrieval; fixtures prove controlled
+semantics; neither proves authenticated integration or guaranteed capacity.
+
+## 10. Migration and execution plan
+
+Add the evidence contract and public adapters first; retain existing identities
+and RunPod behavior. Save minimal factual HTML fixtures and retrieval receipts.
+Run adversarial tests, live collection, build, and UI checks. Deploy through the
+existing workflow and verify the public artifact. Rollback is the previous source
+commit and its snapshot; do not erase Git history. The next independent boundary
+is authenticated Lambda/TensorDock qualification after credentials are supplied.
+
+## Authoritative references
+
+- https://www.coreweave.com/pricing
+- https://docs.digitalocean.com/products/paperspace/pricing/
+- https://docs.lambda.ai/public-cloud/cloud-api/
+- https://lambda.com/instances
+- https://dashboard.tensordock.com/api/docs/fetch-hostnodes
+- https://fluidstack.io/
+- HGX H100/H200 variant normalization:
+  https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html

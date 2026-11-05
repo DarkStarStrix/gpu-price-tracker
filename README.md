@@ -39,12 +39,31 @@ Provider APIs → scheduled collector → validated snapshot + seven-day history
   stock observation for one GPU. Prices do not guarantee rentable capacity at
   that rate. Missing stock information is `unknown`. No CPU/RAM or region is
   invented when the catalog does not specify them.
-- **Lambda:** API adapter available when `LAMBDA_API_KEY` is configured. Converts
-  integer cents per node-hour to dollars per GPU-hour using the stated GPU count.
-  The adapter has fixture coverage; authenticated integration is not yet verified.
-- **TensorDock, CoreWeave, FluidStack, Paperspace:** profiles are retained in the
-  original UI, but no verified collector is connected. They supply no prices.
-  The old March 2026 sample prices are removed.
+- **CoreWeave:** official public pricing HTML, with separate North America and
+  Europe configurations. On-demand node prices are divided by GPU count once;
+  spot, inference-only, CPU, and contact-sales entries are not mixed into them.
+- **Paperspace:** official DigitalOcean pricing tables, including only unambiguous
+  single/multi-GPU rates. The collector excludes two multi-GPU prices that conflict
+  with the page's multiplication rule, plus the combined V100 model label.
+- **Lambda:** authenticated API adapter available when `LAMBDA_API_KEY` is
+  configured. Its public page currently advertises rates effective November 16,
+  2026, so those are not used as current quotes. Authenticated integration remains
+  unverified. API calls use the documented `cloud.lambda.ai` endpoint.
+- **TensorDock:** API documentation requires a bearer token. An unauthenticated
+  location-discovery request returned an empty catalog, so price coverage is not
+  claimed. No verified collector is connected.
+- **Fluidstack:** the current public website does not expose a verified retail
+  price catalog. No prices are substituted from old or third-party listings.
+
+Pricing pages establish **published rates**, not rentable capacity; availability
+is always `unknown` for those offers. New observations include raw USD rate,
+per-instance/per-GPU basis, retrieval time, source URL, and source-content SHA-256.
+The dashboard labels published rates and links their official sources. Excluded
+rows and reasons appear in provider profiles. Existing API snapshots and history
+remain compatible.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for ownership, schema compatibility,
+failure behavior, alternatives, and qualification gates.
 
 Schemas and contracts are in `shared/catalog.ts`; adapters are in
 `scripts/providers.ts`; `scripts/collect.ts` owns snapshots and history.
@@ -53,7 +72,10 @@ A successful provider response replaces that provider's whole offer set, so
 removed listings disappear. A valid empty catalog clears its offers. Failed or
 invalid responses retain the last verified offers without advancing observation
 timestamps or adding history. Only validated public fields are published;
-provider error messages and raw responses are never included. Invalid previous
+provider error messages and raw responses are never included in the website snapshot.
+Public pricing HTML and retrieval receipts are saved separately as a one-day
+Actions artifact, including rejected pages for reproducible parser diagnosis.
+Authenticated API responses are never archived. Invalid previous
 snapshot files stop collection rather than resetting history. Publication uses
 a temporary file plus rename.
 
@@ -97,5 +119,7 @@ The original full-stack source and migrations remain recoverable in Git history.
 ## Provider references
 
 - [RunPod GraphQL GPU catalog](https://docs.runpod.io/sdks/graphql/manage-pods)
+- [CoreWeave published pricing](https://www.coreweave.com/pricing)
+- [Paperspace published pricing](https://docs.digitalocean.com/products/paperspace/pricing/)
 - [Lambda instance-types API](https://docs.lambda.ai/public-cloud/cloud-api/)
 - [GitHub Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)

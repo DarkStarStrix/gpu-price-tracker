@@ -46,6 +46,7 @@ export function ProviderCards() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {summaries.map((summary, idx) => {
           const accentGradient = PROVIDER_ACCENT[summary.provider.id] ?? PROVIDER_ACCENT.lambda;
+          const source = catalog.sources.find(s => s.id === summary.provider.id);
           const symbol = PROVIDER_ICONS[summary.provider.id] ?? "◆";
 
           return (
@@ -84,6 +85,9 @@ export function ProviderCards() {
               <div className="px-5 pb-4 text-xs text-muted-foreground">
                 {catalog.sources.find(s => s.id === summary.provider.id)?.status.replaceAll("_", " ") ?? "not connected"}
                 <p className="mt-1">{catalog.sources.find(s => s.id === summary.provider.id)?.message}</p>
+                {source?.evidence && <a href={source.evidence.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 underline">Official published rates · availability not checked</a>}
+                {!!source?.exclusions?.length && <details className="mt-2"><summary className="cursor-pointer">{source.exclusions.length} rows excluded</summary><ul className="mt-1 space-y-1">{source.exclusions.map(row => <li key={row.row}>{row.row} — {row.reason === "quote_required" ? "Contact sales" : row.reason === "inconsistent_price" ? "Conflicting published prices" : "Ambiguous GPU model"}</li>)}</ul></details>}
+
               </div>
 
               <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent mb-4" />

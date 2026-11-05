@@ -1,0 +1,47 @@
+[
+  {
+    "provider": "coreweave",
+    "requestedUrl": "https://www.coreweave.com/pricing",
+    "finalUrl": "https://www.coreweave.com/pricing",
+    "httpStatus": 200,
+    "fetchedAt": "2026-11-05T16:38:30.933789+00:00",
+    "bytes": 444907,
+    "sha256": "8df27a797c56480758835a070c84e8a9ca3cd94eb594de92c7482f6029544f3c"
+  },
+  {
+    "provider": "paperspace",
+    "requestedUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+    "finalUrl": "https://docs.digitalocean.com/products/paperspace/pricing/",
+    "httpStatus": 200,
+    "fetchedAt": "2026-11-05T16:38:31.339039+00:00",
+    "bytes": 57547,
+    "sha256": "babc3c6ebf3882d54f5d9135a61fa292701b8cf97fe0e15dff98e77637526302"
+  },
+  {
+    "provider": "lambda",
+    "requestedUrl": "https://lambda.ai/service/gpu-cloud",
+    "finalUrl": "https://lambda.com/instances",
+    "httpStatus": 200,
+    "fetchedAt": "2026-11-05T16:38:32.044420+00:00",
+    "bytes": 100769,
+    "sha256": "7b064678001d4232002faed3591beea47a19025fc22f1830e41910d57127cae3"
+  },
+  {
+    "provider": "tensordock",
+    "requestedUrl": "https://dashboard.tensordock.com/api/docs/getting-started",
+    "finalUrl": "https://dashboard.tensordock.com/api/docs/getting-started",
+    "httpStatus": 200,
+    "fetchedAt": "2026-11-05T16:38:32.242038+00:00",
+    "bytes": 49268,
+    "sha256": "869e1527f4df7b7708fdee62327868b047d3167b3dea7ef00fc88579803e7835"
+  },
+  {
+    "provider": "fluidstack",
+    "requestedUrl": "https://fluidstack.io/",
+    "finalUrl": "https://fluidstack.io/",
+    "httpStatus": 200,
+    "fetchedAt": "2026-11-05T16:38:32.615279+00:00",
+    "bytes": 91307,
+    "sha256": "bbfec3148d3eb0453045687554c7ee903ab008602c76963f4c53cd14342cbc48"
+  }
+]

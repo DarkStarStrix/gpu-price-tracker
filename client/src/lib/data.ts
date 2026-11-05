@@ -104,7 +104,7 @@ export const PROVIDERS: Provider[] = [
     regions: ["US-East", "US-West", "EU-West"],
     billingModel: "on-demand",
     notes:
-      "NVIDIA elite partner. Enterprise-focused, account approval required.",
+      "Official published on-demand rates. Capacity is not checked.",
   },
   {
     id: "fluidstack",
@@ -122,7 +122,7 @@ export const PROVIDERS: Provider[] = [
     website: "https://www.paperspace.com",
     regions: ["US-East", "US-West", "EU"],
     billingModel: "on-demand",
-    notes: "Provider profile retained. Price collection is not connected.",
+    notes: "Official machine pricing tables. Capacity is not checked.",
   },
 ];
 

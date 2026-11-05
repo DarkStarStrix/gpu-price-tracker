@@ -479,6 +479,7 @@ function OfferRow({
         {offer.cloudType && (
           <span className="font-data text-[10px] text-muted-foreground capitalize">{offer.cloudType}</span>
         )}
+        <a href={offer.sourceUrl} target="_blank" rel="noopener noreferrer" className="block font-data text-[10px] text-muted-foreground underline" title="Official source for this observation">{offer.dataSource === "pricing_page" ? "Published rate" : "API observation"}</a>
       </td>
 
       {/* Config */}
@@ -519,7 +520,7 @@ function OfferRow({
 
       {/* Observation freshness */}
       <td className="px-4 py-3 hidden md:table-cell">
-        <span className="font-data text-[10px]" title={offer.observedAt}>{!isCurrent(catalog, offer) ? "Stale / retained" : "Observed"}<br />{new Date(offer.observedAt).toLocaleString()}</span>
+        <span className="font-data text-[10px]" title={offer.observedAt}>{!isCurrent(catalog, offer) ? "Stale / retained" : (offer.dataSource === "pricing_page" ? "Rate checked" : "Observed")}<br />{new Date(offer.observedAt).toLocaleString()}</span>
       </td>
 
       {/* Actions */}
