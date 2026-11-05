@@ -32,4 +32,4 @@ setInterval(async () => {
   } catch {
     if (catalog) root.render(<App />);
   }
-}, 15 * 60_000);
+}, 60_000);

@@ -5,7 +5,7 @@
 Collect current, first-party GPU prices for the existing dashboard using GitHub
 Actions and Pages. Preserve the original UI, existing RunPod observations, and
 seven-day history. No paid server, GPU allocation, account creation, or private
-credential discovery. This change adds public CoreWeave and Paperspace sources;
+credential discovery. Connected public sources now include RunPod, CoreWeave, Paperspace, Hyperstack, Verda, Crusoe, Vultr and Nebius;
 Lambda remains authenticated because its public table currently advertises rates
 that take effect November 16, 2026, rather than current prices. TensorDock's
 unauthenticated locations request returned an empty list; it does not qualify
@@ -21,7 +21,7 @@ frontend, and publishes only `dist`. The browser never handles provider secrets.
 
 ## 3. Evidence and ranked bottlenecks
 
-1. Coverage: only RunPod is currently observed. Official CoreWeave HTML and
+1. Coverage baseline before the public-source extension: only RunPod was observed. Official CoreWeave HTML and
    Paperspace pricing tables were fetched successfully on November 5, 2026.
 2. Semantic fidelity: the old schema calls every source an API and cannot express
    a published rate without implying the same evidence as a stock API.
@@ -84,11 +84,11 @@ and display, never price inference.
 
 ## 7. Runtime dynamics
 
-Existing hourly and manual triggers remain. Source HTTP requests have finite
+Collection is scheduled every 15 minutes, with push and manual triggers. Source HTTP requests have finite
 timeouts and size limits, with no browser execution or automatic parser repair.
-Only public HTML is archived as a workflow artifact; authenticated responses are
+Only public HTML and unauthenticated public API payloads are archived as a workflow artifact; authenticated responses are
 not archived. Git persistence precedes Pages deployment. Browser revalidation
-continues every 15 minutes; it does not launch ingestion.
+continues every minute; it does not launch ingestion.
 
 ## 8. Failure modes and mitigations
 
@@ -109,7 +109,7 @@ Before publication: existing RunPod/recovery tests pass, recorded-source fixture
 produce independent expected prices and counts, mutations reject header/region/
 unit drift, contact-sales/mobile/spot/inference/CPU rows never leak into offers,
 Paperspace conflicts stay excluded, and new metadata survives collection/history.
-Local qualification on November 5: 31 tests pass, and a fresh collection produced
+The initial qualification on November 5 passed 31 tests, and a fresh collection produced
 69 RunPod, 18 CoreWeave, and 15 Paperspace offers. CoreWeave exclusions: six
 contact-sales rows. Paperspace exclusions: one ambiguous model and two conflicting
 multi-GPU prices. Captured original response hashes and URLs are in
@@ -142,3 +142,52 @@ is authenticated Lambda/TensorDock qualification after credentials are supplied.
 - https://fluidstack.io/
 - HGX H100/H200 variant normalization:
   https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html
+
+## Movement extension — November 5, 2026
+
+The measured objective is broader qualified coverage plus visible real price and
+listing-pool changes, preserving the existing interface and free deployment.
+Animating invented price fluctuations was rejected. A database/live-server rewrite
+adds no necessary signal; the existing collector owns the required state.
+
+Adapters now return optional historical price points. Nebius imports public
+`METHOD_LAST_PRICE` / `GRANULARITY_HOUR_1` series for the preceding seven days.
+The unfinished current-hour bucket is excluded. These are interval-end provider summaries, labeled `provider_hourly_last`;
+collector observations use `collector`. USD/GPU-hour, source identity, current SKU
+membership, nonfuture timestamps, positive prices, and complete pagination are
+validated before any provider state changes. Source errors retain old data.
+`billingModel=spot` is excluded from on-demand floors and comparisons. Historical
+import failure fails the whole Nebius refresh; it cannot silently truncate history.
+
+`configurationKnown=false` marks a quoted per-GPU rate whose node configuration
+is not established. GPU count and total remain a one-GPU normalization internally;
+the UI and CSV explicitly suppress any claim that this is an actual node price.
+HTML provenance rules remain unchanged. Vultr node prices/VRAM are divided once.
+Crusoe's reviewed current column is valid only before December 1, 2026; its adapter
+fails closed at that transition. Hyperstack maximum CPU/RAM are not allocations.
+
+The collector alone owns `poolHistory`. Each successful provider snapshot records
+observed-listing counts by availability and changes relative to its last success:
+added IDs, removed IDs, changed prices and changed reported availability. A first
+observation is a zero-delta baseline. Older snapshots can migrate from their
+actual last-success timestamp and retained offers. Failed refreshes create no
+pool observation or removal. Counts are not fleet GPU counts. Seven days persist.
+
+The frontend replays discrete verified timestamps with a fixed elapsed-time axis,
+manual playback and scrubbing; no interpolation fabricates observations. Price
+lines keep gaps. Pool lines use step transitions. Motion is user initiated and
+price transitions respect reduced-motion preferences. Both panels return to latest.
+
+Promotion gates: factual source fixtures, invalid header/unit/page/future-date
+mutations, pool baseline/removal/change/failure tests, existing recovery tests,
+type checking, production build, live collection, browser interaction, successful
+Actions deployment and public snapshot verification. No authenticated provider
+integration or physical capacity guarantee follows from these checks.
+
+Additional primary source references:
+- https://www.hyperstack.cloud/gpu-pricing
+- https://verda.com/pricing
+- https://www.crusoe.ai/cloud/pricing
+- https://api.vultr.com/v2/plans?per_page=500
+- https://docs.nebius.com/signup-billing/spot-prices
+- https://api.nebius.cloud/billing/v1alpha1/spot-price

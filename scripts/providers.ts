@@ -4,6 +4,7 @@ import { offerSchema, type GpuOffer } from "../shared/catalog";
 import { gpuId } from "./gpu";
 export { gpuId } from "./gpu";
 import type { SourceResult } from "../shared/catalog";
+import { expandedSources } from "./expanded-sources";
 import { publicPricingSources } from "./pricing-pages";
 
 const nullableNumber = z.number().finite().nonnegative().nullable();
@@ -174,6 +175,7 @@ export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
       }),
     },
     ...publicPricingSources(),
+    ...expandedSources(),
     ...[
       ["tensordock", "TensorDock"],
       ["fluidstack", "FluidStack"],

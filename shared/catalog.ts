@@ -10,6 +10,8 @@ export const offerSchema = z
     gpuModelId: z.string().min(1),
     gpuModelName: z.string().min(1),
     gpuCount: positive.int(),
+    configurationKnown: z.boolean().optional(),
+    billingModel: z.enum(["on-demand", "spot"]).optional(),
     vramPerGpuGb: positive.nullable(),
     vcpus: positive.nullable(),
     ramGb: positive.nullable(),
@@ -75,6 +77,7 @@ export interface SourceResult {
   offers: GpuOffer[];
   evidence?: SourceEvidence;
   exclusions?: Exclusion[];
+  history?: z.infer<typeof historySchema>[];
 }
 export const historySchema = z.object({
   offerId: z.string(),
@@ -82,6 +85,8 @@ export const historySchema = z.object({
   gpuModelId: z.string(),
   cloudType: z.string(),
   pricePerGpuHr: positive,
+  billingModel: z.enum(["on-demand", "spot"]).optional(),
+  historyOrigin: z.enum(["collector", "provider_hourly_last"]).optional(),
   observedAt: timestamp,
   dataSource: z.enum(["api", "pricing_page"]).optional(),
   sourceUrl: z.string().url().startsWith("https://").optional(),
@@ -90,6 +95,26 @@ export const historySchema = z.object({
     .regex(/^[a-f0-9]{64}$/)
     .optional(),
 });
+export const poolPointSchema = z
+  .object({
+    providerId: z.string(),
+    observedAt: timestamp,
+    baseline: z.boolean(),
+    total: z.number().int().nonnegative(),
+    available: z.number().int().nonnegative(),
+    limited: z.number().int().nonnegative(),
+    unavailable: z.number().int().nonnegative(),
+    unknown: z.number().int().nonnegative(),
+    added: z.number().int().nonnegative(),
+    removed: z.number().int().nonnegative(),
+    priceChanges: z.number().int().nonnegative(),
+    availabilityChanges: z.number().int().nonnegative(),
+  })
+  .refine(
+    p => p.total === p.available + p.limited + p.unavailable + p.unknown,
+    "Pool counts must agree"
+  );
+export type PoolPoint = z.infer<typeof poolPointSchema>;
 export const snapshotSchema = z
   .object({
     version: z.literal(1),
@@ -108,12 +133,22 @@ export const snapshotSchema = z
     ),
     offers: z.array(offerSchema),
     history: z.array(historySchema),
+    poolHistory: z.array(poolPointSchema).optional(),
   })
   .superRefine((s, ctx) => {
     if (new Set(s.offers.map(o => o.offerId)).size !== s.offers.length)
       ctx.addIssue({ code: "custom", message: "Duplicate offer IDs" });
     if (new Set(s.sources.map(o => o.id)).size !== s.sources.length)
       ctx.addIssue({ code: "custom", message: "Duplicate source IDs" });
+    if (
+      s.history.some(
+        h => Date.parse(h.observedAt) > Date.parse(s.generatedAt)
+      ) ||
+      s.poolHistory?.some(
+        p => Date.parse(p.observedAt) > Date.parse(s.generatedAt)
+      )
+    )
+      ctx.addIssue({ code: "custom", message: "History is in the future" });
     for (const offer of s.offers) {
       const source = s.sources.find(source => source.id === offer.providerId);
       if (

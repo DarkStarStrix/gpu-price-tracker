@@ -117,9 +117,9 @@ export function OffersTable() {
       o.vramPerGpuGb ?? "",
       o.providerName,
       o.region,
-      `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
+      o.configurationKnown === false ? "Per-GPU rate; node size unspecified" : `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
       o.pricePerGpuHr.toFixed(4),
-      o.totalNodePriceHr.toFixed(4),
+      o.configurationKnown === false ? "" : o.totalNodePriceHr.toFixed(4),
       !isCurrent(catalog, o) ? "unknown (retained)" : o.availability,
       o.cloudType ?? "",
       o.dataSource, o.observedAt, o.sourceUrl,
@@ -485,7 +485,7 @@ function OfferRow({
       {/* Config */}
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className="font-data text-xs text-muted-foreground">
-          {offer.gpuCount}× GPU · {offer.vcpus ?? "—"} vCPU · {offer.ramGb ?? "—"}GB
+          {offer.configurationKnown === false ? "Per-GPU rate · node size unspecified" : `${offer.gpuCount}× GPU · ${offer.vcpus ?? "—"} vCPU · ${offer.ramGb ?? "—"}GB`}
         </span>
       </td>
 
@@ -501,7 +501,7 @@ function OfferRow({
         }`}>
           {formatPrice(offer.pricePerGpuHr)}
         </div>
-        {offer.gpuCount > 1 && (
+        {offer.configurationKnown !== false && offer.gpuCount > 1 && (
           <div className="font-data text-[10px] text-muted-foreground">
             {formatPrice(offer.totalNodePriceHr)}/node
           </div>

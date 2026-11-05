@@ -17,7 +17,7 @@ pnpm dev
 
 The committed `client/public/data/latest.json` also lets the dashboard start
 without provider credentials. Every price retains its actual observation time.
-The browser reads this JSON and rechecks it every 15 minutes. The Refresh button
+The browser reads this JSON and rechecks it every minute. The Refresh button
 reloads the published snapshot; it does not trigger a provider collection.
 
 ```sh
@@ -45,6 +45,11 @@ Provider APIs → scheduled collector → validated snapshot + seven-day history
 - **Paperspace:** official DigitalOcean pricing tables, including only unambiguous
   single/multi-GPU rates. The collector excludes two multi-GPU prices that conflict
   with the page's multiplication rule, plus the combined V100 model label.
+- **Hyperstack:** official on-demand per-GPU price card; published maximum CPU/RAM values are not reported as allocated specs.
+- **Verda:** regular on-demand single-GPU instances with distinct CPU/RAM configuration identities. Discounts, confidential compute, serverless and cluster tables are excluded.
+- **Crusoe:** current on-demand GPU rates; the future December 1 column and contact-sales rows are excluded. This parser deliberately stops at the transition pending rate review.
+- **Vultr:** public plans API; full node price and VRAM are divided by GPU count. Empty location lists do not establish stock. Incomplete pagination fails collection.
+- **Nebius:** public current spot-price API plus seven days of last-price-per-hour history. Interruptible spot rates are explicitly labeled and excluded from on-demand floors and comparisons. No availability is inferred.
 - **Lambda:** authenticated API adapter available when `LAMBDA_API_KEY` is
   configured. Its public page currently advertises rates effective November 16,
   2026, so those are not used as current quotes. Authenticated integration remains
@@ -73,7 +78,7 @@ removed listings disappear. A valid empty catalog clears its offers. Failed or
 invalid responses retain the last verified offers without advancing observation
 timestamps or adding history. Only validated public fields are published;
 provider error messages and raw responses are never included in the website snapshot.
-Public pricing HTML and retrieval receipts are saved separately as a one-day
+Public pricing HTML, unauthenticated public API payloads, and HTML retrieval receipts are saved separately as a one-day
 Actions artifact, including rejected pages for reproducible parser diagnosis.
 Authenticated API responses are never archived. Invalid previous
 snapshot files stop collection rather than resetting history. Publication uses
@@ -83,15 +88,36 @@ The UI marks data older than two hours or from a failed source as stale/retained
 shows unknown availability for those rows, and excludes them from overview
 floors/comparisons/provider price summaries. Unknown specs display a dash.
 History uses exact timestamps and separate offer identities; no synthetic
-curves or reliability scores are generated. The first trend appears after at
-least two collected timestamps. Alerts live in this browser's local storage and
+curves or reliability scores are generated. Nebius provider history makes replay immediately available. Other trends require at least two collected timestamps. Alerts live in this browser's local storage and
 are checked only while the page is open; no background emails are sent.
+
+## Watching movement
+
+The Trends tab retains the original chart style and adds billing/GPU selectors,
+Replay/Pause, a timestamp scrubber, and Return to latest. Time axes use elapsed
+clock time. Replay reveals recorded samples; it never adds jitter to flat prices.
+Nebius history is explicitly labeled as provider hourly-last prices, timestamped
+at interval end, rather than our own retrospective observations.
+
+The shifting-pool panel tracks **observed listings**, not physical fleet size.
+For each successful refresh it stores counts by reported availability plus added,
+removed, repriced and availability-changed listings against the previous success.
+The first observation is a baseline. Failed refreshes add no movement events;
+pricing-page listings remain availability unknown. Seven days are retained.
+Published per-GPU rates with unknown node size are labeled as such and export no
+node price. Their internal one-GPU normalization is not a rentable-node claim.
+
+Additional source qualification on November 5: Cudo requires quotes; GMI exposes
+“from” prices without a qualified on-demand contract; Oblivus has inconsistent
+H100 rates across card/modal and unclear stock/configuration units; Genesis failed
+TLS retrieval. These are not included in verified coverage. This is broad public
+coverage, not an exhaustive worldwide inventory.
 
 ## Deploy and refresh
 
 The workflow `.github/workflows/pages.yml` runs checks, collects prices, commits
 validated observations to `main`, builds, and deploys an artifact to Pages.
-It runs on pushes to `main`, manual dispatch, and at minute 17 every hour (UTC).
+It runs on pushes to `main`, manual dispatch, and at minutes 2, 17, 32, and 47 every hour (UTC).
 GitHub schedules are best effort and can be delayed; observation ages, rather
 than workflow or build time, determine freshness. The two-hour stale threshold
 makes missed or delayed collections visible.

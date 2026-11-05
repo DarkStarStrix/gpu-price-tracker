@@ -7,7 +7,9 @@ import {
   type Snapshot,
   evidenceSchema,
   exclusionSchema,
+  historySchema,
 } from "../shared/catalog";
+import { measurePool } from "../shared/movement";
 import { sources, type Source } from "./providers";
 
 export async function collect(
@@ -23,6 +25,10 @@ export async function collect(
     sources: [],
     offers: [],
     history: [],
+    poolHistory:
+      previous?.poolHistory?.filter(
+        p => Date.parse(p.observedAt) >= now - 7 * 86400_000
+      ) ?? [],
   };
   const history =
     previous?.history.filter(
@@ -72,6 +78,38 @@ export async function collect(
           new Set(checked.map(o => o.offerId)).size !== checked.length
         )
           throw new Error("Source identity mismatch");
+        const imported = (received.history ?? []).map(h =>
+          historySchema.parse(h)
+        );
+        if (
+          imported.some(
+            h =>
+              h.providerId !== source.id ||
+              !checked.some(
+                o =>
+                  o.offerId === h.offerId &&
+                  o.gpuModelId === h.gpuModelId &&
+                  o.billingModel === h.billingModel
+              ) ||
+              Date.parse(h.observedAt) > now ||
+              Date.parse(h.observedAt) < now - 7 * 86400_000 ||
+              h.historyOrigin !== "provider_hourly_last"
+          )
+        )
+          throw new Error("Imported history contract mismatch");
+        const baseline =
+          old?.lastSuccessAt !== null && old?.lastSuccessAt !== undefined;
+        if (
+          baseline &&
+          !next.poolHistory!.some(p => p.providerId === source.id)
+        )
+          next.poolHistory!.push(
+            measurePool(source.id, [], offers, old!.lastSuccessAt!, false)
+          );
+        next.poolHistory!.push(
+          measurePool(source.id, offers, checked, at, baseline)
+        );
+        history.push(...imported);
         // Replace the whole provider catalog on success, including an authoritative empty response.
         offers = checked;
         status.status = "ok";
@@ -86,6 +124,8 @@ export async function collect(
             gpuModelId: o.gpuModelId,
             cloudType: o.cloudType,
             pricePerGpuHr: o.pricePerGpuHr,
+            billingModel: o.billingModel,
+            historyOrigin: "collector" as const,
             observedAt: o.observedAt,
             dataSource: o.dataSource,
             sourceUrl: o.sourceUrl,

@@ -28,7 +28,7 @@ function useCountUp(target: number, duration = 800, delay = 0) {
 
 export function MarketPulse() {
   const offers = eligibleOffers();
-  const prices = offers.filter(o => o.gpuModelId === "h100-sxm" && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
+  const prices = offers.filter(o => o.gpuModelId === "h100-sxm" && o.billingModel !== "spot" && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
   const stats = {totalOffers: catalog.offers.length, availableOffers: offers.filter(o => o.availability === "available" || o.availability === "limited").length,
     providerCount: new Set(offers.map(o => o.providerId)).size, gpuModelCount: new Set(offers.map(o => o.gpuModelId)).size, h100Floor: prices.length ? Math.min(...prices) : null};
 
@@ -69,7 +69,7 @@ export function MarketPulse() {
         prefix="$"
         divisor={100}
         decimals={2}
-        subtext="Fresh observations · USD / GPU-hour"
+        subtext="On-demand · USD / GPU-hour"
         missing={metrics.lowestH100 === null}
         accent="sage"
         delay={160}

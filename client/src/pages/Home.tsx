@@ -38,7 +38,7 @@ export default function Home() {
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
   const providerCount = new Set(offers.map(o => o.providerId)).size;
   const floor = (id: string) => {
-    const prices = freshOffers.filter(o => o.gpuModelId === id && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
+    const prices = freshOffers.filter(o => o.gpuModelId === id && o.billingModel !== "spot" && o.availability !== "unavailable").map(o => o.pricePerGpuHr);
     return prices.length ? `${formatPrice(Math.min(...prices))}/hr` : "—";
   };
 
@@ -137,7 +137,7 @@ export default function Home() {
       <div className="container pt-4">
         <div className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card" role="status">
           {snapshotLoadError && "Snapshot refresh failed; showing the last validated data. "}
-          Scheduled hourly · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
+          Scheduled every 15 minutes · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
           {catalog.sources.some(s => s.status === "error") && " A provider refresh failed; retained prices are marked below."}
           {offers.some(o => isStale(o.observedAt)) && " Some observations are over 2 hours old."}
           {" "}Published rates do not establish availability. Availability can change between observations. Local alerts only check while this page is open.
@@ -257,7 +257,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
                   A scheduled collector reads provider APIs and official pricing tables, then publishes a validated snapshot.
                   Prices are normalized to USD per GPU-hour; node prices retain their GPU count.
-                  History contains actual observations only. Failed refreshes retain their original timestamps.
+                  History contains collector observations and labeled provider hourly spot prices. Pool turnover counts listing changes. Failed refreshes retain their original timestamps.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {catalog.sources.filter(s => s.status === "ok").map(s => s.name + (s.evidence ? " pricing" : " API")).map(src => (
@@ -334,7 +334,7 @@ export default function Home() {
             <PriceTrends />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <strong className="text-foreground font-medium">Note:</strong> History starts with this deployment and grows with each successful collection. No synthetic trends are generated.
+                <strong className="text-foreground font-medium">Note:</strong> Collector history grows with each successful refresh. Nebius also supplies labeled hourly spot-price history. Replay contains no synthetic prices.
               </p>
             </div>
           </div>
@@ -357,7 +357,7 @@ export default function Home() {
           <div>
             <div className="mono-label text-muted-foreground mb-2">Data Sources</div>
             <div className="flex flex-wrap gap-1.5">
-              {["Lambda", "RunPod", "CoreWeave", "TensorDock", "FluidStack", "Paperspace"].map(p => (
+              {catalog.sources.filter(s => s.lastSuccessAt).map(s => s.name).map(p => (
                 <span key={p} className="font-data text-[10px] px-2 py-0.5 bg-[oklch(0.92_0.006_85)] rounded text-foreground">
                   {p}
                 </span>

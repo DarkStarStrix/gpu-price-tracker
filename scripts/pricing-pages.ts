@@ -256,7 +256,7 @@ export function parsePaperspace(html: string, at: string): SourceResult {
   );
 }
 
-async function fetchPricingPage(
+export async function fetchPricingPage(
   id: string,
   url: string,
   at: string,

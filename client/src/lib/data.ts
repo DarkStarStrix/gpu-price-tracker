@@ -67,6 +67,26 @@ export const GPU_MODELS: GpuModel[] = [];
 // ─── Providers ───────────────────────────────────────────────────────────────
 
 export const PROVIDERS: Provider[] = [
+  ...(
+    [
+      ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],
+      ["verda", "Verda", "https://verda.com"],
+      ["crusoe", "Crusoe", "https://www.crusoe.ai"],
+      ["vultr", "Vultr", "https://www.vultr.com"],
+      ["nebius", "Nebius", "https://nebius.com"],
+    ] as const
+  ).map(([id, name, website]) => ({
+    id,
+    name,
+    website,
+    category: "stable" as const,
+    regions: [],
+    billingModel: id === "nebius" ? ("spot" as const) : ("on-demand" as const),
+    notes:
+      id === "nebius"
+        ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
+        : "Official current USD on-demand rates. Capacity is not checked.",
+  })),
   {
     id: "lambda",
     name: "Lambda",
@@ -103,8 +123,7 @@ export const PROVIDERS: Provider[] = [
     website: "https://www.coreweave.com",
     regions: ["US-East", "US-West", "EU-West"],
     billingModel: "on-demand",
-    notes:
-      "Official published on-demand rates. Capacity is not checked.",
+    notes: "Official published on-demand rates. Capacity is not checked.",
   },
   {
     id: "fluidstack",
@@ -135,17 +154,24 @@ export function configureCatalog(snapshot: Snapshot) {
     GPU_MODELS.length,
     ...Array.from(
       new Map(
-        OFFERS.map(o => [
-          o.gpuModelId,
-          {
-            id: o.gpuModelId,
-            name: o.gpuModelName,
-            aliases: [],
-            vramGb: o.vramPerGpuGb ?? 0,
-            architecture: "Not specified",
-            generation: "current" as const,
-          },
-        ])
+        [...OFFERS]
+          .sort(
+            (a, b) =>
+              Number(b.billingModel === "spot") -
+                Number(a.billingModel === "spot") ||
+              Number(a.vramPerGpuGb !== null) - Number(b.vramPerGpuGb !== null)
+          )
+          .map(o => [
+            o.gpuModelId,
+            {
+              id: o.gpuModelId,
+              name: o.gpuModelName,
+              aliases: [],
+              vramGb: o.vramPerGpuGb ?? 0,
+              architecture: "Not specified",
+              generation: "current" as const,
+            },
+          ])
       ).values()
     )
   );
@@ -227,7 +253,9 @@ export function buildComparisons(gpuModelIds?: string[]): ComparisonRow[] {
 
   return targetModels
     .map(gpu => {
-      const gpuOffers = OFFERS.filter(o => o.gpuModelId === gpu.id);
+      const gpuOffers = OFFERS.filter(
+        o => o.gpuModelId === gpu.id && o.billingModel !== "spot"
+      );
       const providerMap = new Map<string, Offer>();
 
       // Keep lowest price per provider
