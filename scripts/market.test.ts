@@ -92,3 +92,32 @@ describe("market observations", () => {
     });
   });
 });
+
+import { priceHistorySummary } from "../shared/market";
+it("provides informative states for missing, first, flat and changing price history", async () => {
+  const s = await sample();
+  expect(priceHistorySummary(s, "absent", now).state).toBe("empty");
+  expect(priceHistorySummary(s, "limited", now).state).toBe("collecting");
+  const h = s.history.find(h => h.offerId === "limited")!;
+  s.history.push({ ...h, observedAt: "2026-11-05T17:00:00Z" });
+  const flat = priceHistorySummary(s, "limited", now);
+  expect(flat.state).toBe("unchanged");
+  expect(flat.stats?.count).toBe(2);
+  s.history.push({
+    ...h,
+    observedAt: "2026-11-05T17:30:00Z",
+    pricePerGpuHr: 4,
+  });
+  expect(priceHistorySummary(s, "limited", now).state).toBe("changed");
+});
+
+import { reconcileSelection } from "../shared/offer-view";
+it("drops disappeared listings from comparison state instead of enabling an empty drawer", () => {
+  expect(
+    reconcileSelection(["old", "a", "b"], [{ offerId: "a" }, { offerId: "b" }])
+  ).toEqual(["a", "b"]);
+  expect(reconcileSelection(["old", "a"], [{ offerId: "a" }])).toHaveLength(1);
+  expect(
+    reconcileSelection(["a", "a", "b"], [{ offerId: "a" }, { offerId: "b" }])
+  ).toEqual(["a", "b"]);
+});

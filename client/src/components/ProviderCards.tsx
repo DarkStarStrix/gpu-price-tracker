@@ -30,7 +30,7 @@ const PROVIDER_ACCENT: Record<string, string> = {
 };
 
 export function ProviderCards() {
-  const summaries = buildProviderSummaries();
+  const summaries = buildProviderSummaries().filter(s => catalog.sources.some(source => source.id === s.provider.id && source.lastSuccessAt !== null));
 
   return (
     <section className="mb-10">

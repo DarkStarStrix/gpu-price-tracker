@@ -104,10 +104,10 @@ function ReplayControls({
     </div>
   );
 }
-export function PriceTrends() {
+export function PriceTrends({initialOfferId=""}:{initialOfferId?:string}) {
   return (
     <section className="mb-10">
-      <PriceMarket />
+      <PriceMarket initialOfferId={initialOfferId} />
       <PoolMovement />
     </section>
   );
@@ -213,7 +213,7 @@ function PoolMovement() {
                 <Line
                   key={key}
                   dataKey={key}
-                  name={key}
+                  name={key === "unknown" ? "Stock not reported" : key}
                   type="stepAfter"
                   stroke={
                     {

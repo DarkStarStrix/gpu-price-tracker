@@ -66,3 +66,24 @@ export function marketStats(points: { price: number }[]) {
     count: points.length,
   };
 }
+
+export function priceHistorySummary(
+  snapshot: Snapshot,
+  offerId: string,
+  now = Date.now()
+) {
+  const points = marketSeries(snapshot, offerId, now - 7 * 86400_000, now);
+  const stats = marketStats(points);
+  return {
+    stats,
+    firstAt: points[0]?.time,
+    lastAt: points.at(-1)?.time,
+    state: !stats
+      ? ("empty" as const)
+      : stats.count < 2
+        ? ("collecting" as const)
+        : Math.abs(stats.high - stats.low) < 0.000001
+          ? ("unchanged" as const)
+          : ("changed" as const),
+  };
+}

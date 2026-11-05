@@ -3,6 +3,7 @@
   Lightweight modal triggered from the OffersTable row action.
 */
 
+import { Modal } from "./Modal";
 import { useState, useEffect, useRef } from "react";
 import { Bell, BellOff, X, Check } from "lucide-react";
 import type { PriceAlert } from "../hooks/usePriceAlerts";
@@ -37,11 +38,7 @@ export function PriceAlertModal({
     inputRef.current?.select();
   }, []);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
+
 
   const parsed = parseFloat(value);
   const isValid = !isNaN(parsed) && parsed > 0;
@@ -59,10 +56,7 @@ export function PriceAlertModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[oklch(0.12_0.02_255_/_0.5)] backdrop-blur-sm animate-fade-in"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <Modal titleId="price-alert-title" onClose={onClose}>
       <div
         className="relative w-full max-w-sm bg-[var(--paper)] border border-border rounded-2xl shadow-[0_16px_60px_oklch(0.12_0.02_255_/_0.3)] animate-fade-up"
         onClick={e => e.stopPropagation()}
@@ -74,7 +68,7 @@ export function PriceAlertModal({
               <Bell className="w-4 h-4 text-[oklch(0.62_0.18_25)]" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-foreground">Price Alert</div>
+              <div id="price-alert-title" className="text-sm font-semibold text-foreground">Price Alert</div>
               <div className="font-data text-[10px] text-muted-foreground">{gpuModelName}</div>
             </div>
           </div>
@@ -163,6 +157,6 @@ export function PriceAlertModal({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

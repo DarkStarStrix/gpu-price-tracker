@@ -1,412 +1,159 @@
-/*
-  ComparisonDrawer — GPU side-by-side comparison panel
-  Triggered from OffersTable when 2-3 GPUs are selected.
-  Shows: spec table, price bars, radar chart (VRAM, price, availability).
-*/
-
-import { useEffect, useRef } from "react";
-import {
-  X,
-  Zap,
-  Cpu,
-  MemoryStick,
-  DollarSign,
-  ExternalLink,
-} from "lucide-react";
-import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { X, ExternalLink } from "lucide-react";
 import type { GpuOffer } from "@shared/catalog";
-
-// ─── Provider metadata ────────────────────────────────────────────────────────
-
-const PROVIDER_COLORS: Record<string, string> = {
-  lambda: "oklch(0.62 0.19 218)",
-  runpod: "oklch(0.60 0.18 155)",
-  coreweave: "oklch(0.65 0.18 270)",
-  tensordock: "oklch(0.68 0.18 35)",
-  fluidstack: "oklch(0.65 0.18 300)",
-  paperspace: "oklch(0.62 0.15 195)",
-};
-
-// ─── Radar data builder ───────────────────────────────────────────────────────
-
-function buildRadarData(offers: GpuOffer[]) {
-  if (offers.length === 0) return [];
-
-  const maxVram = Math.max(...offers.map(o => o.vramPerGpuGb ?? 0));
-  const maxPrice = Math.max(...offers.map(o => o.pricePerGpuHr));
-  const maxVcpus = Math.max(...offers.map(o => o.vcpus || 1));
-  const maxRam = Math.max(...offers.map(o => o.ramGb || 1));
-
-  const axes = ["VRAM", "Price Value", "vCPUs", "RAM", "Availability"].filter(
-    axis =>
-      axis === "VRAM"
-        ? offers.every(o => o.vramPerGpuGb !== null)
-        : axis === "vCPUs"
-          ? offers.every(o => o.vcpus !== null)
-          : axis === "RAM"
-            ? offers.every(o => o.ramGb !== null)
-            : axis === "Availability"
-              ? offers.every(o => o.availability !== "unknown")
-              : true
-  );
-
-  return axes.map(axis => {
-    const entry: Record<string, number | string> = { axis };
-    offers.forEach(o => {
-      const key = o.offerId;
-
-      const avail =
-        o.availability === "available"
-          ? 1
-          : o.availability === "limited"
-            ? 0.5
-            : 0;
-
-      switch (axis) {
-        case "VRAM":
-          entry[key] = Math.round(
-            ((o.vramPerGpuGb ?? 0) / (maxVram || 1)) * 100
-          );
-          break;
-        case "Price Value":
-          // Inverted: lower price = higher score
-          entry[key] = Math.round(
-            ((maxPrice - o.pricePerGpuHr) / maxPrice) * 100
-          );
-          break;
-        case "vCPUs":
-          entry[key] = Math.round(((o.vcpus || 0) / maxVcpus) * 100);
-          break;
-        case "RAM":
-          entry[key] = Math.round(((o.ramGb || 0) / maxRam) * 100);
-          break;
-        case "Availability":
-          entry[key] = Math.round(avail * 100);
-          break;
-      }
-    });
-    return entry;
-  });
-}
-
-// ─── Custom Radar Tooltip ─────────────────────────────────────────────────────
-
-function RadarTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="glass-card border border-border rounded-lg px-3 py-2 text-xs shadow-lg">
-      <div className="font-medium text-foreground mb-1">{label}</div>
-      {payload.map((p: any) => (
-        <div key={p.name} className="flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ background: p.color }}
-          />
-          <span className="text-muted-foreground truncate max-w-[120px]">
-            {p.name}
-          </span>
-          <span className="font-data text-foreground ml-auto">{p.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Spec Row ─────────────────────────────────────────────────────────────────
-
-function SpecRow({
-  label,
-  values,
-  format,
+import { billingLabel, cloudLabel } from "@shared/offer-view";
+import { AvailabilityBadge } from "./AvailabilityBadge";
+import { Modal } from "./Modal";
+export function ComparisonDrawer({
+  offers,
+  onClose,
 }: {
-  label: string;
-  values: (string | number)[];
-  format?: (v: string | number) => string;
-}) {
-  const fmt = format ?? String;
-  return (
-    <tr className="border-b border-border/50 last:border-0">
-      <td className="py-2 pr-4 text-xs text-muted-foreground whitespace-nowrap font-medium">
-        {label}
-      </td>
-      {values.map((v, i) => (
-        <td
-          key={i}
-          className="py-2 px-3 text-xs font-data text-foreground text-center"
-        >
-          {fmt(v)}
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-interface Props {
   offers: GpuOffer[];
   onClose: () => void;
-}
-
-export function ComparisonDrawer({ offers, onClose }: Props) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  // Close on backdrop click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (e.target === overlayRef.current) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  if (offers.length === 0) return null;
-
-  const radarData = buildRadarData(offers);
-  const maxPrice = Math.max(...offers.map(o => o.pricePerGpuHr));
-
+}) {
+  if (offers.length < 2) return null;
+  const mixed =
+    new Set(offers.map(o => `${o.gpuModelId}:${o.billingModel ?? "on-demand"}`))
+      .size > 1;
+  const rows: [string, (o: GpuOffer) => string][] = [
+    ["USD / GPU-hour", o => `$${o.pricePerGpuHr.toFixed(3)}`],
+    ["Billing", billingLabel],
+    ["Cloud tier", cloudLabel],
+    [
+      "Node configuration",
+      o =>
+        o.configurationKnown === false
+          ? "Per-GPU rate; node size not specified"
+          : `${o.gpuCount} GPU${o.gpuCount > 1 ? "s" : ""}`,
+    ],
+    [
+      "USD / node-hour",
+      o =>
+        o.configurationKnown === false
+          ? "Not specified"
+          : `$${o.totalNodePriceHr.toFixed(3)}`,
+    ],
+    [
+      "VRAM / GPU",
+      o => (o.vramPerGpuGb === null ? "Not reported" : `${o.vramPerGpuGb} GB`),
+    ],
+    ["vCPUs", o => (o.vcpus === null ? "Not reported" : String(o.vcpus))],
+    ["System RAM", o => (o.ramGb === null ? "Not reported" : `${o.ramGb} GB`)],
+    ["Region", o => o.region],
+    ["Observed", o => new Date(o.observedAt).toLocaleString()],
+  ];
   return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-[100] bg-[oklch(0.12_0.02_255_/_0.55)] backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 animate-fade-in"
-    >
-      <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-2xl bg-[var(--paper)] border border-border shadow-[0_24px_80px_oklch(0.12_0.02_255_/_0.35)] animate-fade-up"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-[var(--paper)/95%] backdrop-blur-sm">
-          <div>
-            <div className="mono-label text-[oklch(0.62_0.19_218)] mb-0.5">
-              Side-by-Side Analysis
-            </div>
-            <h2 className="text-lg font-bold text-foreground">
-              GPU Comparison
-              <span className="ml-2 font-data text-sm text-muted-foreground font-normal">
-                {offers.length} selected
-              </span>
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-all duration-150"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <Modal titleId="comparison-title" onClose={onClose} wide>
+      <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
+        <div>
+          <p className="text-[10px] font-data text-muted-foreground uppercase tracking-widest">
+            Recorded offer comparison
+          </p>
+          <h2 id="comparison-title" className="text-xl font-semibold">
+            Compare {offers.length} listings
+          </h2>
         </div>
-
-        <div className="p-6 space-y-8">
-          {/* ── Price bars ──────────────────────────────────────────────────── */}
-          <div>
-            <div className="mono-label text-muted-foreground mb-3">
-              Price per GPU / hr
-            </div>
-            <div className="space-y-3">
-              {offers.map(o => {
-                const color =
-                  PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
-                const pct = (o.pricePerGpuHr / maxPrice) * 100;
-                return (
-                  <div key={o.offerId} className="flex items-center gap-3">
-                    <div className="w-36 text-xs text-muted-foreground truncate">
-                      <span className="font-medium text-foreground">
-                        {o.providerName}
-                      </span>
-                      <br />
-                      <span className="font-data text-[10px]">
-                        {o.gpuModelName} · {o.cloudType}
-                      </span>
-                    </div>
-                    <div className="flex-1 h-6 bg-[oklch(0.93_0.006_85)] rounded-md overflow-hidden">
-                      <div
-                        className="h-full rounded-md flex items-center px-2 transition-all duration-700"
-                        style={{
-                          width: `${pct}%`,
-                          background: color,
-                          minWidth: "2rem",
-                        }}
-                      >
-                        <span className="font-data text-[10px] text-white font-semibold whitespace-nowrap">
-                          ${o.pricePerGpuHr.toFixed(2)}/hr
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Radar chart ─────────────────────────────────────────────────── */}
-          <div>
-            <div className="mono-label text-muted-foreground mb-3">
-              Multi-Dimensional Analysis
-            </div>
-            <div className="h-64 w-full">
-              {radarData.length < 3 ? (
-                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                  Not enough provider-reported specifications for this chart.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart
-                    data={radarData}
-                    margin={{ top: 8, right: 32, bottom: 8, left: 32 }}
-                  >
-                    <PolarGrid
-                      stroke="oklch(0.85 0.008 85)"
-                      strokeDasharray="3 3"
-                    />
-                    <PolarAngleAxis
-                      dataKey="axis"
-                      tick={{
-                        fontSize: 10,
-                        fill: "oklch(0.55 0.01 85)",
-                        fontFamily: "IBM Plex Mono, monospace",
-                      }}
-                    />
-                    <Tooltip content={<RadarTooltip />} />
-                    {offers.map(o => {
-                      const color =
-                        PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
-                      const key = o.offerId;
-                      return (
-                        <Radar
-                          key={o.offerId}
-                          name={`${o.providerName} ${o.gpuModelName} · ${o.cloudType}`}
-                          dataKey={key}
-                          stroke={color}
-                          fill={color}
-                          fillOpacity={0.12}
-                          strokeWidth={2}
-                          dot={{ r: 3, fill: color }}
-                        />
-                      );
-                    })}
-                  </RadarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 justify-center mt-2">
-              {offers.map(o => {
-                const color =
-                  PROVIDER_COLORS[o.providerId] ?? "oklch(0.62 0.19 218)";
-                return (
-                  <div key={o.offerId} className="flex items-center gap-1.5">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ background: color }}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {o.providerName}{" "}
-                      <span className="font-data">{o.gpuModelName}</span>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Spec table ──────────────────────────────────────────────────── */}
-          <div>
-            <div className="mono-label text-muted-foreground mb-3">
-              Specifications
-            </div>
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-[oklch(0.96_0.004_85)]">
-                    <th className="py-2 px-4 text-left text-xs text-muted-foreground font-medium w-32">
-                      Spec
-                    </th>
-                    {offers.map(o => (
-                      <th
-                        key={o.offerId}
-                        className="py-2 px-3 text-center text-xs font-medium text-foreground"
-                      >
-                        <div>
-                          {o.providerName} · {o.cloudType}
-                        </div>
-                        <div className="font-data text-[10px] text-muted-foreground font-normal">
-                          {o.gpuModelName}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <SpecRow
-                    label="Price/GPU/hr"
-                    values={offers.map(o => o.pricePerGpuHr)}
-                    format={v => `$${Number(v).toFixed(2)}`}
-                  />
-                  <SpecRow
-                    label="VRAM"
-                    values={offers.map(o => o.vramPerGpuGb ?? "—")}
-                    format={v => `${v} GB`}
-                  />
-                  <SpecRow
-                    label="vCPUs"
-                    values={offers.map(o => o.vcpus || "—")}
-                  />
-                  <SpecRow
-                    label="RAM"
-                    values={offers.map(o => (o.ramGb ? `${o.ramGb} GB` : "—"))}
-                  />
-                  <SpecRow label="Region" values={offers.map(o => o.region)} />
-                  <SpecRow
-                    label="Cloud Type"
-                    values={offers.map(o => o.cloudType ?? "on-demand")}
-                  />
-                  <SpecRow
-                    label="Availability"
-                    values={offers.map(o => o.availability)}
-                  />
-
-                  <SpecRow
-                    label="Data Source"
-                    values={offers.map(o => o.dataSource)}
-                  />
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ── Provider links ───────────────────────────────────────────────── */}
-          <div className="flex flex-wrap gap-3">
-            {offers.map(o => (
-              <a
-                key={o.offerId}
-                href={o.providerLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-xs font-medium border border-border rounded-lg text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
-              >
-                <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                View on {o.providerName}
-              </a>
-            ))}
-          </div>
-        </div>
+        <button
+          aria-label="Close comparison"
+          onClick={onClose}
+          className="p-2 rounded hover:bg-muted"
+        >
+          <X size={18} />
+        </button>
       </div>
-    </div>
+      <div className="p-5">
+        {mixed && (
+          <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded text-xs">
+            Different GPU models or billing types are selected. Their prices are
+            not like-for-like.
+          </p>
+        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left p-3 text-muted-foreground">
+                  Evidence
+                </th>
+                {offers.map(o => (
+                  <th key={o.offerId} className="p-3 text-left min-w-44">
+                    <p className="text-base">{o.providerName}</p>
+                    <p className="font-normal mt-1">{o.gpuModelName}</p>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([label, get]) => (
+                <tr key={label} className="border-t border-border">
+                  <th className="text-left p-3 font-medium text-muted-foreground">
+                    {label}
+                  </th>
+                  {offers.map(o => (
+                    <td key={o.offerId} className="p-3 font-data">
+                      {get(o)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr className="border-t border-border">
+                <th className="p-3 text-left font-medium text-muted-foreground">
+                  Stock evidence
+                </th>
+                {offers.map(o => (
+                  <td key={o.offerId} className="p-3">
+                    <AvailabilityBadge
+                      state={o.availability}
+                      providerLink={o.providerLink}
+                    />
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-t border-border">
+                <th className="p-3 text-left font-medium text-muted-foreground">
+                  Source
+                </th>
+                {offers.map(o => (
+                  <td key={o.offerId} className="p-3">
+                    <a
+                      className="text-teal underline"
+                      href={o.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {o.dataSource === "pricing_page"
+                        ? "Published pricing"
+                        : "Provider API"}{" "}
+                      ↗
+                    </a>
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-t border-border">
+                <th className="p-3 text-left font-medium text-muted-foreground">
+                  Open listing
+                </th>
+                {offers.map(o => (
+                  <td key={o.offerId} className="p-3">
+                    <a
+                      href={o.providerLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex gap-1 items-center border border-border rounded p-2 text-teal"
+                    >
+                      Open provider <ExternalLink size={12} />
+                    </a>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-muted-foreground mt-4">
+          Missing specifications stay “Not reported”. A published price does not
+          establish rentable stock. No composite availability or performance
+          score is inferred.
+        </p>
+      </div>
+    </Modal>
   );
 }

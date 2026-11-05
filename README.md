@@ -193,3 +193,21 @@ observations prices are unknown. Provider hourly-last samples are labeled.
 Offers keep all availability states visible by default. Limited stock is not
 sold out. Explicit Open provider and Alert actions stay in a sticky action column;
 Compare remains visible and requires 2–3 selections with accessible checkboxes.
+
+## Stock evidence and comparison
+
+“Check stock” means the source supplies a price but no current capacity report;
+it opens the provider directly. It does not mean sold out. Known available,
+limited and unavailable reports keep their status. The page reports stock coverage
+separately from price coverage. Internal JSON/CSV retains the original unknown
+state for reproducible analysis.
+
+The offer history cell shows a latest recorded price, sample count and observed
+interval, with separate first/unchanged/changed states. View history opens that
+exact listing's market chart. Comparison and alert dialogs are portaled outside
+animated page containers and support keyboard navigation, Escape, body-scroll
+locking and focus restoration. Comparison uses factual values and flags differing
+GPU models/billing rather than generating a synthetic quality score.
+
+The active provider view omits Prime, Lambda, TensorDock and Fluidstack as requested;
+their optional adapters/profiles remain dormant, without fabricated observations.

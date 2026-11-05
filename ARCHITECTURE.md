@@ -212,3 +212,56 @@ sorted by actual time and bounded by selected range. Sampled high/low are not
 intraperiod market extrema; no OHLC or trading volume is inferred. Removed listing
 history remains selectable while retained. The backend retention and collection
 cadence are unchanged. Offer availability never disables source/provider links.
+
+## Evidence and interaction audit — November 5
+
+1. **Objective and constraints.** Make stock and history useful, repair the visible
+   comparison failure, and preserve the original dashboard, actual observations,
+   free Pages/Actions deployment, source timestamps and price units. The user
+   subsequently excluded Prime, Lambda, TensorDock and Fluidstack from active
+   coverage; no credentials are requested or provisioned.
+2. **Current-system model.** Adapters own price/stock extraction; collector owns
+   per-provider replacement and rolling history; the subscribed catalog owns page
+   updates; offer presentation owns epistemic labels; dialogs own viewport focus.
+3. **Evidence and bottlenecks.** Most sources provide prices without stock. RunPod
+   missing/null stock stays unknown internally. Flat sparklines hide both actual
+   sample counts and unchanged rates. A live browser reproduction showed Compare
+   dimming only the Offers section while its content was offscreen: `.animate-fade-up`
+   retains a CSS transform, containing fixed descendants. Earlier AX-only checking
+   found the drawer content but failed to establish visible behavior.
+4. **Hypotheses.** Ranked comparison causes were transformed ancestors, selection
+   loss at refresh, and minimum-selection blocking. The browser screenshot plus
+   CSS containment evidence confirmed the first; selected IDs and drawer contents
+   remained present. A flat line was confirmed as unchanged observations, not a
+   missing backend sample. Repo Actions secrets list is empty. Lambda advertises
+   future Nov 16 rates; TensorDock hostnodes returned 401; Prime returned 403;
+   Fluidstack's current public site supplies no qualified price/stock catalog.
+5. **Alternatives.** Recoloring unknown stock green fails truthfulness. Hiding all
+   such listings destroys useful rate coverage. An always-on scraping/backend
+   rewrite cannot establish stock the provider does not expose. Choose explicit
+   provider stock-check actions, numeric history summaries, and body-level dialogs.
+6. **Components and contracts.** Availability remains available/limited/unavailable/
+   unknown in persisted JSON; unknown renders as a `Check stock` link, with a reason,
+   or `Stock not reported` where no URL exists. Known stock retains its provider
+   report. Current stock coverage is reported separately from price coverage.
+   History summaries retain offer identity, actual sample count, latest price,
+   interval and net change. Missing/one-sample/flat histories have distinct states.
+   View history opens the selected listing's chart, including its billing type.
+7. **Runtime dynamics.** Shared Modal portals into document.body, outside page
+   transforms. It traps Tab focus, handles Escape/backdrop, locks body scroll and
+   restores previous focus/scroll. Comparison shows raw values, billing, configuration,
+   source, timestamp and stock evidence; no synthetic availability/quality radar.
+8. **Failure behavior.** No provider report is promoted into verified stock. Failed
+   source freshness still forces a stock check. Missing specs are Not reported.
+   Different GPU models or billing types prompt a comparability notice. Providers
+   without a successful observation are omitted from active profiles; optional
+   unconfigured adapters and past evidence are retained rather than deleted.
+9. **Verification gates.** DOM integration mounts under a transformed ancestor and
+   asserts the real dialog is under body, focus trapping, close and scroll restoration.
+   History tests cover missing/first/unchanged/changing data. Browser acceptance
+   requires a fully visible comparison at multiple scroll positions, usable close/
+   Escape, working exact-listing history navigation and provider stock links.
+10. **Migration and execution.** No persisted-schema or ingestion changes. Apply
+    shared modal and evidence presentation first, run regression/type/build gates,
+    verify the production preview and public deployment, and preserve a before/after
+    screenshot. Rollback is a source revision; never erase collected observations.

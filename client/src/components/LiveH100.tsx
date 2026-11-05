@@ -47,7 +47,7 @@ export function LiveH100() {
             Lowest current observed quote · {offer.providerName}
           </p>
           <div className="flex flex-wrap gap-2 mt-2 items-center">
-            <AvailabilityBadge state={offer.availability} />
+            <AvailabilityBadge providerLink={offer.providerLink} state={offer.availability} />
             <span className="text-[10px] text-muted-foreground">
               {billingLabel(offer)} · {cloudLabel(offer)}
             </span>

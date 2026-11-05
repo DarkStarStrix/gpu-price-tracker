@@ -32,3 +32,11 @@ export function filterPool(
           f.availability)
   );
 }
+
+export function reconcileSelection(
+  ids: string[],
+  offers: Pick<GpuOffer, "offerId">[]
+) {
+  const current = new Set(offers.map(o => o.offerId));
+  return [...new Set(ids)].filter(id => current.has(id)).slice(0, 3);
+}

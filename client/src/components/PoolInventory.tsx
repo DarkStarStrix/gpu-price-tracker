@@ -48,7 +48,7 @@ export function PoolInventory({ provider }: { provider: string }) {
         ["available", "Available · green"],
         ["limited", "Limited · amber"],
         ["unavailable", "Unavailable · red"],
-        ["unknown", "Unknown / stale · gray"],
+        ["unknown", "Check provider / stale"],
       ],
     ],
     [
@@ -88,7 +88,7 @@ export function PoolInventory({ provider }: { provider: string }) {
       <p className="text-xs text-muted-foreground mb-4">
         These filters apply to current listings. The timeline below shows the
         whole selected provider. Green means reported available; amber is
-        limited, red unavailable, gray unverified or stale.
+        limited, red unavailable, stock-check links mean no current stock report.
       </p>
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
         {visible.map(o => (
@@ -100,7 +100,7 @@ export function PoolInventory({ provider }: { provider: string }) {
               <strong className="text-xs truncate" title={o.gpuModelName}>
                 {o.gpuModelName}
               </strong>
-              <AvailabilityBadge
+              <AvailabilityBadge providerLink={o.providerLink}
                 state={isCurrent(catalog, o) ? o.availability : "unknown"}
               />
             </div>

@@ -4,12 +4,12 @@
 */
 
 import { useState, useMemo } from "react";
-import { catalog, sparklines } from "@/lib/catalog";
-import { billingLabel, cloudLabel } from "@shared/offer-view";
+import { catalog } from "@/lib/catalog";
+import { billingLabel, cloudLabel, reconcileSelection } from "@shared/offer-view";
 import { isCurrent } from "@shared/catalog";
 
 import { formatPrice } from "@/lib/data";
-import { Sparkline } from "./Sparkline";
+import { priceHistorySummary } from "@shared/market";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { ComparisonDrawer } from "./ComparisonDrawer";
@@ -38,10 +38,10 @@ interface Filters {
   maxPrice: number | null;
 }
 
-export function OffersTable() {
+export function OffersTable({onViewHistory}:{onViewHistory?:(id:string)=>void}) {
   const offers = catalog.offers;
   const isLoading = false;
-  const sparklineMap = sparklines();
+
 
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -51,7 +51,8 @@ export function OffersTable() {
   const [showFilters, setShowFilters] = useState(true);
 
   // Comparison state
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [storedSelectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedIds = reconcileSelection(storedSelectedIds, offers);
   const [showComparison, setShowComparison] = useState(false);
 
   // Price alert state
@@ -65,9 +66,10 @@ export function OffersTable() {
 
   const toggleSelect = (offerId: string) => {
     setSelectedIds(prev => {
-      if (prev.includes(offerId)) return prev.filter(id => id !== offerId);
-      if (prev.length >= 3) return prev; // max 3
-      return [...prev, offerId];
+      const current = reconcileSelection(prev, offers);
+      if (current.includes(offerId)) return current.filter(id => id !== offerId);
+      if (current.length >= 3) return current; // max 3
+      return [...current, offerId];
     });
   };
 
@@ -243,6 +245,7 @@ export function OffersTable() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground mb-3">Stock reported for {offers.filter(o=>isCurrent(catalog,o)&&o.availability!=="unknown").length} of {offers.length} listings. The other listings still have recorded prices; use Check stock to verify capacity with the provider.</p>
       {/* Selection hint */}
       {selectedIds.length === 0 && !isLoading && offers.length > 0 && (
         <p className="mono-label text-muted-foreground mb-3">
@@ -250,7 +253,7 @@ export function OffersTable() {
         </p>
       )}
 
-      <p className="text-xs text-muted-foreground mb-3">Availability: green = available · amber = limited · red = unavailable · gray = unknown or stale. Limited means low reported stock, not sold out. Every listing keeps an Open provider link so you can check current capacity. Billing and cloud tier are separate attributes.</p>
+      <p className="text-xs text-muted-foreground mb-3">Availability: green = available · amber = limited · red = unavailable · stock checks = no current provider report. Limited means low reported stock, not sold out. Every listing keeps an Open provider link so you can check current capacity. Billing and cloud tier are separate attributes.</p>
       {/* Filter bar */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-2.5 mb-5 p-4 bg-card border border-border rounded-xl animate-scale-in">
@@ -279,7 +282,7 @@ export function OffersTable() {
             <option value="available">Available</option>
             <option value="limited">Limited</option>
             <option value="unavailable">Unavailable</option>
-            <option value="unknown">Unknown</option>
+            <option value="unknown">Needs provider check</option>
           </select>
           <select aria-label="Offer billing" value={filters.billing} onChange={e=>setFilters(f=>({...f,billing:e.target.value}))} className="p-2 text-sm bg-background border border-border rounded-lg"><option value="">All billing</option><option value="on-demand">On-demand</option><option value="spot">Spot · interruptible</option></select>
           <select aria-label="Offer cloud tier" value={filters.cloud} onChange={e=>setFilters(f=>({...f,cloud:e.target.value}))} className="p-2 text-sm bg-background border border-border rounded-lg"><option value="">All cloud tiers</option><option value="secure">Secure Cloud</option><option value="community">Community Cloud</option></select>
@@ -312,11 +315,11 @@ export function OffersTable() {
               <SortHeader label="GPU" sortKey="gpu" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="VRAM" sortKey="vram" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
               <SortHeader label="Provider" sortKey="provider" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden lg:table-cell">Config</th>
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Region</th>
+              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden 2xl:table-cell">Config</th>
+              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden 2xl:table-cell">Region</th>
               <SortHeader label="$/GPU/hr" sortKey="price" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="text-right" />
-              <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">7d</th>
-              <SortHeader label="Avail." sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">Recorded price history</th>
+              <SortHeader label="Stock / check" sortKey="availability" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
               <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">Observed</th>
               <th className="px-4 py-3 text-right mono-label sticky right-0 bg-card border-l border-border">Actions</th>
             </tr>
@@ -342,7 +345,7 @@ export function OffersTable() {
                 isAlertTriggered={isCurrent(catalog, offer) && isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)}
                 onSetAlert={() => setAlertTarget(offer)}
                 hasAlert={!!getAlert(offer.gpuModelId)}
-                dbSparkline={sparklineMap[offer.offerId]}
+                onViewHistory={() => onViewHistory?.(offer.offerId)}
               />
             ))}
             {!isLoading && filteredOffers.length === 0 && (
@@ -413,7 +416,7 @@ function SortHeader({
 }
 
 function OfferRow({
-  offer, isEven, rank, isSelected, onToggleSelect, isAlertTriggered, onSetAlert, hasAlert, dbSparkline,
+  offer, isEven, rank, isSelected, onToggleSelect, isAlertTriggered, onSetAlert, hasAlert, onViewHistory,
 }: {
   offer: GpuOffer;
   isEven: boolean;
@@ -423,11 +426,11 @@ function OfferRow({
   isAlertTriggered: boolean;
   onSetAlert: () => void;
   hasAlert: boolean;
-  dbSparkline?: number[];
+  onViewHistory: () => void;
 }) {
   const isTopOffer = rank < 3;
 
-  const sparkData = dbSparkline ?? [];
+  const history = priceHistorySummary(catalog, offer.offerId);
 
   // Coral glow styles when alert is triggered
   const alertGlowClass = isAlertTriggered
@@ -487,14 +490,14 @@ function OfferRow({
       </td>
 
       {/* Config */}
-      <td className="px-4 py-3 hidden lg:table-cell">
+      <td className="px-4 py-3 hidden 2xl:table-cell">
         <span className="font-data text-xs text-muted-foreground">
           {offer.configurationKnown === false ? "Per-GPU rate · node size unspecified" : `${offer.gpuCount}× GPU · ${offer.vcpus ?? "—"} vCPU · ${offer.ramGb ?? "—"}GB`}
         </span>
       </td>
 
       {/* Region */}
-      <td className="px-4 py-3 font-data text-xs text-muted-foreground hidden md:table-cell">
+      <td className="px-4 py-3 font-data text-xs text-muted-foreground hidden 2xl:table-cell">
         {offer.region}
       </td>
 
@@ -512,14 +515,17 @@ function OfferRow({
         )}
       </td>
 
-      {/* Sparkline */}
-      <td className="px-4 py-3 text-center hidden lg:table-cell">
-        {sparkData.length >= 2 ? <Sparkline data={sparkData} width={68} height={20} /> : <span title="History starts with collected observations">—</span>}
+      {/* Actual history summary; a flat line alone conveys no evidence. */}
+      <td className="px-4 py-3 hidden lg:table-cell min-w-36" onClick={e=>e.stopPropagation()}>
+        <div className="text-xs font-medium">{history.state === "empty" ? "No history yet" : history.state === "collecting" ? "First observation" : history.state === "unchanged" ? "Unchanged" : `${history.stats!.change >= 0 ? "+" : ""}${history.stats!.percent.toFixed(2)}% since first sample`}</div>
+        {history.stats && <div className="text-[10px] text-muted-foreground mt-1">${history.stats.last.toFixed(3)} · {history.stats.count} sample{history.stats.count===1?"":"s"}</div>}
+        {history.firstAt && <div className="text-[10px] text-muted-foreground" title={`${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`}>{new Date(history.firstAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} – {new Date(history.lastAt!).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</div>}
+        <button onClick={onViewHistory} className="text-[11px] text-teal underline mt-1">View history →</button>
       </td>
 
       {/* Availability */}
       <td className="px-4 py-3">
-        <AvailabilityBadge state={!isCurrent(catalog, offer) ? "unknown" : offer.availability} />
+        <AvailabilityBadge providerLink={offer.providerLink} state={!isCurrent(catalog, offer) ? "unknown" : offer.availability} />
       </td>
 
       {/* Observation freshness */}

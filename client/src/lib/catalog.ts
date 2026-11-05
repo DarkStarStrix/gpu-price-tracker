@@ -53,15 +53,6 @@ export function loadCatalog(): Promise<void> {
   });
   return pending;
 }
-export function sparklines(): Record<string, number[]> {
-  const grouped: Record<string, number[]> = {};
-  for (const point of [...catalog.history].sort((a, b) =>
-    a.observedAt.localeCompare(b.observedAt)
-  )) {
-    (grouped[point.offerId] ??= []).push(point.pricePerGpuHr);
-  }
-  return grouped;
-}
 export function eligibleOffers() {
   return catalog.offers.filter(o => isCurrent(catalog, o));
 }

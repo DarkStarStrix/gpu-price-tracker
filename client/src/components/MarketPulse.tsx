@@ -45,7 +45,7 @@ export function MarketPulse() {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
       <MetricCard
         icon={<Activity className="w-4 h-4" />}
-        label="Active Offers"
+        label="Reported capacity"
         value={metrics.availableOffers}
         suffix=""
         subtext={`of ${metrics.totalOffers} tracked`}

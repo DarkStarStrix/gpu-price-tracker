@@ -9,6 +9,7 @@ import { availabilityLabel } from "@/lib/data";
 interface AvailabilityBadgeProps {
   state: AvailabilityState;
   className?: string;
+  providerLink?: string;
 }
 
 const stateStyles: Record<
@@ -52,16 +53,33 @@ const stateStyles: Record<
 export function AvailabilityBadge({
   state,
   className = "",
+  providerLink,
 }: AvailabilityBadgeProps) {
+  if (state === "unknown")
+    return providerLink ? (
+      <a
+        href={providerLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        title="This source reports prices but has no current stock report. Check availability with the provider."
+        className={`inline-flex items-center gap-1 text-xs font-medium text-teal underline underline-offset-2 whitespace-nowrap ${className}`}
+      >
+        Check stock ↗
+      </a>
+    ) : (
+      <span
+        className={`text-xs text-muted-foreground ${className}`}
+        title="No current stock report supplied by this source"
+      >
+        Stock not reported
+      </span>
+    );
   const s = stateStyles[state];
 
   return (
     <span
-      title={
-        state === "unknown"
-          ? "No current verified capacity report"
-          : `Provider reports ${availabilityLabel(state).toLowerCase()} capacity; checked at the offer timestamp`
-      }
+      title={`Provider reports ${availabilityLabel(state).toLowerCase()} capacity; checked at the offer timestamp`}
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-data text-[10px] tracking-wide font-medium ${s.container} ${s.text} ${className}`}
     >
       <span className={`relative w-2 h-2 rounded-full ${s.dot} flex-shrink-0`}>

@@ -32,6 +32,7 @@ const TABS: { id: Tab; label: string; desc: string }[] = [
 ];
 
 export default function Home() {
+  const [historyOfferId, setHistoryOfferId] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [scrolled, setScrolled] = useState(false);
   const offers = catalog.offers;
@@ -284,13 +285,13 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-foreground">Price Trends</h2>
               <div className="flex-1 section-rule" />
             </div>
-            <PriceTrends />
+            <PriceTrends initialOfferId={historyOfferId} />
           </div>
         )}
 
         {activeTab === "offers" && (
           <div className="animate-fade-up">
-            <OffersTable />
+            <OffersTable onViewHistory={id => {setHistoryOfferId(id);setActiveTab("trends");}} />
           </div>
         )}
 
@@ -320,7 +321,7 @@ export default function Home() {
         {activeTab === "trends" && (
           <div className="animate-fade-up">
             <div className="flex items-baseline justify-between mb-5"><h2 className="text-2xl font-bold">Market history</h2><span className="text-xs text-muted-foreground">Recorded prices · rolling seven-day history</span></div>
-            <PriceTrends />
+            <PriceTrends initialOfferId={historyOfferId} />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <strong className="text-foreground font-medium">Note:</strong> Collector history grows with each successful refresh. Nebius also supplies labeled hourly spot-price history. Replay contains no synthetic prices.

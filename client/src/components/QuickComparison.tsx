@@ -111,7 +111,7 @@ function ComparisonCard({
 
               </div>
               <div className="flex items-center gap-2.5">
-                <AvailabilityBadge state={p.availability} />
+                <AvailabilityBadge providerLink={p.link} state={p.availability} />
                 <span className={`font-data text-sm font-semibold w-14 text-right ${
                   isLowest ? "text-foreground" : "text-foreground/70"
                 }`}>

@@ -23,10 +23,19 @@ const date = (t: number) =>
     hour: "2-digit",
     minute: "2-digit",
   });
-export function PriceMarket() {
-  const [gpu, setGpu] = useState("h100-sxm"),
-    [billing, setBilling] = useState("on-demand"),
-    [selected, setSelected] = useState(""),
+export function PriceMarket({
+  initialOfferId = "",
+}: {
+  initialOfferId?: string;
+}) {
+  const initial =
+    catalog.offers.find(o => o.offerId === initialOfferId) ??
+    catalog.history.find(o => o.offerId === initialOfferId);
+  const [gpu, setGpu] = useState(initial?.gpuModelId ?? "h100-sxm"),
+    [billing, setBilling] = useState<string>(
+      initial?.billingModel ?? "on-demand"
+    ),
+    [selected, setSelected] = useState(initialOfferId),
     [hours, setHours] = useState(168),
     [hover, setHover] = useState<{ time: number; price: number } | null>(null);
   const models = [
@@ -186,6 +195,7 @@ export function PriceMarket() {
       {offer && !historicalChoice && (
         <div className="flex flex-wrap items-center gap-3 mb-4 text-xs">
           <AvailabilityBadge
+            providerLink={offer.providerLink}
             state={isCurrent(catalog, offer) ? offer.availability : "unknown"}
           />
           <span className="text-muted-foreground">
