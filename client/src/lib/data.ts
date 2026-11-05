@@ -182,6 +182,11 @@ export function configureCatalog(snapshot: Snapshot) {
 
 // ─── Utility Functions ───────────────────────────────────────────────────────
 
+export function providerLogo(id: string): string {
+  const extensions: Record<string, string> = {prime: "jpg", hyperstack: "webp", vultr: "ico", paperspace: "webp"};
+  return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
+}
+
 export function getProvider(id: string): Provider | undefined {
   return PROVIDERS.find(p => p.id === id);
 }

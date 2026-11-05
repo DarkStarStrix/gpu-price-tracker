@@ -1,0 +1,71 @@
+[
+  {
+    "id": "prime",
+    "source": "https://cdn.prod.website-files.com/66239f0441b09824acb92c75/671b6f6054736f752438334f_Positive.jpg",
+    "file": "prime.jpg",
+    "bytes": 15553
+  },
+  {
+    "id": "hyperstack",
+    "source": "https://www.hyperstack.cloud/hubfs/hyperstack_2025/hyperstack_Fav_Icon.webp",
+    "file": "hyperstack.webp"
+  },
+  {
+    "id": "verda",
+    "source": "https://verda.com/apple-touch-icon.png?v=20251113",
+    "file": "verda.png",
+    "bytes": 11302
+  },
+  {
+    "id": "crusoe",
+    "source": "https://cdn.prod.website-files.com/6855c1aa175582ee23e0aa19/68934b7ef165ad996914d921_Webclip.png",
+    "file": "crusoe.png",
+    "bytes": 10164
+  },
+  {
+    "id": "vultr",
+    "source": "https://docs.vultr.com/favicon.ico",
+    "file": "vultr.ico"
+  },
+  {
+    "id": "nebius",
+    "source": "https://nebius.com/favicon/apple-touch-icon.png",
+    "file": "nebius.png",
+    "bytes": 2212
+  },
+  {
+    "id": "lambda",
+    "source": "https://lambda.com/hubfs/raw_assets/33/public/@projects/Lambda%20Marketing%20Website/lambda-theme/assets/static/img/apple-touch-icon-180x180.png",
+    "file": "lambda.png",
+    "bytes": 687
+  },
+  {
+    "id": "runpod",
+    "source": "https://cdn.prod.website-files.com/69ce570adca53340abab8376/69e08b4ced16e020149fc61d_favicon_www_runpod_io_256x256.png",
+    "file": "runpod.png",
+    "bytes": 4141
+  },
+  {
+    "id": "tensordock",
+    "source": "https://www.tensordock.com/assets/favicon/apple-touch-icon.png",
+    "file": "tensordock.png",
+    "bytes": 3007
+  },
+  {
+    "id": "coreweave",
+    "source": "https://cdn.prod.website-files.com/62ba1fb86485b6d5029975c4/676dd39272d1e888a56c48ad_logo_coreweave_solo_256x256.png",
+    "file": "coreweave.png",
+    "bytes": 4383
+  },
+  {
+    "id": "fluidstack",
+    "source": "https://fluidstack.io/apple-icon.png?apple-icon.0_.103wpqkpxr.png?dpl=dpl_9k1ZYJSgX9eyL6oHu9zWeR4Kpj6U",
+    "file": "fluidstack.png",
+    "bytes": 5222
+  },
+  {
+    "id": "paperspace",
+    "source": "https://cdn.prod.website-files.com/5db99670374d1d829291af4f/66e9b9e0cd2da80a84ae9ba7_DO_Bug_Black_Circle_256_256.webp",
+    "file": "paperspace.webp"
+  }
+]
