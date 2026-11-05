@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import { loadCatalog, catalog } from "./lib/catalog";
+import { loadCatalog } from "./lib/catalog";
 import "./index.css";
 const root = createRoot(document.getElementById("root")!);
 async function start() {
@@ -24,12 +24,16 @@ async function start() {
 }
 void start();
 
-// Re-read the published snapshot without requesting provider APIs from the browser.
-setInterval(async () => {
-  try {
-    await loadCatalog();
-    root.render(<App />);
-  } catch {
-    if (catalog) root.render(<App />);
-  }
-}, 60_000);
+// Keep the mounted dashboard (tabs, filters, replay) while its subscribed data updates.
+function refreshPublishedData() {
+  if (document.visibilityState === "visible")
+    void loadCatalog()
+      .then(() => {
+        // Recover the initial error screen when data becomes available.
+        root.render(<App />);
+      })
+      .catch(() => {});
+}
+setInterval(refreshPublishedData, 60_000);
+window.addEventListener("focus", refreshPublishedData);
+document.addEventListener("visibilitychange", refreshPublishedData);

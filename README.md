@@ -17,8 +17,7 @@ pnpm dev
 
 The committed `client/public/data/latest.json` also lets the dashboard start
 without provider credentials. Every price retains its actual observation time.
-The browser reads this JSON and rechecks it every minute. The Refresh button
-reloads the published snapshot; it does not trigger a provider collection.
+The browser reads this JSON and rechecks it every minute. The Refresh button updates the published snapshot in place, preserving the selected tab and filters; it does not trigger a provider collection. Returning to the browser tab also checks for updates. The status banner shows the last successful browser check separately from the collector snapshot time.
 
 ```sh
 pnpm check

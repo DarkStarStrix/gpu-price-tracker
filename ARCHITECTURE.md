@@ -191,3 +191,5 @@ Additional primary source references:
 - https://api.vultr.com/v2/plans?per_page=500
 - https://docs.nebius.com/signup-billing/spot-prices
 - https://api.nebius.cloud/billing/v1alpha1/spot-price
+
+Browser refresh uses an observable catalog revision so every mounted dashboard reads the validated snapshot after a successful request. Manual, periodic and focus refreshes share one in-flight request. The browser uses a cache-busting query, no-store caching and a 20-second timeout. Schema-invalid, failed or older snapshots retain the last validated data and expose refresh failure. Checks update in place and preserve local tab/filter state; last checked time is distinct from source observation time.

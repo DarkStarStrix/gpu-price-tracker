@@ -12,7 +12,7 @@ import { OffersTable } from "@/components/OffersTable";
 import { ProviderCards } from "@/components/ProviderCards";
 import { PriceTrends } from "@/components/PriceTrends";
 import { Activity, RefreshCw, ChevronRight, ArrowRight, Settings, User, Zap } from "lucide-react";
-import { catalog, snapshotLoadError } from "@/lib/catalog";
+import { catalog, snapshotLoadError, snapshotRefreshing, lastCheckedAt, loadCatalog } from "@/lib/catalog";
 import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 
@@ -106,10 +106,11 @@ export default function Home() {
             <button
               title="Refresh data"
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
-              onClick={() => window.location.reload()}
+              disabled={snapshotRefreshing}
+              onClick={() => { void loadCatalog().catch(() => {}); }}
             >
-              <RefreshCw className="w-3 h-3" />
-              <span className="hidden md:inline">Refresh</span>
+              <RefreshCw className={`w-3 h-3 ${snapshotRefreshing ? "animate-spin" : ""}`} />
+              <span className="hidden md:inline">{snapshotRefreshing ? "Checking…" : "Refresh"}</span>
             </button>
 
             <a href="https://github.com/DarkStarStrix/gpu-price-tracker" className="text-xs text-muted-foreground hover:text-foreground px-2">GitHub</a>
@@ -137,7 +138,8 @@ export default function Home() {
       <div className="container pt-4">
         <div className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card" role="status">
           {snapshotLoadError && "Snapshot refresh failed; showing the last validated data. "}
-          Scheduled every 15 minutes · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
+          {snapshotRefreshing ? "Checking for updates · " : lastCheckedAt ? `Auto-update on · Last checked ${new Date(lastCheckedAt).toLocaleTimeString()} · ` : ""}
+          Collector every 15 minutes · Snapshot {new Date(catalog.generatedAt).toLocaleString()} · {freshOffers.length} fresh offers.
           {catalog.sources.some(s => s.status === "error") && " A provider refresh failed; retained prices are marked below."}
           {offers.some(o => isStale(o.observedAt)) && " Some observations are over 2 hours old."}
           {" "}Published rates do not establish availability. Availability can change between observations. Local alerts only check while this page is open.
