@@ -1,12 +1,14 @@
 import { providerLogo } from "@/lib/data";
 import { useState } from "react";
 import { catalog, snapshotLoadError, snapshotRefreshing } from "@/lib/catalog";
-import { h100Quote, marketSeries, marketStats } from "@shared/market";
+import { displayQuote, marketSeries, marketStats } from "@shared/market";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 export function LiveH100() {
   const [billing, setBilling] = useState("on-demand");
-  const offer = h100Quote(catalog, billing);
+  const quote = displayQuote(catalog, "h100-sxm", billing);
+  const offer = quote?.offer;
+  const retained = quote?.retained ?? false;
   const points = offer
     ? marketSeries(catalog, offer.offerId, Date.now() - 86400000)
     : [];
@@ -19,9 +21,10 @@ export function LiveH100() {
       <div className="flex justify-between items-center gap-2">
         <span className="text-xs font-semibold flex items-center gap-2">
           <span
-            className={`h-2 w-2 rounded-full ${snapshotLoadError ? "bg-amber-500" : "bg-emerald-500"}`}
+            className={`h-2 w-2 rounded-full ${snapshotLoadError || retained ? "bg-amber-500" : "bg-emerald-500"}`}
           />
-          H100 SXM · auto-updating
+          H100 SXM ·{" "}
+          {retained ? "Last observed · refresh overdue" : "auto-updating"}
         </span>
         <select
           aria-label="H100 billing"
@@ -45,7 +48,10 @@ export function LiveH100() {
       {offer ? (
         <>
           <p className="text-xs mt-2">
-            Lowest current observed quote ·{" "}
+            {retained
+              ? "Last observed quote · not current"
+              : "Lowest current observed quote"}{" "}
+            ·{" "}
             <img
               src={providerLogo(offer.providerId)}
               alt=""
@@ -56,14 +62,14 @@ export function LiveH100() {
           <div className="flex flex-wrap gap-2 mt-2 items-center">
             <AvailabilityBadge
               providerLink={offer.providerLink}
-              state={offer.availability}
+              state={retained ? "unknown" : offer.availability}
             />
             <span className="text-[10px] text-muted-foreground">
               {billingLabel(offer)} · {cloudLabel(offer)}
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Observed {new Date(offer.observedAt).toLocaleTimeString()} ·{" "}
+            Observed {new Date(offer.observedAt).toLocaleString()} ·{" "}
             {snapshotRefreshing
               ? "Checking…"
               : "Checks every minute; collection every 15 min"}
@@ -86,8 +92,7 @@ export function LiveH100() {
         </>
       ) : (
         <p className="text-xs text-muted-foreground mt-2">
-          No fresh verified H100 quote for this billing model. Retained prices
-          remain available in Offers.
+          No recorded H100 quote for this billing model.
         </p>
       )}
     </div>

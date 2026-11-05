@@ -109,7 +109,7 @@ function ComparisonCard({
             </span>
           </div>
           <span className="font-data text-[10px] text-muted-foreground">
-            /gpu/hr
+            {row.providers[0]?.retained ? "Last observed · /GPU/hr" : "/GPU/hr"}
           </span>
         </div>
       </div>
@@ -143,6 +143,15 @@ function ComparisonCard({
                   />
                   {p.providerName}
                 </span>
+                {p.retained && (
+                  <span
+                    className="text-[9px] text-amber-700"
+                    title={`Observed ${new Date(p.observedAt).toLocaleString()}`}
+                  >
+                    Last observed ·{" "}
+                    {new Date(p.observedAt).toLocaleDateString()}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2.5">
                 <AvailabilityBadge

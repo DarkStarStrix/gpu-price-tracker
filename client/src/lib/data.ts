@@ -28,7 +28,7 @@ export interface GpuModel {
   vramGb: number;
 }
 
-export type Offer = GpuOffer;
+export type Offer = GpuOffer & { retained: boolean };
 
 export interface ProviderSummary {
   provider: Provider;
@@ -36,6 +36,7 @@ export interface ProviderSummary {
   lowestPrices: Record<string, number>;
   regionCoverage: string[];
   offerCount: number;
+  retained: boolean;
 }
 
 export interface ComparisonRow {
@@ -48,6 +49,8 @@ export interface ComparisonRow {
     lowestPrice: number;
     availability: AvailabilityState;
     link: string;
+    retained: boolean;
+    observedAt: string;
   }[];
   lowestOverall: number;
 }
@@ -108,7 +111,14 @@ export const PROVIDERS: Provider[] = [
 // Catalog is validated and installed once before the dashboard mounts.
 export let OFFERS: Offer[] = [];
 export function configureCatalog(snapshot: Snapshot) {
-  OFFERS = snapshot.offers.filter(o => isCurrent(snapshot, o));
+  OFFERS = snapshot.offers.map(o => {
+    const retained = !isCurrent(snapshot, o);
+    return {
+      ...o,
+      retained,
+      availability: retained ? ("unknown" as const) : o.availability,
+    };
+  });
   GPU_MODELS.splice(
     0,
     GPU_MODELS.length,
@@ -212,6 +222,8 @@ export function buildComparisons(gpuModelIds?: string[]): ComparisonRow[] {
             lowestPrice: offer.pricePerGpuHr,
             availability: offer.availability,
             link: offer.providerLink,
+            retained: offer.retained,
+            observedAt: offer.observedAt,
           };
         })
         .sort((a, b) => a.lowestPrice - b.lowestPrice);
@@ -256,6 +268,7 @@ export function buildProviderSummaries(): ProviderSummary[] {
       lowestPrices,
       regionCoverage,
       offerCount: providerOffers.length,
+      retained: providerOffers.some(o => o.retained),
     };
   });
 }

@@ -38,7 +38,7 @@ pnpm preview
 
 The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 
-Pricing pages establish a published rate, not stock. Missing stock becomes a **Check stock** link; explicit available/limited/unavailable reports keep their colored indicators. Failed or old observations remain visible in Offers with their actual timestamps and are excluded from current market floors. The freshness limit is two hours.
+Pricing pages establish a published rate, not stock. Missing stock becomes a **Check stock** link; explicit available/limited/unavailable reports keep their colored indicators. Failed or old observations remain visible in Offers with their actual timestamps and never count as current market data. Overview, comparisons and provider inventory retain their last observed prices with explicit stale labels when fresh data is unavailable. Old stock reports become stock-check links. The freshness limit is two hours.
 
 ## Updates, history and comparison
 

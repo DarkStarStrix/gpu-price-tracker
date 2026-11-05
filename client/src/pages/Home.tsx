@@ -20,6 +20,7 @@ import {
   lastCheckedAt,
   loadCatalog,
 } from "@/lib/catalog";
+import { displayQuote } from "@shared/market";
 import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 
@@ -45,15 +46,10 @@ export default function Home() {
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
   const providerCount = new Set(offers.map(o => o.providerId)).size;
   const floor = (id: string) => {
-    const prices = freshOffers
-      .filter(
-        o =>
-          o.gpuModelId === id &&
-          o.billingModel !== "spot" &&
-          o.availability !== "unavailable"
-      )
-      .map(o => o.pricePerGpuHr);
-    return prices.length ? `${formatPrice(Math.min(...prices))}/hr` : "—";
+    const quote = displayQuote(catalog, id);
+    return quote
+      ? `${formatPrice(quote.offer.pricePerGpuHr)}/hr${quote.retained ? " · last observed" : ""}`
+      : "—";
   };
 
   useEffect(() => {
@@ -179,7 +175,7 @@ export default function Home() {
           {catalog.sources.some(s => s.status === "error") &&
             " A provider refresh failed; retained prices are marked below."}
           {offers.some(o => isStale(o.observedAt)) &&
-            " Some observations are over 2 hours old."}{" "}
+            " Refresh overdue: showing last observed prices. Stock must be checked with the provider."}{" "}
           Published rates do not establish availability. Availability can change
           between observations. Local alerts only check while this page is open.
         </div>

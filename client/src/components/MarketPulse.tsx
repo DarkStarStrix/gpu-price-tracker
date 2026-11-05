@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { catalog, eligibleOffers } from "@/lib/catalog";
+import { displayQuote } from "@shared/market";
 import { Activity, TrendingDown, Server, Cpu } from "lucide-react";
 
 function useCountUp(target: number, duration = 800, delay = 0) {
@@ -32,22 +33,15 @@ function useCountUp(target: number, duration = 800, delay = 0) {
 
 export function MarketPulse() {
   const offers = eligibleOffers();
-  const prices = offers
-    .filter(
-      o =>
-        o.gpuModelId === "h100-sxm" &&
-        o.billingModel !== "spot" &&
-        o.availability !== "unavailable"
-    )
-    .map(o => o.pricePerGpuHr);
+  const quote = displayQuote(catalog, "h100-sxm");
   const stats = {
     totalOffers: catalog.offers.length,
     availableOffers: offers.filter(
       o => o.availability === "available" || o.availability === "limited"
     ).length,
-    providerCount: new Set(offers.map(o => o.providerId)).size,
-    gpuModelCount: new Set(offers.map(o => o.gpuModelId)).size,
-    h100Floor: prices.length ? Math.min(...prices) : null,
+    providerCount: new Set(catalog.offers.map(o => o.providerId)).size,
+    gpuModelCount: new Set(catalog.offers.map(o => o.gpuModelId)).size,
+    h100Floor: quote?.offer.pricePerGpuHr ?? null,
   };
 
   const metrics = {
@@ -65,7 +59,12 @@ export function MarketPulse() {
         label="Reported capacity"
         value={metrics.availableOffers}
         suffix=""
-        subtext={`of ${metrics.totalOffers} tracked`}
+        subtext={
+          offers.length
+            ? `of ${metrics.totalOffers} tracked`
+            : "Awaiting a fresh stock report"
+        }
+        missing={offers.length === 0}
         accent="teal"
         delay={0}
       />
@@ -74,13 +73,13 @@ export function MarketPulse() {
         label="Providers"
         value={metrics.providers}
         suffix=""
-        subtext="cloud platforms"
+        subtext="tracked cloud platforms"
         accent="navy"
         delay={80}
       />
       <MetricCard
         icon={<TrendingDown className="w-4 h-4" />}
-        label="H100 Floor"
+        label={quote?.retained ? "Last observed H100" : "H100 Floor"}
         value={metrics.lowestH100 ? Math.round(metrics.lowestH100 * 100) : 0}
         suffix=""
         prefix="$"
@@ -96,7 +95,7 @@ export function MarketPulse() {
         label="GPU Models"
         value={metrics.gpuModels}
         suffix=""
-        subtext="configurations"
+        subtext="tracked configurations"
         accent="coral"
         delay={240}
       />

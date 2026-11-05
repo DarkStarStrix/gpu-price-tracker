@@ -144,7 +144,10 @@ export function PriceMarket({
             {o.configurationKnown === false
               ? "Per-GPU rate"
               : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
-            · ${o.pricePerGpuHr.toFixed(3)} current quoted rate
+            · ${o.pricePerGpuHr.toFixed(3)}{" "}
+            {isCurrent(catalog, o)
+              ? "current quoted rate"
+              : "last observed rate"}
           </option>
         ))}
         {historical.map(h => (

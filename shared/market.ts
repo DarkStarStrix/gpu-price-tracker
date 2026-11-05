@@ -87,3 +87,26 @@ export function priceHistorySummary(
           : ("changed" as const),
   };
 }
+
+/** Prefer current quotes; retain an explicitly labeled last observation during missed refreshes. */
+export function displayQuote(
+  snapshot: Snapshot,
+  gpu: string,
+  billing = "on-demand",
+  now = Date.now()
+) {
+  const eligible = snapshot.offers.filter(
+    o =>
+      o.gpuModelId === gpu &&
+      (o.billingModel ?? "on-demand") === billing &&
+      o.availability !== "unavailable"
+  );
+  const fresh = eligible.filter(o => isCurrent(snapshot, o, now));
+  const offer = [...(fresh.length ? fresh : eligible)].sort(
+    (a, b) =>
+      a.pricePerGpuHr - b.pricePerGpuHr || a.offerId.localeCompare(b.offerId)
+  )[0];
+  return offer
+    ? { offer, retained: !isCurrent(snapshot, offer, now) }
+    : undefined;
+}

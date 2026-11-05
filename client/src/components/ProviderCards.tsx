@@ -42,14 +42,17 @@ export function ProviderCards() {
           const source = catalog.sources.find(
             s => s.id === summary.provider.id
           );
-          const connected = source?.status === "ok";
-          const status = connected
-            ? "Connected"
-            : source?.status === "not_configured"
-              ? "Credentials required"
-              : source?.status === "error"
-                ? "Refresh failed"
-                : "Not connected";
+          const connected = source?.status === "ok" && !summary.retained;
+          const status =
+            source?.status === "ok" && summary.retained
+              ? "Refresh overdue"
+              : connected
+                ? "Connected"
+                : source?.status === "not_configured"
+                  ? "Credentials required"
+                  : source?.status === "error"
+                    ? "Refresh failed"
+                    : "Not connected";
 
           return (
             <div
@@ -199,7 +202,10 @@ export function ProviderCards() {
                 <div className="flex items-center gap-1 mb-2">
                   <BarChart2 className="w-3 h-3 text-muted-foreground" />
                   <span className="mono-label text-muted-foreground">
-                    Lowest Prices · USD / GPU-hour
+                    {summary.retained
+                      ? "Last observed prices"
+                      : "Lowest Prices"}{" "}
+                    · USD / GPU-hour
                   </span>
                 </div>
                 <div className="space-y-1.5">
