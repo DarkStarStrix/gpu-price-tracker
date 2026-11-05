@@ -187,6 +187,16 @@ export function parseCrusoe(html: string, at: string): SourceResult {
   if (!models.length || models.length !== rates.length)
     throw new Error("Crusoe rows changed");
   // Price columns have no model IDs; lock the reviewed model/tag order before joining them.
+  if (
+    models
+      .toArray()
+      .some(
+        e =>
+          $(e).attr("data-sort-name") !==
+          clean($(e).find(".pricing-item-heading").text())
+      )
+  )
+    throw new Error("Crusoe model identity changed");
   const identities = models
     .map(
       (_, e) =>
