@@ -5,6 +5,7 @@
 
 import { useState, useMemo } from "react";
 import { catalog, sparklines } from "@/lib/catalog";
+import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { isCurrent } from "@shared/catalog";
 
 import { formatPrice } from "@/lib/data";
@@ -28,6 +29,8 @@ type SortDir = "asc" | "desc";
 
 
 interface Filters {
+  billing: string;
+  cloud: string;
   gpuModel: string;
   provider: string;
   availability: string;
@@ -43,7 +46,7 @@ export function OffersTable() {
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filters, setFilters] = useState<Filters>({
-    gpuModel: "", provider: "", availability: "", search: "", maxPrice: null,
+    billing: "", cloud: "", gpuModel: "", provider: "", availability: "", search: "", maxPrice: null,
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -70,6 +73,8 @@ export function OffersTable() {
 
   const filteredOffers = useMemo(() => {
     let result = [...offers] as GpuOffer[];
+    if (filters.billing) result = result.filter(o => (o.billingModel ?? "on-demand") === filters.billing);
+    if (filters.cloud) result = result.filter(o => o.cloudType === filters.cloud);
     if (filters.gpuModel)     result = result.filter(o => o.gpuModelId === filters.gpuModel);
     if (filters.provider)     result = result.filter(o => o.providerId === filters.provider);
     if (filters.availability) result = result.filter(o => (!isCurrent(catalog, o) ? "unknown" : o.availability) === filters.availability);
@@ -100,11 +105,11 @@ export function OffersTable() {
   }, [offers, filters, sortKey, sortDir]);
 
   const activeFilterCount = [
-    filters.gpuModel, filters.provider, filters.availability,
+    filters.billing, filters.cloud, filters.gpuModel, filters.provider, filters.availability,
     filters.search, filters.maxPrice !== null ? "x" : "",
   ].filter(Boolean).length;
 
-  const clearFilters = () => setFilters({ gpuModel: "", provider: "", availability: "", search: "", maxPrice: null });
+  const clearFilters = () => setFilters({ billing: "", cloud: "", gpuModel: "", provider: "", availability: "", search: "", maxPrice: null });
 
   const selectedOffers = offers.filter(o => selectedIds.includes(o.offerId)).map(o => ({...o, availability: !isCurrent(catalog, o) ? "unknown" as const : o.availability}));
   const alertCount = Object.keys(alerts).length;
@@ -243,6 +248,7 @@ export function OffersTable() {
         </p>
       )}
 
+      <p className="text-xs text-muted-foreground mb-3">Availability: green = available · amber = limited · red = unavailable · gray = unknown or stale. Billing and cloud tier are separate attributes.</p>
       {/* Filter bar */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-2.5 mb-5 p-4 bg-card border border-border rounded-xl animate-scale-in">
@@ -273,6 +279,8 @@ export function OffersTable() {
             <option value="unavailable">Unavailable</option>
             <option value="unknown">Unknown</option>
           </select>
+          <select aria-label="Offer billing" value={filters.billing} onChange={e=>setFilters(f=>({...f,billing:e.target.value}))} className="p-2 text-sm bg-background border border-border rounded-lg"><option value="">All billing</option><option value="on-demand">On-demand</option><option value="spot">Spot · interruptible</option></select>
+          <select aria-label="Offer cloud tier" value={filters.cloud} onChange={e=>setFilters(f=>({...f,cloud:e.target.value}))} className="p-2 text-sm bg-background border border-border rounded-lg"><option value="">All cloud tiers</option><option value="secure">Secure Cloud</option><option value="community">Community Cloud</option></select>
           <div className="flex items-center gap-2">
             <label className="mono-label text-muted-foreground">Max $/hr</label>
             <input
@@ -476,8 +484,8 @@ function OfferRow({
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm text-foreground">{offer.providerName}</span>
         </div>
-        {offer.cloudType && (
-          <span className="font-data text-[10px] text-muted-foreground capitalize">{offer.cloudType}</span>
+        {(
+          <span className="flex flex-wrap gap-1 mt-1 text-[10px] font-data"><span className="rounded bg-teal/10 text-teal px-1.5 py-0.5">{billingLabel(offer)}</span><span className="rounded bg-muted px-1.5 py-0.5">{cloudLabel(offer)}</span></span>
         )}
         <a href={offer.sourceUrl} target="_blank" rel="noopener noreferrer" className="block font-data text-[10px] text-muted-foreground underline" title="Official source for this observation">{offer.dataSource === "pricing_page" ? "Published rate" : "API observation"}</a>
       </td>

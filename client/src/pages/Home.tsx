@@ -17,10 +17,10 @@ import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 
 // Generated assets
-const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/hero-grid-bg-NQsreG7zHjL8KoMjMjEHPf.webp";
-const GPU_DIAGRAM = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/gpu-node-diagram-82nRNVr8Fqh8sD8buCJnnV.webp";
-const PRICE_WAVE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/price-wave-PEENh3JnMuPVtwQALtE5Zn.webp";
-const CONSTELLATION = "https://d2xsxph8kpxj0f.cloudfront.net/310519663288203906/L3MSxqVptRGomjLN7RuJgm/provider-constellation-aydpAtBkoHhZFdvSLqWQW3.webp";
+const HERO_BG = `${import.meta.env.BASE_URL}images/provider-network.svg`;
+const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.jpg`;
+const PRICE_WAVE = `${import.meta.env.BASE_URL}images/market-wave.svg`;
+const CONSTELLATION = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 
 type Tab = "overview" | "offers" | "providers" | "trends";
 
@@ -171,7 +171,7 @@ export default function Home() {
           {/* GPU Diagram — right side decorative */}
           <div
             className="absolute right-0 top-0 bottom-0 w-[45%] hidden lg:block"
-            style={{ opacity: 0.12 }}
+            style={{ opacity: 0.88, mixBlendMode: "multiply" }}
           >
             <img
               src={GPU_DIAGRAM}

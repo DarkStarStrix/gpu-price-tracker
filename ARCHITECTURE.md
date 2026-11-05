@@ -193,3 +193,14 @@ Additional primary source references:
 - https://api.nebius.cloud/billing/v1alpha1/spot-price
 
 Browser refresh uses an observable catalog revision so every mounted dashboard reads the validated snapshot after a successful request. Manual, periodic and focus refreshes share one in-flight request. The browser uses a cache-busting query, no-store caching and a 20-second timeout. Schema-invalid, failed or older snapshots retain the last validated data and expose refresh failure. Checks update in place and preserve local tab/filter state; last checked time is distinct from source observation time.
+
+Availability and pool presentation extension: current inventory selectors live in
+`shared/offer-view.ts` and apply the same freshness contract as offer badges.
+Historical pool totals are not re-filtered using today's listings, since doing
+so would misrepresent past membership; the timeline explicitly retains provider
+scope. Billing and cloud security tier are displayed separately. Prime's adapter
+requests single-GPU configurations, validates USD prices, maps explicit stock,
+and requires complete stable pagination. The optional PRIME_API_KEY is passed
+only to the collector. Unknown stock and missing credentials never become green
+availability. Multi-GPU and spot Prime pricing remain unqualified. Local banner
+assets replace remote placeholders; generated art is decorative.

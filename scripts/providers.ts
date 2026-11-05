@@ -4,6 +4,7 @@ import { offerSchema, type GpuOffer } from "../shared/catalog";
 import { gpuId } from "./gpu";
 export { gpuId } from "./gpu";
 import type { SourceResult } from "../shared/catalog";
+import { primeSource } from "./prime";
 import { expandedSources } from "./expanded-sources";
 import { publicPricingSources } from "./pricing-pages";
 
@@ -176,6 +177,7 @@ export function sources(env: NodeJS.ProcessEnv = process.env): Source[] {
     },
     ...publicPricingSources(),
     ...expandedSources(),
+    primeSource(env),
     ...[
       ["tensordock", "TensorDock"],
       ["fluidstack", "FluidStack"],

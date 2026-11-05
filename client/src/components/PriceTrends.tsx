@@ -1,3 +1,4 @@
+import { PoolInventory } from "./PoolInventory";
 import { useState, useMemo, useEffect } from "react";
 import { Play, Pause, SkipForward } from "lucide-react";
 import { catalog } from "@/lib/catalog";
@@ -313,6 +314,8 @@ function PoolMovement() {
           observations.
         </p>
       )}
+      <PoolInventory key={provider} provider={provider} />
+      <h4 className="text-sm font-semibold mb-3">Provider movement timeline</h4>
       <ReplayControls replay={replay} times={times} />
       {selected && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-xs font-data">
@@ -375,7 +378,14 @@ function PoolMovement() {
                   dataKey={key}
                   name={key}
                   type="stepAfter"
-                  stroke={COLORS[i]}
+                  stroke={
+                    {
+                      available: "#16a34a",
+                      limited: "#d97706",
+                      unavailable: "#dc2626",
+                      unknown: "#94a3b8",
+                    }[key]
+                  }
                   strokeWidth={2}
                   dot={data.length < 4}
                   isAnimationActive={false}

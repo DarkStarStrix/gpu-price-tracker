@@ -35,6 +35,7 @@ jobs:
       - name: Collect public price observations
         run: pnpm collect
         env:
+          PRIME_API_KEY: ${{ secrets.PRIME_API_KEY }}
           LAMBDA_API_KEY: ${{ secrets.LAMBDA_API_KEY }}
       - name: Retain public source evidence
         if: always()

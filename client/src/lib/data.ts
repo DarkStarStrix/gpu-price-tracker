@@ -69,6 +69,7 @@ export const GPU_MODELS: GpuModel[] = [];
 export const PROVIDERS: Provider[] = [
   ...(
     [
+      ["prime", "Prime Intellect", "https://primeintellect.ai"],
       ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],
       ["verda", "Verda", "https://verda.com"],
       ["crusoe", "Crusoe", "https://www.crusoe.ai"],
@@ -83,9 +84,11 @@ export const PROVIDERS: Provider[] = [
     regions: [],
     billingModel: id === "nebius" ? ("spot" as const) : ("on-demand" as const),
     notes:
-      id === "nebius"
-        ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
-        : "Official current USD on-demand rates. Capacity is not checked.",
+      id === "prime"
+        ? "Authenticated single-GPU on-demand availability. Set PRIME_API_KEY in GitHub Actions secrets to connect."
+        : id === "nebius"
+          ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
+          : "Official current USD on-demand rates. Capacity is not checked.",
   })),
   {
     id: "lambda",

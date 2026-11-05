@@ -148,3 +148,30 @@ The original full-stack source and migrations remain recoverable in Git history.
 - [Paperspace published pricing](https://docs.digitalocean.com/products/paperspace/pricing/)
 - [Lambda instance-types API](https://docs.lambda.ai/public-cloud/cloud-api/)
 - [GitHub Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+
+## Availability, pool filters, and Prime Intellect
+
+Availability colors retain text labels: green is provider-reported available,
+amber limited, red unavailable, and gray unknown/stale. A published price never
+implies stock. Billing badges (on-demand / spot, interruptible) and cloud badges
+(Secure Cloud / Community Cloud / unspecified) are separate attributes.
+
+The pool inventory has GPU, billing, cloud tier, availability, and region filters,
+scoped to the selected provider. Inventory filters apply to current listings;
+the movement timeline explicitly remains the whole provider's recorded history.
+
+Prime Intellect is integrated behind the optional GitHub Actions secret
+`PRIME_API_KEY`. Until configured it shows credentials required. Its documented
+availability API returned HTTP 403 without authentication. Only one-GPU
+on-demand configurations are currently collected, keeping node and GPU-hour units
+unambiguous; missing stock remains unknown. `isSpot` is a capability flag and is
+not treated as a spot price. Pagination is bounded and must be complete. This
+adapter has fixture/contract coverage but authenticated integration remains
+unverified until a token is configured. Tokens and authenticated responses never
+enter the frontend or public evidence artifacts.
+
+API contract: https://docs.primeintellect.ai/api-reference/availability/get-gpu-availability
+
+The local GPU illustration is an AI-refined derivative of the user-supplied
+chassis drawing, used decoratively rather than as an engineering specification.
+All banner graphics are shipped with the site rather than remote CDN URLs.
