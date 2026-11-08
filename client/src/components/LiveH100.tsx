@@ -23,8 +23,7 @@ export function LiveH100() {
           <span
             className={`h-2 w-2 rounded-full ${snapshotLoadError || retained ? "bg-amber-500" : "bg-emerald-500"}`}
           />
-          H100 SXM ·{" "}
-          {retained ? "Last observed · refresh overdue" : "auto-updating"}
+          H100 SXM · {retained ? "Last observed" : "auto-updating"}
         </span>
         <select
           aria-label="H100 billing"

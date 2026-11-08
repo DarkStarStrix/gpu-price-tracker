@@ -177,10 +177,10 @@ export default function Home() {
             {catalog.sources.some(s => s.status === "error") &&
               " A provider refresh failed. Retained prices are marked below."}
             {offers.some(o => isStale(o.observedAt)) &&
-              " Refresh overdue. Showing last observed prices."}
+              " Showing last observed prices where fresh data is unavailable."}
           </p>
           <p className="mt-1">
-            Collection is scheduled every 15 minutes and can run late.{" "}
+            Collection runs automatically on GitHub.{" "}
             <a
               href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"
               target="_blank"

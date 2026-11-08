@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths-ignore: ["client/public/data/latest.json"]
   schedule:
-    - cron: "2,17,32,47 * * * *"
+    # Keep the 15-minute cadence clear of the top-of-hour queue.
+    - cron: "8,23,38,53 * * * *"
   workflow_dispatch:
 
 permissions:

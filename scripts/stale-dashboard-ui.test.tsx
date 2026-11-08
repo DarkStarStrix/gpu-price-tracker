@@ -2,10 +2,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { it, expect, vi } from "vitest";
-import { QuickComparison } from "../client/src/components/QuickComparison";
-import { LiveH100 } from "../client/src/components/LiveH100";
-import { MarketPulse } from "../client/src/components/MarketPulse";
-import { ProviderCards } from "../client/src/components/ProviderCards";
+import App from "../client/src/App";
 import { loadCatalog } from "../client/src/lib/catalog";
 import { parseRunpod } from "./providers";
 import { collect } from "./collect";
@@ -47,28 +44,29 @@ it("renders retained prices and provider inventory without presenting stale stoc
   const root = createRoot(host);
   try {
     await loadCatalog();
-    await act(() =>
-      root.render(
-        <>
-          <QuickComparison />
-          <LiveH100 />
-          <MarketPulse />
-          <ProviderCards />
-        </>
-      )
-    );
+    await act(() => root.render(<App />));
     await act(() => vi.advanceTimersByTime(1600));
     const text = host.textContent!;
     expect(text).toContain("Last observed quote · not current");
-    expect(text).toContain("Refresh overdue");
-    expect(text).toContain("4 offers");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain(
+      "Showing last observed prices where fresh data is unavailable."
+    );
+    expect(text).not.toMatch(/refresh overdue/i);
+    expect(text).toContain("4 Offers");
     expect(text).toContain("$2.69");
     expect(text).toContain("Awaiting a fresh stock report");
-    expect(text).not.toContain("Limited");
+    expect(host.querySelector('[title^="Provider reports "]')).toBeNull();
     expect(text).not.toContain("No current verified prices");
     expect(
       host.querySelector('a[href="https://www.runpod.io/pricing"]')
     ).not.toBeNull();
+    const providers = [...host.querySelectorAll("button")].find(
+      button => button.textContent === "Providers"
+    )!;
+    await act(() => providers.click());
+    expect(host.textContent).toContain("Last observed prices");
+    expect(host.textContent).toContain("4 offers");
+    expect(host.textContent).not.toMatch(/refresh overdue/i);
   } finally {
     await act(() => root.unmount());
     host.remove();

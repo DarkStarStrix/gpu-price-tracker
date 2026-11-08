@@ -45,7 +45,7 @@ export function ProviderCards() {
           const connected = source?.status === "ok" && !summary.retained;
           const status =
             source?.status === "ok" && summary.retained
-              ? "Refresh overdue"
+              ? "Last observed prices"
               : connected
                 ? "Connected"
                 : source?.status === "not_configured"
