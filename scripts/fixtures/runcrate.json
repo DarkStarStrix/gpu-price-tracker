@@ -1,0 +1,39 @@
+{
+  "gpus": [
+    {
+      "gpu_type": "MI350X",
+      "name": "MI350X",
+      "vram": "288GB",
+      "min_price_hr": 5.72,
+      "available_options": 0
+    },
+    {
+      "gpu_type": "H100",
+      "name": "H100",
+      "vram": "80GB",
+      "min_price_hr": 3.58,
+      "available_options": 11
+    },
+    {
+      "gpu_type": "A100_80G",
+      "name": "A100 80GB",
+      "vram": "80GB",
+      "min_price_hr": 1.73,
+      "available_options": 14
+    },
+    {
+      "gpu_type": "L40S",
+      "name": "L40S",
+      "vram": "48GB",
+      "min_price_hr": 0.55,
+      "available_options": 4
+    },
+    {
+      "gpu_type": "GAUDI2",
+      "name": "GAUDI2",
+      "vram": "\u2014",
+      "min_price_hr": 1.56,
+      "available_options": 0
+    }
+  ]
+}
