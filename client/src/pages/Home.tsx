@@ -18,6 +18,7 @@ import {
   snapshotLoadError,
   snapshotRefreshing,
   lastCheckedAt,
+  lastCheckResult,
   loadCatalog,
 } from "@/lib/catalog";
 import { displayQuote } from "@shared/market";
@@ -115,7 +116,9 @@ export default function Home() {
               })}
             </span>
             <button
-              title="Refresh data"
+              type="button"
+              aria-label="Refresh prices"
+              title="Check for a newer published price snapshot"
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
               disabled={snapshotRefreshing}
               onClick={() => {
@@ -158,26 +161,36 @@ export default function Home() {
       </div>
 
       <div className="container pt-4">
-        <div
-          className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card"
-          role="status"
-        >
-          {snapshotLoadError &&
-            "Snapshot refresh failed; showing the last validated data. "}
-          {snapshotRefreshing
-            ? "Checking for updates · "
-            : lastCheckedAt
-              ? `Auto-update on · Last checked ${new Date(lastCheckedAt).toLocaleTimeString()} · `
-              : ""}
-          Collector every 15 minutes · Snapshot{" "}
-          {new Date(catalog.generatedAt).toLocaleString()} ·{" "}
-          {freshOffers.length} fresh offers.
-          {catalog.sources.some(s => s.status === "error") &&
-            " A provider refresh failed; retained prices are marked below."}
-          {offers.some(o => isStale(o.observedAt)) &&
-            " Refresh overdue: showing last observed prices. Stock must be checked with the provider."}{" "}
-          Published rates do not establish availability. Availability can change
-          between observations. Local alerts only check while this page is open.
+        <div className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card">
+          <p role="status">
+            {snapshotRefreshing
+              ? "Checking for a newer price snapshot… "
+              : snapshotLoadError
+                ? "Snapshot check failed, showing the last validated data. "
+                : lastCheckResult === "unchanged"
+                  ? "No newer snapshot has been published. "
+                  : "New snapshot loaded. "}
+            {lastCheckedAt &&
+              `Last checked ${new Date(lastCheckedAt).toLocaleTimeString()} · `}
+            Provider snapshot {new Date(catalog.generatedAt).toLocaleString()} ·{" "}
+            {freshOffers.length} fresh offers.
+            {catalog.sources.some(s => s.status === "error") &&
+              " A provider refresh failed. Retained prices are marked below."}
+            {offers.some(o => isStale(o.observedAt)) &&
+              " Refresh overdue. Showing last observed prices."}
+          </p>
+          <p className="mt-1">
+            Collection is scheduled every 15 minutes and can run late.{" "}
+            <a
+              href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-teal underline"
+            >
+              Run collector on GitHub
+            </a>{" "}
+            with repository write access. Use the provider link to check stock.
+          </p>
         </div>
       </div>
 

@@ -323,7 +323,8 @@ export function PriceMarket({
           : "Collector observations from the selected listing. History starts at its first successful collection."}{" "}
         The line connects recorded samples; between-sample prices are unknown.
         No fabricated candles, volume, or price ticks. Flat rates stay flat.
-        Collection every 15 minutes; the page checks every minute.
+        Collection is scheduled every 15 minutes. The page checks for new
+        snapshots every minute.
       </p>
     </div>
   );

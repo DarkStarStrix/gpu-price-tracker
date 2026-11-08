@@ -5,6 +5,7 @@ export let catalog: Snapshot;
 export let snapshotLoadError = false;
 export let snapshotRefreshing = false;
 export let lastCheckedAt: string | null = null;
+export let lastCheckResult: "updated" | "unchanged" | null = null;
 let revision = 0;
 let pending: Promise<void> | null = null;
 const listeners = new Set<() => void>();
@@ -32,11 +33,11 @@ export function loadCatalog(): Promise<void> {
       );
       if (!response.ok) throw new Error("Price snapshot could not be loaded");
       const checked = snapshotSchema.parse(await response.json());
-      if (
-        catalog &&
-        Date.parse(checked.generatedAt) < Date.parse(catalog.generatedAt)
-      )
+      const previousTime = catalog ? Date.parse(catalog.generatedAt) : null;
+      const checkedTime = Date.parse(checked.generatedAt);
+      if (previousTime !== null && checkedTime < previousTime)
         throw new Error("Published snapshot is older than the loaded data");
+      lastCheckResult = checkedTime === previousTime ? "unchanged" : "updated";
       catalog = checked;
       configureCatalog(checked);
       lastCheckedAt = new Date().toISOString();

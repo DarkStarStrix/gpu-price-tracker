@@ -72,7 +72,7 @@ export function LiveH100() {
             Observed {new Date(offer.observedAt).toLocaleString()} ·{" "}
             {snapshotRefreshing
               ? "Checking…"
-              : "Checks every minute; collection every 15 min"}
+              : "Checks for published data every minute"}
           </p>
           <div className="flex justify-between gap-2 mt-3 text-xs">
             <span className="text-muted-foreground">

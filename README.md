@@ -42,7 +42,7 @@ Pricing pages establish a published rate, not stock. Missing stock becomes a **C
 
 ## Updates, history and comparison
 
-GitHub Actions collects every 15 minutes at minutes 2/17/32/47, commits observations, builds, and deploys Pages. Scheduled execution can be delayed by GitHub. The browser checks the published snapshot every minute and when returning to the tab. The Refresh button checks the published snapshot; it does not start a provider scrape. Browser check time and collector observation time are separate.
+GitHub Actions is scheduled to collect at minutes 2/17/32/47, then commit observations, build, and deploy Pages. Actual runs can be delayed by GitHub. The browser checks the published snapshot every minute and when returning to the tab. **Refresh** checks immediately and reports whether a newer snapshot arrived. **Run collector on GitHub** opens the workflow, where users with repository write access can select **Run workflow**. Refresh the dashboard after deployment completes.
 
 The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, crosshair, brush, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
