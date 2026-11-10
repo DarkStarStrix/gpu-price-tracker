@@ -35,6 +35,7 @@ pnpm preview
 | Crusoe     | Official current on-demand rates         | Future December 1 prices are excluded; collection stops at that transition until the parser is reviewed.             |
 | Vultr      | Public plans endpoint                    | Node prices and total VRAM are normalized per GPU; empty locations do not prove availability.                        |
 | Nebius     | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                |
+| Runcrate   | Public GPU pricing feed                  | Lowest listed per-GPU rate per type. Types with no orderable option are excluded; no node configuration is asserted. |
 
 The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 

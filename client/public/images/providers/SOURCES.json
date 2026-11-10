@@ -43,5 +43,10 @@
     "id": "paperspace",
     "source": "https://cdn.prod.website-files.com/5db99670374d1d829291af4f/66e9b9e0cd2da80a84ae9ba7_DO_Bug_Black_Circle_256_256.webp",
     "file": "paperspace.webp"
+  },
+  {
+    "id": "runcrate",
+    "source": "https://www.runcrate.ai/android-chrome-512x512.png",
+    "file": "runcrate.png"
   }
 ]

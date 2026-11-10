@@ -18,6 +18,7 @@ export const urls = {
   crusoe: "https://www.crusoe.ai/cloud/pricing",
   vultr: "https://api.vultr.com/v2/plans?per_page=500",
   nebius: "https://api.nebius.cloud/billing/v1alpha1/spot-price",
+  runcrate: "https://www.runcrate.ai/api/gpu-pricing",
 };
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -296,6 +297,50 @@ export function parseVultr(payload: unknown, at: string): SourceResult {
   if (!offers.length) throw new Error("Empty GPU catalog");
   return { offers };
 }
+const runcrateSchema = z.object({
+  gpus: z.array(
+    z.object({
+      gpu_type: z.string().min(1),
+      name: z.string().min(1),
+      vram: z.string(),
+      min_price_hr: z.number().finite().positive(),
+      available_options: z.number().int().nonnegative(),
+    })
+  ),
+});
+export function parseRuncrate(payload: unknown, at: string): SourceResult {
+  const d = runcrateSchema.parse(payload);
+  // Types with no orderable option are not listed; prices are never inferred.
+  const offers = d.gpus
+    .filter(g => g.available_options >= 1)
+    .map(g => {
+      const vram = /^(\d+)\s*GB$/i.exec(g.vram)?.[1];
+      return offerSchema.parse({
+        offerId: `runcrate:${g.gpu_type}`,
+        providerId: "runcrate",
+        providerName: "Runcrate",
+        gpuModelId: gpuId(g.name, vram ? Number(vram) : null),
+        gpuModelName: g.name,
+        gpuCount: 1,
+        configurationKnown: false,
+        billingModel: "on-demand",
+        vramPerGpuGb: vram ? Number(vram) : null,
+        vcpus: null,
+        ramGb: null,
+        region: "Not specified",
+        pricePerGpuHr: g.min_price_hr,
+        totalNodePriceHr: g.min_price_hr,
+        availability: "available",
+        providerLink: "https://www.runcrate.ai/pricing",
+        sourceUrl: urls.runcrate,
+        cloudType: "on-demand",
+        dataSource: "api",
+        observedAt: at,
+      });
+    });
+  if (!offers.length) throw new Error("Empty GPU catalog");
+  return { offers };
+}
 const sku = z.object({
   skuId: z.string(),
   productTitle: z.string(),
@@ -425,6 +470,14 @@ export function expandedSources(): Source[] {
       configured: true,
       connected: true,
       fetch: async at => parseVultr(await publicJson("vultr", urls.vultr), at),
+    },
+    {
+      id: "runcrate",
+      name: "Runcrate",
+      configured: true,
+      connected: true,
+      fetch: async at =>
+        parseRuncrate(await publicJson("runcrate", urls.runcrate), at),
     },
     {
       id: "nebius",

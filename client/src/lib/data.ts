@@ -106,6 +106,15 @@ export const PROVIDERS: Provider[] = [
     billingModel: "on-demand",
     notes: "Official machine pricing tables. Capacity is not checked.",
   },
+  {
+    id: "runcrate",
+    name: "Runcrate",
+    category: "stable",
+    website: "https://www.runcrate.ai",
+    billingModel: "on-demand",
+    notes:
+      "Public pricing feed, lowest listed rate per GPU-hour. Types with no orderable option are excluded.",
+  },
 ];
 
 // Catalog is validated and installed once before the dashboard mounts.

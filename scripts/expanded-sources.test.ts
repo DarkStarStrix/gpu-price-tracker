@@ -6,10 +6,12 @@ import {
   parseCrusoe,
   parseVultr,
   parseNebius,
+  parseRuncrate,
 } from "./expanded-sources";
 import current from "./fixtures/nebius-current.json";
 import series from "./fixtures/nebius-history.json";
 import vultr from "./fixtures/vultr.json";
+import runcrate from "./fixtures/runcrate.json";
 import { collect } from "./collect";
 import { parseRunpod, type Source } from "./providers";
 import runpod from "./fixtures/runpod.json";
@@ -88,6 +90,28 @@ describe("expanded public sources", () => {
         { ...vultr, meta: { ...vultr.meta, links: { next: "more" } } },
         at
       )
+    ).toThrow();
+  });
+  it("lists only Runcrate types with an orderable option and keeps the feed rate per GPU", () => {
+    const r = parseRuncrate(runcrate, at);
+    expect(r.offers.map(o => o.offerId).sort()).toEqual([
+      "runcrate:A100_80G",
+      "runcrate:H100",
+      "runcrate:L40S",
+    ]);
+    const h100 = r.offers.find(o => o.offerId === "runcrate:H100")!;
+    expect(h100.pricePerGpuHr).toBe(3.58);
+    expect(h100.totalNodePriceHr).toBe(3.58);
+    expect(h100.vramPerGpuGb).toBe(80);
+    expect(h100.gpuModelId).toBe("h100-unspecified");
+    expect(h100.availability).toBe("available");
+    expect(h100.configurationKnown).toBe(false);
+    expect(
+      r.offers.find(o => o.offerId === "runcrate:A100_80G")?.gpuModelId
+    ).toBe("a100-80");
+    expect(() => parseRuncrate({ gpus: [] }, at)).toThrow();
+    expect(() =>
+      parseRuncrate({ gpus: [{ ...runcrate.gpus[1], min_price_hr: 0 }] }, at)
     ).toThrow();
   });
   it("imports real hourly spot history with units and provenance distinct from collector observations", async () => {
