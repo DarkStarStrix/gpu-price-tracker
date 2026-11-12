@@ -383,15 +383,6 @@ export default function Home() {
                 />
               </div>
             </div>
-
-            {/* Price Trends */}
-            <div className="flex items-center gap-4 mb-6">
-              <h2 className="text-xl font-semibold text-foreground">
-                Price Trends
-              </h2>
-              <div className="flex-1 section-rule" />
-            </div>
-            <TrendsPanel initialOfferId={historyOfferId} belowFold />
           </div>
         )}
 
