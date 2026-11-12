@@ -1,5 +1,5 @@
 import { z } from "zod/mini";
-import { computeFeedSchema } from "./compute";
+import { computeFeedSchema, computeKinds, type ComputeKind } from "./compute";
 
 const timestamp = z.iso.datetime();
 const positive = z.number().check(z.positive());
@@ -77,6 +77,25 @@ export const offerSchema = z
     })
   );
 export type GpuOffer = z.infer<typeof offerSchema>;
+export type Listing =
+  | (GpuOffer & { kind?: never })
+  | (Omit<GpuOffer, "gpuCount"> & {
+      kind: ComputeKind;
+      gpuCount: null;
+      storageGb?: number;
+      terms?: string;
+    });
+
+export type ListingKind = "gpu" | ComputeKind;
+
+export function listingKind(offerId: string): ListingKind {
+  const prefix = /^compute:(cpu|tpu|sandbox):/.exec(offerId)?.[1];
+  return (prefix as ComputeKind | undefined) ?? "gpu";
+}
+
+export function listingUnit(kind: ListingKind = "gpu") {
+  return kind === "gpu" ? "GPU-hour" : computeKinds[kind].unit;
+}
 export const evidenceSchema = z.object({
   sourceUrl: httpsUrl,
   retrievedAt: timestamp,
@@ -237,11 +256,59 @@ export function isStale(observedAt: string, now = Date.now()) {
 
 export function isCurrent(
   snapshot: Snapshot,
-  offer: GpuOffer,
+  offer: Listing,
   now = Date.now()
 ) {
-  return (
-    !isStale(offer.observedAt, now) &&
-    snapshot.sources.find(s => s.id === offer.providerId)?.status === "ok"
-  );
+  const sources = offer.kind ? snapshot.compute : snapshot.sources;
+  const status = sources?.find(
+    source =>
+      ("providerId" in source ? source.providerId : source.id) ===
+      offer.providerId
+  )?.status;
+  return status === "ok" && !isStale(offer.observedAt, now);
+}
+
+const legacyComputeLinks: Record<string, string> = {
+  spheron: "https://app.spheron.ai/",
+  voltagegpu: "https://voltagegpu.com/pricing",
+};
+
+export function computeListings(
+  snapshot: Snapshot,
+  kind?: ComputeKind
+): Listing[] {
+  return (snapshot.compute ?? []).flatMap(feed => {
+    if (!feed.observedAt) return [];
+    const observedAt = feed.observedAt;
+    const providerLink =
+      feed.providerLink ?? legacyComputeLinks[feed.providerId] ?? feed.url;
+    return feed.rates
+      .filter(rate => !kind || rate.kind === kind)
+      .map(rate => ({
+        kind: rate.kind,
+        offerId: `compute:${rate.kind}:${feed.providerId}:${rate.id}`,
+        gpuModelId: `compute:${rate.kind}:${rate.model}`,
+        gpuModelName: rate.model,
+        providerId: feed.providerId,
+        providerName: feed.providerName,
+        gpuCount: null,
+        vramPerGpuGb: null,
+        vcpus: rate.vcpus ?? null,
+        ramGb: rate.memoryGb ?? null,
+        storageGb: rate.storageGb,
+        terms: rate.terms,
+        billingModel: rate.billing,
+        region: rate.region ?? "Not specified",
+        pricePerGpuHr: rate.price,
+        totalNodePriceHr: rate.price,
+        availability: rate.availability,
+        cloudType: rate.kind === "cpu" ? "vm" : "",
+        providerLink: rate.providerLink ?? providerLink,
+        sourceUrl: feed.url,
+        dataSource:
+          feed.dataSource ??
+          (feed.providerId === "gcp" ? "pricing_page" : "api"),
+        observedAt,
+      }));
+  });
 }

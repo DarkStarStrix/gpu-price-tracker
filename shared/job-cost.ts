@@ -1,8 +1,8 @@
-import type { GpuOffer } from "./catalog";
+import type { Listing } from "./catalog";
 
 export function estimateJobCost(
   offer: Pick<
-    GpuOffer,
+    Listing,
     | "configurationKnown"
     | "gpuCount"
     | "minRentalGpus"
@@ -19,7 +19,7 @@ export function estimateJobCost(
     hours <= 0
   )
     return null;
-  if (offer.configurationKnown === false) {
+  if (offer.gpuCount === null || offer.configurationKnown === false) {
     const total = gpus * hours * offer.pricePerGpuHr;
     return Number.isFinite(total)
       ? { total, nodes: null, billedGpus: null }

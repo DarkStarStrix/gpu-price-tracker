@@ -1,3 +1,5 @@
+import { listingKind, type ListingKind } from "@shared/catalog";
+
 export const historyPeriods = [
   [1, "1 hour"],
   [24, "24 hours"],
@@ -22,6 +24,7 @@ export type SharedView =
   | {
       view: "offers";
       ids: string[];
+      kind?: ListingKind;
       filters: OfferFilters;
       hours: HistoryHours;
       through?: number;
@@ -64,7 +67,19 @@ export function readViewLink(search: string): SharedView | undefined {
           ? ""
           : value;
     }
-    return { view: "offers", ids, filters, hours, ...anchored };
+    const requested = params.get("kind");
+    const kind =
+      requested === "cpu" || requested === "tpu" || requested === "sandbox"
+        ? requested
+        : listingKind(ids[0] ?? "");
+    return {
+      view: "offers",
+      ids,
+      filters,
+      hours,
+      ...(kind === "gpu" ? {} : { kind }),
+      ...anchored,
+    };
   }
   if (params.get("view") === "trends") {
     const start = timestamp("from");
@@ -90,6 +105,7 @@ export function viewLink(state: SharedView, href: string) {
   });
   if (state.through) params.set("through", String(state.through));
   if (state.view === "offers") {
+    if (state.kind && state.kind !== "gpu") params.set("kind", state.kind);
     for (const id of state.ids) params.append("offer", id);
     for (const key of filterKeys) {
       if (state.filters[key]) params.set(key, state.filters[key]);

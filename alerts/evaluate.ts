@@ -1,4 +1,10 @@
-import { isCurrent, type Snapshot } from "../shared/catalog";
+import {
+  computeListings,
+  isCurrent,
+  listingUnit,
+  type Listing,
+  type Snapshot,
+} from "../shared/catalog";
 import type { Evaluation, Watch } from "../shared/watchlist";
 
 export function evaluateWatches(
@@ -7,7 +13,12 @@ export function evaluateWatches(
   snapshot: Snapshot,
   now = Date.now()
 ): Evaluation {
-  const offers = new Map(snapshot.offers.map(offer => [offer.offerId, offer]));
+  const offers = new Map<string, Listing>(
+    [...snapshot.offers, ...computeListings(snapshot)].map(offer => [
+      offer.offerId,
+      offer,
+    ])
+  );
   const previousById = new Map(
     previous.observed.map(observation => [observation.offerId, observation])
   );
@@ -35,7 +46,7 @@ export function evaluateWatches(
       const events = [];
       if (before && below && !before.below)
         events.push(
-          `USD ${offer.pricePerGpuHr.toFixed(3)} per GPU-hour reached your target.`
+          `USD ${offer.pricePerGpuHr.toFixed(3)} per ${listingUnit(offer.kind)} reached your target.`
         );
       if (
         before &&

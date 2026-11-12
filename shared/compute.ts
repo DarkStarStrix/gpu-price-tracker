@@ -19,6 +19,8 @@ const computeRateSchema = z.object({
   vcpus: z.optional(z.int().check(z.positive())),
   memoryGb: z.optional(positive),
   storageGb: z.optional(positive),
+  providerLink: z.optional(z.url().check(z.startsWith("https://"))),
+  terms: z.optional(label),
   availability: z.enum(["available", "unavailable", "unknown"]),
 });
 
@@ -27,6 +29,9 @@ export const computeFeedSchema = z
     providerId: label,
     providerName: label,
     url: z.url().check(z.startsWith("https://")),
+    providerLink: z.optional(z.url().check(z.startsWith("https://"))),
+    dataSource: z.optional(z.enum(["api", "pricing_page"])),
+    kinds: z.optional(z.array(z.enum(["cpu", "tpu", "sandbox"]))),
     status: z.enum(["ok", "error"]),
     observedAt: z.nullable(z.iso.datetime()),
     rates: z.array(computeRateSchema).check(z.maxLength(500)),
@@ -35,6 +40,13 @@ export const computeFeedSchema = z
     z.refine(
       feed =>
         new Set(feed.rates.map(rate => rate.id)).size === feed.rates.length &&
+        feed.rates.every(
+          rate =>
+            (!feed.kinds || feed.kinds.includes(rate.kind)) &&
+            (feed.dataSource !== "pricing_page" ||
+              rate.availability === "unknown") &&
+            `compute:${rate.kind}:${feed.providerId}:${rate.id}`.length <= 300
+        ) &&
         (feed.observedAt !== null ||
           (feed.status === "error" && !feed.rates.length)),
       { message: "Invalid compute feed observations" }

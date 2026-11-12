@@ -9,7 +9,7 @@ const lium = "https://lium.io/api/public/v1/nodes?include_rented=true";
 const gpuAi = "https://api.gpu.ai/v1/pricing";
 const gpuAiTypes = "https://api.gpu.ai/v1/gpu-types";
 const openRelay = "https://api.openrelay.inc/v1/public/pricing";
-const linode = "https://api.linode.com/v4/linode/types?page_size=500";
+export const linode = "https://api.linode.com/v4/linode/types?page_size=500";
 const oracle =
   "https://apexapps.oracle.com/pls/apex/cetools/api/v1/products/?currencyCode=USD";
 const azure = "https://prices.azure.com/api/retail/prices";
@@ -206,17 +206,22 @@ const linodeFeed = z.object({
       id: text,
       label: text,
       gpus: nonnegativeCount,
+      accelerated_devices: z.number().int().nonnegative().optional(),
+      disk: positiveCount.optional(),
       vcpus: positiveCount,
       memory: positiveCount,
       price: z.object({ hourly: price }),
     })
   ),
 });
-export function parseLinode(data: unknown, at: string): SourceResult {
+export function readLinodePlans(data: unknown) {
   const feed = linodeFeed.parse(data);
   if (feed.pages !== 1 || feed.results !== feed.data.length)
     throw new Error("Incomplete Akamai plan catalog");
-  const offers = feed.data
+  return feed.data;
+}
+export function parseLinode(data: unknown, at: string): SourceResult {
+  const offers = readLinodePlans(data)
     .filter(row => row.gpus > 0)
     .map(row => {
       const hardware = [

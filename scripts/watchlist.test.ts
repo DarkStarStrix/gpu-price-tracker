@@ -91,3 +91,51 @@ it("accepts push services and refuses unrelated or deceptive endpoint URLs", () 
   ])
     expect(isPushEndpoint(url)).toBe(false);
 });
+
+it("evaluates CPU watches independently of a provider's GPU source", () => {
+  const cpuWatch = { ...watch, offerId: "compute:cpu:runpod:vm" };
+  const check = (
+    previous: Evaluation,
+    minute: number,
+    status: "ok" | "error",
+    price: number
+  ) => {
+    const next = snapshot(minute, 3, "unavailable", "error");
+    next.compute = [
+      {
+        providerId: "runpod",
+        providerName: "RunPod",
+        url: "https://example.com/pricing",
+        status,
+        observedAt: next.generatedAt,
+        rates: [
+          {
+            id: "vm",
+            kind: "cpu",
+            model: "CPU VM",
+            billing: "on-demand",
+            price,
+            availability: "unknown",
+          },
+        ],
+      },
+    ];
+    return evaluateWatches(
+      [cpuWatch],
+      previous,
+      next,
+      Date.parse(next.generatedAt)
+    );
+  };
+
+  const baseline = check(empty, 0, "ok", 3);
+  expect(baseline.observed).toHaveLength(1);
+  expect(check(baseline, 15, "error", 1)).toEqual(baseline);
+  const crossed = check(baseline, 30, "ok", 2);
+  expect(crossed.pending).toMatchObject([
+    {
+      offerId: cpuWatch.offerId,
+      body: "USD 2.000 per instance-hour reached your target.",
+    },
+  ]);
+});

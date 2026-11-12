@@ -1,4 +1,5 @@
 import { isCurrent, type Snapshot, type GpuOffer } from "@shared/catalog";
+import type { ComputeFeed } from "@shared/compute";
 import { addedProviders } from "@shared/added-providers";
 
 /*
@@ -34,6 +35,7 @@ interface ProviderSummary {
   source: Snapshot["sources"][number];
   profile: Provider | undefined;
   pricingUrl: string | undefined;
+  compute: ComputeFeed | undefined;
   gpuInventory: string[];
   lowestPrices: Record<string, number>;
   regionCoverage: string[];
@@ -65,6 +67,19 @@ export const GPU_MODELS: GpuModel[] = [];
 // ─── Providers ───────────────────────────────────────────────────────────────
 
 export const PROVIDERS: Provider[] = [
+  ...(
+    [
+      ["e2b", "E2B", "https://e2b.dev/"],
+      ["daytona", "Daytona", "https://www.daytona.io/"],
+      ["modal", "Modal", "https://modal.com/"],
+    ] as const
+  ).map(([id, name, website]) => ({
+    id,
+    name,
+    website,
+    category: "stable" as const,
+    notes: "Published sandbox CPU and memory usage rates.",
+  })),
   ...Object.entries(addedProviders).map(([id, provider]) => ({
     id,
     ...provider,
@@ -172,6 +187,7 @@ export function providerLogo(id: string): string {
     paperspace: "webp",
     hotaisle: "svg",
     runcrate: "webp",
+    modal: "svg",
   };
   return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
 }
@@ -274,7 +290,28 @@ export function buildProviderSummaries(
   snapshot: Snapshot,
   now = Date.now()
 ): ProviderSummary[] {
-  return snapshot.sources.map(source => {
+  const feeds = new Map(
+    (snapshot.compute ?? []).map(feed => [feed.providerId, feed])
+  );
+  const sources: Snapshot["sources"] = [
+    ...snapshot.sources,
+    ...[...feeds.values()]
+      .filter(
+        feed => !snapshot.sources.some(source => source.id === feed.providerId)
+      )
+      .map(feed => ({
+        id: feed.providerId,
+        name: feed.providerName,
+        status: feed.status,
+        checkedAt: snapshot.generatedAt,
+        lastSuccessAt: feed.observedAt,
+        message:
+          feed.status === "ok"
+            ? "Published compute rates"
+            : "Compute refresh failed",
+      })),
+  ];
+  return sources.map(source => {
     const providerOffers = snapshot.offers.filter(
       o => o.providerId === source.id
     );
@@ -304,7 +341,12 @@ export function buildProviderSummaries(
     return {
       source,
       profile: getProvider(source.id),
-      pricingUrl: source.evidence?.sourceUrl ?? providerOffers[0]?.sourceUrl,
+      compute: feeds.get(source.id),
+      pricingUrl:
+        source.evidence?.sourceUrl ??
+        providerOffers[0]?.sourceUrl ??
+        feeds.get(source.id)?.providerLink ??
+        feeds.get(source.id)?.url,
       gpuInventory,
       lowestPrices,
       regionCoverage,

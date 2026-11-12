@@ -3,10 +3,17 @@
   Design: Data Observatory v2 — elevated cards, accent bars, animated details
 */
 
-import { buildProviderSummaries, formatPrice, providerLogo } from "@/lib/data";
+import {
+  buildProviderSummaries,
+  formatPrice,
+  hourlyPrice,
+  providerLogo,
+} from "@/lib/data";
 import { CategoryBadge } from "./CategoryBadge";
 import { ExternalLink, MapPin, Cpu, BarChart2, Clock } from "lucide-react";
-import { isStale, type Snapshot } from "@shared/catalog";
+import { isStale, listingUnit, type Snapshot } from "@shared/catalog";
+
+import { computeKinds, type ComputeKind } from "@shared/compute";
 
 function timeAgo(at: string, now: number): string {
   const diffMs = now - Date.parse(at);
@@ -50,7 +57,14 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
     <section className="mb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {summaries.map((summary, idx) => {
-          const { source, profile, pricingUrl } = summary;
+          const { source, profile, pricingUrl, compute } = summary;
+          const hasGpuFeed = snapshot.sources.some(
+            feed => feed.id === source.id
+          );
+          const computeFresh =
+            compute?.status === "ok" &&
+            !!compute.observedAt &&
+            !isStale(compute.observedAt, now);
           const leaseRates = source.leaseRates;
           const accentGradient =
             PROVIDER_ACCENT[source.id] ?? PROVIDER_ACCENT.paperspace;
@@ -63,7 +77,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
           if (source.status !== "ok") status = INACTIVE_STATUS[source.status];
           else if (connected)
             status =
-              summary.offerCount || leaseRates?.length
+              summary.offerCount || leaseRates?.length || compute?.rates.length
                 ? "Connected"
                 : "No offers listed";
           const website = profile?.website ?? pricingUrl;
@@ -103,7 +117,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                       <span className="font-data text-[10px] text-muted-foreground">
                         {leaseRates
                           ? `${leaseRates.length} lease quotes`
-                          : `${summary.offerCount} offers`}
+                          : `${summary.offerCount + (compute?.rates.length ?? 0)} offers`}
                       </span>
                     </div>
                   </div>
@@ -165,159 +179,218 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
 
               <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent mb-4" />
 
-              {/* Metrics grid */}
-              <div className="px-5 pb-4 grid grid-cols-2 gap-3">
-                {/* GPU Inventory */}
-                <div>
-                  <div className="flex items-center gap-1 mb-1.5">
-                    <Cpu className="w-3 h-3 text-muted-foreground" />
-                    <span className="mono-label text-muted-foreground">
-                      GPUs
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {!summary.gpuInventory.length && (
-                      <span className="text-xs text-muted-foreground">
-                        No GPU listings
-                      </span>
-                    )}
-                    {summary.gpuInventory.slice(0, 4).map(gpu => (
-                      <span
-                        key={gpu}
-                        className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground leading-tight"
-                      >
-                        {gpu}
-                      </span>
-                    ))}
-                    {summary.gpuInventory.length > 4 && (
-                      <span className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
-                        +{summary.gpuInventory.length - 4}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Regions */}
-                <div>
-                  <div className="flex items-center gap-1 mb-1.5">
-                    <MapPin className="w-3 h-3 text-muted-foreground" />
-                    <span className="mono-label text-muted-foreground">
-                      Regions
-                    </span>
-                  </div>
-                  {summary.regionCoverage.length > 4 ? (
-                    <details className="rounded-md border border-border/60 bg-card text-xs">
-                      <summary className="cursor-pointer px-2 py-1.5">
-                        {summary.regionCoverage.length} regions
-                      </summary>
-                      <ul
-                        aria-label={`${source.name} regions`}
-                        tabIndex={0}
-                        className="max-h-40 overflow-y-auto overscroll-contain space-y-1 border-t border-border/60 px-2 py-1.5 text-muted-foreground"
-                      >
-                        {[...summary.regionCoverage]
-                          .sort((a, b) => a.localeCompare(b))
-                          .map(region => (
-                            <li key={region}>{region}</li>
-                          ))}
-                      </ul>
-                    </details>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {!summary.regionCoverage.length && (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                      {summary.regionCoverage.map(region => (
-                        <span
-                          key={region}
-                          className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground"
-                        >
-                          {region}
+              {hasGpuFeed && (
+                <>
+                  {/* Metrics grid */}
+                  <div className="px-5 pb-4 grid grid-cols-2 gap-3">
+                    {/* GPU Inventory */}
+                    <div>
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <Cpu className="w-3 h-3 text-muted-foreground" />
+                        <span className="mono-label text-muted-foreground">
+                          GPUs
                         </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {leaseRates ? (
-                <div className="px-5 pb-4">
-                  <details className="rounded-md border border-border/60 bg-card text-xs">
-                    <summary className="cursor-pointer px-2 py-1.5">
-                      {connected
-                        ? "View lease quotes"
-                        : "View last observed lease quotes"}{" "}
-                      · USD / GPU-hour
-                    </summary>
-                    <ul
-                      tabIndex={0}
-                      aria-label="Published lease quotes"
-                      className="max-h-64 overflow-y-auto overscroll-contain divide-y divide-border/60 border-t border-border/60 px-2"
-                    >
-                      {leaseRates.map((rate, index) => (
-                        <li key={index} className="space-y-0.5 py-2">
-                          <div className="flex justify-between gap-2 font-medium">
-                            <span>{rate.model}</span>
-                            <span className="font-data shrink-0">
-                              {leasePrice.format(rate.pricePerGpuHr)}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground">
-                            {rate.quantity} · {rate.region}
-                          </p>
-                          <p className="text-muted-foreground">
-                            {rate.term} ·{" "}
-                            {rate.ready === "Live"
-                              ? "Listed as live"
-                              : `Ready ${rate.ready}`}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                </div>
-              ) : (
-                <div className="px-5 pb-4">
-                  <div className="flex items-center gap-1 mb-2">
-                    <BarChart2 className="w-3 h-3 text-muted-foreground" />
-                    <span className="mono-label text-muted-foreground">
-                      {summary.retained
-                        ? "Last observed prices"
-                        : "Lowest Prices"}{" "}
-                      · USD / GPU-hour
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {!Object.keys(summary.lowestPrices).length && (
-                      <p className="text-xs text-muted-foreground">
-                        No current verified prices
-                      </p>
-                    )}
-                    {Object.entries(summary.lowestPrices)
-                      .sort(([, a], [, b]) => a - b)
-                      .slice(0, 4)
-                      .map(([gpu, price]) => (
-                        <div
-                          key={gpu}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-xs text-foreground/80">
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {!summary.gpuInventory.length && (
+                          <span className="text-xs text-muted-foreground">
+                            No GPU listings
+                          </span>
+                        )}
+                        {summary.gpuInventory.slice(0, 4).map(gpu => (
+                          <span
+                            key={gpu}
+                            className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground leading-tight"
+                          >
                             {gpu}
                           </span>
-                          <div className="flex items-center gap-1">
-                            <span className="font-data text-xs font-semibold text-foreground w-14 text-right">
-                              {formatPrice(price)}
-                              <span className="text-muted-foreground font-normal">
-                                /hr
-                              </span>
+                        ))}
+                        {summary.gpuInventory.length > 4 && (
+                          <span className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
+                            +{summary.gpuInventory.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Regions */}
+                    <div>
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <MapPin className="w-3 h-3 text-muted-foreground" />
+                        <span className="mono-label text-muted-foreground">
+                          Regions
+                        </span>
+                      </div>
+                      {summary.regionCoverage.length > 4 ? (
+                        <details className="rounded-md border border-border/60 bg-card text-xs">
+                          <summary className="cursor-pointer px-2 py-1.5">
+                            {summary.regionCoverage.length} regions
+                          </summary>
+                          <ul
+                            aria-label={`${source.name} regions`}
+                            tabIndex={0}
+                            className="max-h-40 overflow-y-auto overscroll-contain space-y-1 border-t border-border/60 px-2 py-1.5 text-muted-foreground"
+                          >
+                            {[...summary.regionCoverage]
+                              .sort((a, b) => a.localeCompare(b))
+                              .map(region => (
+                                <li key={region}>{region}</li>
+                              ))}
+                          </ul>
+                        </details>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {!summary.regionCoverage.length && (
+                            <span className="text-xs text-muted-foreground">
+                              —
                             </span>
-                          </div>
+                          )}
+                          {summary.regionCoverage.map(region => (
+                            <span
+                              key={region}
+                              className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground"
+                            >
+                              {region}
+                            </span>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                    </div>
+                  </div>
+
+                  {leaseRates ? (
+                    <div className="px-5 pb-4">
+                      <details className="rounded-md border border-border/60 bg-card text-xs">
+                        <summary className="cursor-pointer px-2 py-1.5">
+                          {connected
+                            ? "View lease quotes"
+                            : "View last observed lease quotes"}{" "}
+                          · USD / GPU-hour
+                        </summary>
+                        <ul
+                          tabIndex={0}
+                          aria-label="Published lease quotes"
+                          className="max-h-64 overflow-y-auto overscroll-contain divide-y divide-border/60 border-t border-border/60 px-2"
+                        >
+                          {leaseRates.map((rate, index) => (
+                            <li key={index} className="space-y-0.5 py-2">
+                              <div className="flex justify-between gap-2 font-medium">
+                                <span>{rate.model}</span>
+                                <span className="font-data shrink-0">
+                                  {leasePrice.format(rate.pricePerGpuHr)}
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground">
+                                {rate.quantity} · {rate.region}
+                              </p>
+                              <p className="text-muted-foreground">
+                                {rate.term} ·{" "}
+                                {rate.ready === "Live"
+                                  ? "Listed as live"
+                                  : `Ready ${rate.ready}`}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </div>
+                  ) : (
+                    <div className="px-5 pb-4">
+                      <div className="flex items-center gap-1 mb-2">
+                        <BarChart2 className="w-3 h-3 text-muted-foreground" />
+                        <span className="mono-label text-muted-foreground">
+                          {summary.retained
+                            ? "Last observed prices"
+                            : "Lowest Prices"}{" "}
+                          · USD / GPU-hour
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {!Object.keys(summary.lowestPrices).length && (
+                          <p className="text-xs text-muted-foreground">
+                            No current verified prices
+                          </p>
+                        )}
+                        {Object.entries(summary.lowestPrices)
+                          .sort(([, a], [, b]) => a - b)
+                          .slice(0, 4)
+                          .map(([gpu, price]) => (
+                            <div
+                              key={gpu}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="text-xs text-foreground/80">
+                                {gpu}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-data text-xs font-semibold text-foreground w-14 text-right">
+                                  {formatPrice(price)}
+                                  <span className="text-muted-foreground font-normal">
+                                    /hr
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {compute && (
+                <div className="px-5 pb-4 space-y-2 text-xs">
+                  {(Object.keys(computeKinds) as ComputeKind[]).map(kind => {
+                    const rates = compute.rates.filter(
+                      rate => rate.kind === kind
+                    );
+                    if (!rates.length && !compute.kinds?.includes(kind))
+                      return null;
+                    const floor = rates.reduce(
+                      (price, rate) => Math.min(price, rate.price),
+                      Infinity
+                    );
+                    return (
+                      <div
+                        key={kind}
+                        className="flex flex-wrap items-center justify-between gap-x-2"
+                      >
+                        <span>
+                          {computeKinds[kind].label} · {rates.length}
+                        </span>
+                        {!!rates.length && (
+                          <span className="font-data">
+                            {hourlyPrice.format(floor)} / {listingUnit(kind)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 text-muted-foreground">
+                    <span>
+                      {computeFresh
+                        ? "Compute prices checked"
+                        : compute.status === "error"
+                          ? "Compute refresh failed"
+                          : "Last observed compute rates"}
+                      {compute.observedAt &&
+                        ` · ${timeAgo(compute.observedAt, now)}`}
+                    </span>
+                    <a
+                      href={
+                        compute.providerLink ??
+                        (compute.dataSource === "pricing_page"
+                          ? compute.url
+                          : (profile?.website ?? pricingUrl))
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-teal hover:underline"
+                    >
+                      Compute pricing <ExternalLink className="inline size-3" />
+                    </a>
                   </div>
                 </div>
               )}
-
               {/* Footer: notes + last polled */}
               <div className="mt-auto px-5 py-3 bg-secondary border-t border-border/40 flex items-center justify-between gap-2">
                 <details className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0">

@@ -3,7 +3,9 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { OffersTable } from "../client/src/components/OffersTable";
-import { loadCatalog } from "../client/src/lib/catalog";
+import { readViewLink, viewLink } from "../client/src/lib/view-link";
+import { encodeHistory } from "../shared/browser-snapshot";
+import { loadCatalog, loadHistory } from "../client/src/lib/catalog";
 import { collect } from "./collect";
 import { parseRunpod } from "./providers";
 import fixture from "./fixtures/runpod.json";
@@ -105,6 +107,93 @@ it("compares offers across pages and filters without plotting unreported specifi
     expect(document.activeElement).toBe(button("Compare 2"));
     await act(() => button("Clear selection").click());
     expect(host.querySelector('[aria-label="Selected offers"]')).toBeNull();
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
+it("opens a shared sandbox comparison using sandbox pricing, history, and human-facing links", async () => {
+  const at = new Date().toISOString();
+  const rates = [1, 2].map(vcpus => ({
+    id: `sandbox-${vcpus}`,
+    kind: "sandbox" as const,
+    model: `Size ${vcpus}`,
+    billing: "on-demand" as const,
+    price: vcpus / 10,
+    vcpus,
+    memoryGb: vcpus * 2,
+    availability: "unknown" as const,
+  }));
+  const ids = rates.map(rate => `compute:sandbox:test:${rate.id}`);
+  const snapshot = {
+    version: 1 as const,
+    generatedAt: at,
+    sources: [],
+    offers: [],
+    compute: [
+      {
+        providerId: "test",
+        providerName: "Test provider",
+        url: "https://example.com/api/rates",
+        providerLink: "https://example.com/sandboxes",
+        observedAt: at,
+        status: "ok" as const,
+        rates,
+      },
+    ],
+    history: rates.map((rate, index) => ({
+      offerId: ids[index],
+      providerId: "test",
+      gpuModelId: `compute:sandbox:${rate.model}`,
+      cloudType: "",
+      pricePerGpuHr: rate.price,
+      observedAt: at,
+    })),
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () =>
+        url.includes("history.json") ? encodeHistory(snapshot) : snapshot,
+    }))
+  );
+  vi.stubGlobal("localStorage", { getItem: () => null });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await loadCatalog();
+    await loadHistory();
+    const shared = readViewLink(
+      `?view=offers&kind=sandbox&offer=${ids[0]}&offer=${ids[1]}&provider=test&hours=24`
+    );
+    expect(shared).toMatchObject({
+      view: "offers",
+      kind: "sandbox",
+      hours: 24,
+      filters: { provider: "test" },
+    });
+    if (shared?.view !== "offers") throw new Error("Missing shared comparison");
+    const url = viewLink(shared, "https://example.com/");
+    expect(readViewLink(new URL(url).search)).toEqual(shared);
+    await act(() =>
+      root.render(<OffersTable kind="sandbox" shared={shared} />)
+    );
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("USD / sandbox-hour");
+    expect(dialog.textContent).toContain("Sandboxes needed");
+    expect(dialog.textContent).not.toContain("VRAM / GPU");
+    expect(dialog.textContent).toContain("$0.10");
+    expect(dialog.textContent).toContain("$0.100 · 1 sample");
+    expect(
+      host.querySelector('a[href="https://example.com/sandboxes"]')
+    ).not.toBeNull();
+    expect(
+      host.querySelector('a[href="https://example.com/api/rates"]')
+    ).toBeNull();
   } finally {
     await act(() => root.unmount());
     host.remove();

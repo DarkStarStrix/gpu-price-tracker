@@ -5,6 +5,8 @@
 
 import { Modal } from "./Modal";
 import { useState, useEffect, useRef } from "react";
+import { listingUnit, type ListingKind } from "@shared/catalog";
+import { hourlyPrice } from "@/lib/data";
 import { Bell, BellOff, X, Check } from "lucide-react";
 import type { PriceAlert } from "../hooks/usePriceAlerts";
 
@@ -12,6 +14,7 @@ interface Props {
   gpuModelId: string;
   gpuModelName: string;
   currentPrice: number;
+  kind?: ListingKind;
   existingAlert: PriceAlert | undefined;
   onSave: (gpuModelId: string, targetPrice: number) => boolean | void;
   onClear: (gpuModelId: string) => void;
@@ -22,6 +25,7 @@ export function PriceAlertModal({
   gpuModelId,
   gpuModelName,
   currentPrice,
+  kind = "gpu",
   existingAlert,
   onSave,
   onClear,
@@ -30,7 +34,7 @@ export function PriceAlertModal({
   const [value, setValue] = useState(
     existingAlert
       ? String(existingAlert.targetPrice)
-      : String(Math.round(currentPrice * 0.9 * 100) / 100)
+      : String(Number((currentPrice * 0.9).toFixed(kind === "gpu" ? 2 : 6)))
   );
   const [saveError, setSaveError] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -107,7 +111,7 @@ export function PriceAlertModal({
               <span className="font-data text-[10px] text-muted-foreground">
                 Current:{" "}
                 <span className="text-foreground">
-                  ${currentPrice.toFixed(2)}/hr
+                  {hourlyPrice.format(currentPrice)} / {listingUnit(kind)}
                 </span>
               </span>
             </div>
@@ -118,8 +122,8 @@ export function PriceAlertModal({
               <input
                 ref={inputRef}
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="any"
+                min="0"
                 value={value}
                 onChange={e => setValue(e.target.value)}
                 onKeyDown={e => {
@@ -153,7 +157,8 @@ export function PriceAlertModal({
               <span className="text-xs text-[oklch(0.45_0.12_25)] dark:text-red-300">
                 Active alert at{" "}
                 <span className="font-data font-semibold">
-                  ${existingAlert.targetPrice.toFixed(2)}/hr
+                  {hourlyPrice.format(existingAlert.targetPrice)} /{" "}
+                  {listingUnit(kind)}
                 </span>
               </span>
             </div>

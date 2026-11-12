@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
+import { catalog } from "@/lib/catalog";
 import { X } from "lucide-react";
-import type { GpuOffer } from "@shared/catalog";
+import {
+  computeListings,
+  listingKind,
+  listingUnit,
+  type Listing,
+} from "@shared/catalog";
 import { watchSchema, type Watch } from "@shared/watchlist";
 import { Modal } from "./Modal";
 
@@ -70,7 +76,7 @@ export function WatchlistDialog({
   offer,
   onClose,
 }: {
-  offer: GpuOffer | null;
+  offer: Listing | null;
   onClose: () => void;
 }) {
   const [watchlist, setWatchlist] = useState<Watchlist>(EMPTY);
@@ -192,6 +198,21 @@ export function WatchlistDialog({
         }
       : null);
 
+  const kind = listingKind(listing?.offerId ?? "");
+  const currentListing =
+    kind === "gpu"
+      ? undefined
+      : offer?.offerId === listing?.offerId
+        ? offer
+        : computeListings(catalog, kind).find(
+            item => item.offerId === listing?.offerId
+          );
+  const canWatchStock =
+    kind === "gpu" ||
+    (currentListing?.dataSource === "api" &&
+      currentListing.availability !== "unknown") ||
+    (!currentListing && !!editing?.restock);
+
   return (
     <Modal titleId="watchlist-title" onClose={onClose}>
       <div className="space-y-4 p-5">
@@ -230,7 +251,7 @@ export function WatchlistDialog({
                   const result = watchSchema.safeParse({
                     ...listing,
                     price: target.trim() ? Number(target) : null,
-                    restock,
+                    restock: canWatchStock && restock,
                   });
                   if (!result.success) {
                     setError(
@@ -249,7 +270,7 @@ export function WatchlistDialog({
               >
                 <p className="text-xs font-medium">{listing.label}</p>
                 <label className="offer-field">
-                  Target USD / GPU-hour
+                  Target USD / {listingUnit(kind)}
                   <input
                     type="number"
                     min="0"
@@ -259,15 +280,21 @@ export function WatchlistDialog({
                     onChange={event => setTarget(event.target.value)}
                   />
                 </label>
-                <label className="flex items-start gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    className="accent-teal"
-                    checked={restock}
-                    onChange={event => setRestock(event.target.checked)}
-                  />
-                  Alert when the provider reports available stock
-                </label>
+                {canWatchStock ? (
+                  <label className="flex items-start gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      className="accent-teal"
+                      checked={restock}
+                      onChange={event => setRestock(event.target.checked)}
+                    />
+                    Alert when the provider reports available stock
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    This source does not report stock.
+                  </p>
+                )}
                 <button
                   type="submit"
                   className="offer-button offer-button--primary"

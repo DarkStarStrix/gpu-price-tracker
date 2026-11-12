@@ -50,11 +50,6 @@ const ProviderCards = lazy(() =>
     default: module.ProviderCards,
   }))
 );
-const ComputeRates = lazy(() =>
-  import("@/components/ComputeRates").then(module => ({
-    default: module.ComputeRates,
-  }))
-);
 
 type Tab = "overview" | "offers" | "providers" | "trends";
 
@@ -73,7 +68,9 @@ export default function Home() {
     sharedView?.view === "trends" ? sharedView.id : ""
   );
   const [initialGpu, setInitialGpu] = useState("");
-  const [offerKind, setOfferKind] = useState<"gpu" | ComputeKind>("gpu");
+  const [offerKind, setOfferKind] = useState<"gpu" | ComputeKind>(
+    sharedView?.view === "offers" ? (sharedView.kind ?? "gpu") : "gpu"
+  );
   const [dark, setDark] = useState(() =>
     document.documentElement.classList.contains("dark")
   );
@@ -121,8 +118,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (activeTab === "offers" && offerKind === "gpu")
-      void loadHistory().catch(() => {});
+    if (activeTab === "offers") void loadHistory().catch(() => {});
   }, [activeTab, generatedAt, offerKind]);
 
   useEffect(() => {
@@ -481,7 +477,9 @@ export default function Home() {
                 <OffersTable
                   initialGpu={initialGpu}
                   shared={
-                    sharedView?.view === "offers" ? sharedView : undefined
+                    sharedView?.view === "offers" && !sharedView.kind
+                      ? sharedView
+                      : undefined
                   }
                   onViewHistory={id => {
                     setHistoryOfferId(id);
@@ -492,10 +490,19 @@ export default function Home() {
             </div>
             {offerKind !== "gpu" && (
               <Suspense fallback={<p role="status">Loading compute prices…</p>}>
-                <ComputeRates
+                <OffersTable
                   key={offerKind}
-                  feeds={catalog.compute ?? []}
                   kind={offerKind}
+                  shared={
+                    sharedView?.view === "offers" &&
+                    sharedView.kind === offerKind
+                      ? sharedView
+                      : undefined
+                  }
+                  onViewHistory={id => {
+                    setHistoryOfferId(id);
+                    navigate("trends");
+                  }}
                 />
               </Suspense>
             )}

@@ -20,7 +20,7 @@ flowchart LR
 
 The collector owns writes. The workflow serializes publication. The browser is a read-only consumer apart from local price-alert storage. The build derives a preloaded current catalog and a compact chart history from the same snapshot. The browser validates the current catalog before installing it and only attaches chart data with the same observation timestamp. Consumers subscribe to a revision through the shared store.
 
-The same collector publishes an optional compute catalog alongside GPU offers. CPU rates are per whole instance-hour, TPU rates per chip-hour, and sandbox rates per running sandbox-hour. Each compute feed tracks its last observation separately so a failed CPU or TPU refresh retains its previous rates and leaves GPU collection independent. The browser shows compute listings in their own tab and labels retained rates.
+The same collector publishes an optional compute catalog alongside GPU offers. CPU rates are per whole instance-hour, TPU rates per chip-hour, and sandbox rates per running sandbox-hour. Each compute feed tracks its last observation separately so a failed CPU or TPU refresh retains its previous rates and leaves GPU collection independent. CPU, TPU, and sandbox categories use the same offer controls as GPU listings. A shared projection preserves their billing units and stable IDs for history and watch evaluation. Successful observations enter the same rolling history. Failed feeds retain rates and never generate fresh observations.
 
 ## 3. Evidence and ranked bottlenecks
 

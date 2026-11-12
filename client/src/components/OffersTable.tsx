@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -15,16 +23,24 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { isCurrent, type GpuOffer } from "@shared/catalog";
+import {
+  computeListings,
+  isCurrent,
+  listingUnit,
+  type Listing,
+  type ListingKind,
+} from "@shared/catalog";
+import { computeKinds } from "@shared/compute";
 import { toCSV } from "@shared/csv";
 import { priceHistorySummary } from "@shared/market";
 import {
   billingLabel,
   cloudTiers,
   reconcileSelection,
+  computeSpecs,
 } from "@shared/offer-view";
 import { catalog, fullCatalog, historyLoadError } from "@/lib/catalog";
-import { formatPrice, providerLogo } from "@/lib/data";
+import { formatPrice, hourlyPrice, providerLogo } from "@/lib/data";
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ComparisonDrawer } from "./ComparisonDrawer";
@@ -54,8 +70,8 @@ const WatchlistDialog = lazy(() =>
 );
 
 function sortOffers(
-  a: GpuOffer,
-  b: GpuOffer,
+  a: Listing,
+  b: Listing,
   key: Exclude<SortKey, "availability">
 ) {
   switch (key) {
@@ -66,20 +82,34 @@ function sortOffers(
     case "provider":
       return a.providerName.localeCompare(b.providerName);
     case "vram":
-      return (a.vramPerGpuGb ?? -1) - (b.vramPerGpuGb ?? -1);
+      return (
+        (a.kind ? (a.ramGb ?? -1) : (a.vramPerGpuGb ?? -1)) -
+        (b.kind ? (b.ramGb ?? -1) : (b.vramPerGpuGb ?? -1))
+      );
   }
 }
 
 export function OffersTable({
   initialGpu = "",
+  kind = "gpu",
   onViewHistory,
   shared,
 }: {
   initialGpu?: string;
+  kind?: ListingKind;
   onViewHistory?: (id: string) => void;
   shared?: Extract<SharedView, { view: "offers" }>;
 }) {
-  const { offers } = catalog;
+  const snapshot = catalog;
+  const gpu = kind === "gpu";
+  const title = gpu ? "GPU offers" : computeKinds[kind].label;
+  const unit = listingUnit(kind);
+  const headingId = useId();
+  const advancedId = useId();
+  const offers = useMemo<Listing[]>(
+    () => (gpu ? snapshot.offers : computeListings(snapshot, kind)),
+    [snapshot, gpu, kind]
+  );
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filters, setFilters] = useState<Filters>(
@@ -111,8 +141,8 @@ export function OffersTable({
   );
   const [historyThrough, setHistoryThrough] = useState(shared?.through);
   const comparisonThrough = historyThrough ?? Date.now();
-  const [costOffer, setCostOffer] = useState<GpuOffer | null>(null);
-  const [watchOffer, setWatchOffer] = useState<GpuOffer | null | undefined>();
+  const [costOffer, setCostOffer] = useState<Listing | null>(null);
+  const [watchOffer, setWatchOffer] = useState<Listing | null | undefined>();
   const selectedIds = reconcileSelection(storedSelectedIds, offers);
   const missingSharedCount =
     shared?.ids.filter(id => !offers.some(offer => offer.offerId === id))
@@ -123,6 +153,8 @@ export function OffersTable({
     if (selectedIds.length < 2) setShowComparison(false);
   }, [offers, selectedIds.length, storedSelectedIds.length]);
 
+  const alertKey = (offer: Listing) =>
+    offer.kind ? offer.offerId : offer.gpuModelId;
   const {
     alerts,
     setAlert,
@@ -131,7 +163,7 @@ export function OffersTable({
     isAlertTriggered,
     storageError,
   } = usePriceAlerts();
-  const [alertTarget, setAlertTarget] = useState<GpuOffer | null>(null);
+  const [alertTarget, setAlertTarget] = useState<Listing | null>(null);
 
   function updateFilter(key: keyof Filters, value: string) {
     setFilters(previous => ({ ...previous, [key]: value }));
@@ -240,47 +272,63 @@ export function OffersTable({
     filters.maxPrice,
   ].filter(Boolean).length;
   const hasFilters = Object.values(filters).some(Boolean);
-  const alertCount = Object.keys(alerts).length;
+  const alertCount = new Set(offers.map(alertKey).filter(id => alerts[id]))
+    .size;
+  const failedFeeds = (snapshot.compute ?? []).filter(
+    feed =>
+      !gpu &&
+      feed.status === "error" &&
+      (feed.kinds?.includes(kind) ||
+        feed.rates.some(rate => rate.kind === kind))
+  );
 
   function exportCSV() {
     const headers = [
-      "GPU",
-      "VRAM (GB)",
+      gpu ? "GPU" : "Configuration",
+      gpu ? "VRAM (GB)" : "RAM (GB)",
       "Provider",
       "Region",
       "Config",
-      "$/GPU/hr",
-      "$/Node/hr",
+      `USD/${unit}`,
+      ...(gpu ? ["$/Node/hr"] : []),
       "Availability",
       "Cloud Type",
       "Data Source",
       "Observed at",
       "Source URL",
       "Billing",
+      ...(gpu ? [] : ["Terms"]),
     ];
     const rows = filtered.map(({ offer: o, retained }) => [
       o.gpuModelName,
-      o.vramPerGpuGb ?? "",
+      (o.kind ? o.ramGb : o.vramPerGpuGb) ?? "",
       o.providerName,
       o.region,
-      o.configurationKnown === false
-        ? "Per-GPU rate; node size unspecified"
-        : `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
-      o.pricePerGpuHr.toFixed(4),
-      o.configurationKnown === false ? "" : o.totalNodePriceHr.toFixed(4),
+      o.kind
+        ? computeSpecs(o)
+        : o.configurationKnown === false
+          ? "Per-GPU rate; node size unspecified"
+          : `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
+      o.kind ? String(o.pricePerGpuHr) : o.pricePerGpuHr.toFixed(4),
+      ...(o.kind
+        ? []
+        : [
+            o.configurationKnown === false ? "" : o.totalNodePriceHr.toFixed(4),
+          ]),
       retained ? "unknown (retained)" : o.availability,
       o.cloudType,
       o.dataSource,
       o.observedAt,
       o.sourceUrl,
       o.billingModel ?? "on-demand",
+      ...(o.kind ? [o.terms ?? ""] : []),
     ]);
     const url = URL.createObjectURL(
       new Blob([toCSV([headers, ...rows])], { type: "text/csv" })
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = `gpu-prices-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${kind}-prices-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -312,11 +360,11 @@ export function OffersTable({
   );
 
   return (
-    <section className="offer-market" aria-labelledby="offers-title">
+    <section className="offer-market" aria-labelledby={headingId}>
       <div className="offer-market__intro">
         <div>
-          <h1 id="offers-title">GPU offers</h1>
-          <p>Compare hourly rates, GPU configurations, and reported stock.</p>
+          <h1 id={headingId}>{title}</h1>
+          <p>Compare hourly rates, configurations, and reported stock.</p>
         </div>
         <button
           type="button"
@@ -336,13 +384,22 @@ export function OffersTable({
               <Search size={16} aria-hidden="true" />
               <input
                 type="search"
-                placeholder="GPU, provider, region"
+                placeholder={
+                  gpu
+                    ? "GPU, provider, region"
+                    : "Configuration, provider, region"
+                }
                 value={filters.search}
                 onChange={e => updateFilter("search", e.target.value)}
               />
             </span>
           </label>
-          {filter("gpuModel", "GPU model", "All GPUs", liveGpuModels)}
+          {filter(
+            "gpuModel",
+            gpu ? "GPU model" : "Configuration",
+            gpu ? "All GPUs" : "All configurations",
+            liveGpuModels
+          )}
           {filter("provider", "Provider", "All providers", liveProviders)}
           {filter("billing", "Billing", "All billing", [
             ["on-demand", "On-demand"],
@@ -352,14 +409,14 @@ export function OffersTable({
             type="button"
             className="offer-button"
             aria-expanded={showFilters}
-            aria-controls="offer-advanced-filters"
+            aria-controls={advancedId}
             onClick={() => setShowFilters(value => !value)}
           >
             <SlidersHorizontal size={16} /> More filters
             {extraFilters > 0 ? ` (${extraFilters})` : ""}
           </button>
         </div>
-        <div id="offer-advanced-filters" hidden={!showFilters}>
+        <div id={advancedId} hidden={!showFilters}>
           <div className="offer-market__extra-filters">
             {filter("availability", "Stock", "Any stock status", [
               ["available", "Available"],
@@ -368,9 +425,10 @@ export function OffersTable({
               ["unknown", "Needs stock check"],
             ])}
             {filter("region", "Region", "All regions", regions)}
-            {filter("cloud", "Cloud tier", "All cloud tiers", cloudTiers)}
+            {gpu &&
+              filter("cloud", "Cloud tier", "All cloud tiers", cloudTiers)}
             <label className="offer-field">
-              Max USD / GPU-hour
+              Max USD / {unit}
               <input
                 type="number"
                 min="0"
@@ -430,6 +488,12 @@ export function OffersTable({
           )}
         </div>
       </div>
+      {failedFeeds.length > 0 && (
+        <p role="status" className="mb-2 text-sm text-muted-foreground">
+          Refresh failed for{" "}
+          {failedFeeds.map(feed => feed.providerName).join(", ")}.
+        </p>
+      )}
       {storageError && (
         <p role="alert" className="mb-2 text-sm text-destructive">
           Browser storage unavailable. Alert settings are unchanged.
@@ -449,18 +513,18 @@ export function OffersTable({
         className="offer-market__table-wrap"
         tabIndex={0}
         role="region"
-        aria-label="GPU offer results"
+        aria-label={`${title} results`}
       >
-        <table className="offer-market__table" aria-label="GPU offers">
+        <table className="offer-market__table" aria-label={title}>
           <thead>
             <tr>
               <th scope="col" className="offer-select">
                 <span className="sr-only">Select for comparison</span>
               </th>
-              {sort("GPU", "gpu")}
-              {sort("USD / GPU-hour", "price", "offer-rate")}
+              {sort(gpu ? "GPU" : "Configuration", "gpu")}
+              {sort(`USD / ${unit}`, "price", "offer-rate")}
               {sort("Provider", "provider")}
-              {sort("VRAM", "vram")}
+              {sort(gpu ? "VRAM" : "RAM", "vram")}
               <th scope="col">7-day history</th>
               {sort("Stock", "availability")}
               <th scope="col" className="offer-actions">
@@ -482,10 +546,10 @@ export function OffersTable({
                 onToggleSelect={() => toggleSelect(offer.offerId)}
                 isAlertTriggered={
                   !retained &&
-                  isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)
+                  isAlertTriggered(alertKey(offer), offer.pricePerGpuHr)
                 }
                 onSetAlert={() => setAlertTarget(offer)}
-                hasAlert={!!getAlert(offer.gpuModelId)}
+                hasAlert={!!getAlert(alertKey(offer))}
                 onViewHistory={
                   onViewHistory ? () => onViewHistory(offer.offerId) : undefined
                 }
@@ -601,6 +665,7 @@ export function OffersTable({
             {
               view: "offers",
               ids: selectedIds,
+              kind,
               filters,
               hours: historyHours,
               through: comparisonThrough,
@@ -641,10 +706,11 @@ export function OffersTable({
       )}
       {alertTarget && (
         <PriceAlertModal
-          gpuModelId={alertTarget.gpuModelId}
+          gpuModelId={alertKey(alertTarget)}
           gpuModelName={alertTarget.gpuModelName}
           currentPrice={alertTarget.pricePerGpuHr}
-          existingAlert={getAlert(alertTarget.gpuModelId)}
+          kind={alertTarget.kind}
+          existingAlert={getAlert(alertKey(alertTarget))}
           onSave={setAlert}
           onClear={clearAlert}
           onClose={() => setAlertTarget(null)}
@@ -729,11 +795,11 @@ function OfferRow({
   hasAlert,
   onViewHistory,
 }: {
-  offer: GpuOffer;
+  offer: Listing;
   onEstimate: () => void;
   onWatch: () => void;
   retained: boolean;
-  availability: GpuOffer["availability"];
+  availability: Listing["availability"];
   isSelected: boolean;
   selectionFull: boolean;
   onToggleSelect: () => void;
@@ -757,10 +823,12 @@ function OfferRow({
         : history.state === "unchanged"
           ? "Unchanged"
           : `${history.stats!.change >= 0 ? "+" : ""}${history.stats!.percent.toFixed(2)}%`;
+  const memory = offer.kind ? offer.ramGb : offer.vramPerGpuGb;
   const tier = cloudTiers.find(([id]) => id === offer.cloudType)?.[1];
   const observed = new Date(offer.observedAt).toLocaleString();
-  const node =
-    offer.configurationKnown === false
+  const node = offer.kind
+    ? computeSpecs(offer)
+    : offer.configurationKnown === false
       ? "Node size unspecified"
       : [
           `${offer.gpuCount}× GPU`,
@@ -799,17 +867,22 @@ function OfferRow({
       </td>
       <th scope="row" className="offer-gpu">
         <strong>{offer.gpuModelName}</strong>
-        <small>{node}</small>
+        {node && <small>{node}</small>}
+        {offer.kind && offer.terms && <small>{offer.terms}</small>}
       </th>
       <td className="offer-rate">
         <strong className="font-data">
-          {formatPrice(offer.pricePerGpuHr)}
+          {offer.kind
+            ? hourlyPrice.format(offer.pricePerGpuHr)
+            : formatPrice(offer.pricePerGpuHr)}
         </strong>
-        {offer.configurationKnown !== false && offer.gpuCount > 1 && (
-          <small className="font-data">
-            {formatPrice(offer.totalNodePriceHr)} / node-hour
-          </small>
-        )}
+        {!offer.kind &&
+          offer.configurationKnown !== false &&
+          offer.gpuCount > 1 && (
+            <small className="font-data">
+              {formatPrice(offer.totalNodePriceHr)} / node-hour
+            </small>
+          )}
         {retained && (
           <small className="offer-retained" title={observed}>
             Last observed
@@ -840,7 +913,7 @@ function OfferRow({
         </div>
       </td>
       <td className="offer-vram font-data">
-        {offer.vramPerGpuGb === null ? "—" : `${offer.vramPerGpuGb} GB`}
+        {memory === null ? "—" : `${memory} GB`}
       </td>
       <td className="offer-history">
         {onViewHistory ? (
@@ -915,12 +988,12 @@ function OfferRow({
         </div>
         <a
           className="offer-source"
-          href={offer.sourceUrl}
+          href={offer.kind ? offer.providerLink : offer.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
           title={`Observed ${observed}`}
         >
-          Source <ExternalLink size={11} />
+          {offer.kind ? "Pricing details" : "Source"} <ExternalLink size={11} />
           <time dateTime={offer.observedAt}>
             {new Date(offer.observedAt).toLocaleDateString()}
           </time>

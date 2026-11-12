@@ -1,8 +1,17 @@
 import { useMemo, useState } from "react";
 import { getProvider } from "@/lib/data";
 import { marketSeries, marketStats, movingListingIds } from "@shared/market";
-import { billingLabel, cloudLabel } from "@shared/offer-view";
-import { isCurrent, type GpuOffer, type Snapshot } from "@shared/catalog";
+import { computeKinds } from "@shared/compute";
+import { billingLabel, cloudLabel, computeSpecs } from "@shared/offer-view";
+import {
+  computeListings,
+  isCurrent,
+  listingKind,
+  listingUnit,
+  type ListingKind,
+  type Listing,
+  type Snapshot,
+} from "@shared/catalog";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { TimeSeriesPlot } from "./TimeSeriesPlot";
 import { CopyViewLink } from "./CopyViewLink";
@@ -28,9 +37,13 @@ export function PriceMarket({
   snapshot: Snapshot;
   shared?: Extract<SharedView, { view: "trends" }>;
 }) {
+  const compute = useMemo(() => computeListings(catalog), [catalog]);
   const initial =
-    catalog.offers.find(o => o.offerId === initialOfferId) ??
-    catalog.history.find(o => o.offerId === initialOfferId);
+    (listingKind(initialOfferId) === "gpu" ? catalog.offers : compute).find(
+      o => o.offerId === initialOfferId
+    ) ?? catalog.history.find(o => o.offerId === initialOfferId);
+  const [kind, setKind] = useState(() => listingKind(initialOfferId));
+  const unit = listingUnit(kind);
   const [gpu, setGpu] = useState(
       shared?.gpu || initial?.gpuModelId || "h100-sxm"
     ),
@@ -54,10 +67,13 @@ export function PriceMarket({
     const moved = moversOnly
       ? movingListingIds(catalog, windowStart, windowEnd)
       : undefined;
-    const matches = (offer: Pick<GpuOffer, "offerId" | "billingModel">) =>
+    const matches = (offer: Pick<Listing, "offerId" | "billingModel">) =>
+      listingKind(offer.offerId) === kind &&
       (offer.billingModel ?? "on-demand") === billing &&
       (!moved || moved.has(offer.offerId));
-    const currentOffers = catalog.offers.filter(matches);
+    const currentOffers: Listing[] = (
+      kind === "gpu" ? catalog.offers : compute
+    ).filter(matches);
     const currentIds = new Set(currentOffers.map(offer => offer.offerId));
     const historical = new Map<string, Snapshot["history"][number]>();
     for (const point of catalog.history) {
@@ -71,8 +87,12 @@ export function PriceMarket({
       ),
     ].sort();
     return { models, currentOffers, pastOffers };
-  }, [catalog, billing, moversOnly, windowStart, windowEnd]);
+  }, [catalog, compute, kind, billing, moversOnly, windowStart, windowEnd]);
   const model = models.includes(gpu) ? gpu : models[0];
+  const modelLabel = (id: string) =>
+    kind === "gpu"
+      ? id.replaceAll("-", " ").toUpperCase()
+      : id.slice(`compute:${kind}:`.length);
   const listings = useMemo(
     () =>
       currentOffers
@@ -126,16 +146,33 @@ export function PriceMarket({
       <div className="flex flex-wrap justify-between items-start gap-4">
         <div>
           <p className="text-[10px] font-data text-muted-foreground tracking-widest uppercase">
-            GPU market tape · USD / GPU-hour
+            {kind === "gpu" ? "GPU" : computeKinds[kind].label} market tape ·
+            USD / {unit}
           </p>
           <h3 className="font-semibold text-xl mt-1">
-            {model?.replaceAll("-", " ").toUpperCase() ?? "Price history"}
+            {model ? modelLabel(model) : "Price history"}
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             One listing, real timestamps. Automatic snapshot updates.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <select
+            aria-label="Chart compute type"
+            className="border border-border rounded bg-background p-2 text-xs"
+            value={kind}
+            onChange={event => {
+              setKind(event.target.value as ListingKind);
+              reset();
+            }}
+          >
+            <option value="gpu">GPUs</option>
+            {Object.entries(computeKinds).map(([id, item]) => (
+              <option key={id} value={id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
           <select
             aria-label="Price billing model"
             className="border border-border rounded bg-background p-2 text-xs"
@@ -149,7 +186,9 @@ export function PriceMarket({
             <option value="spot">Spot · interruptible</option>
           </select>
           <select
-            aria-label="Chart GPU model"
+            aria-label={
+              kind === "gpu" ? "Chart GPU model" : "Chart configuration"
+            }
             className="border border-border rounded bg-background p-2 text-xs max-w-60"
             value={model ?? ""}
             disabled={!models.length}
@@ -158,10 +197,12 @@ export function PriceMarket({
               reset();
             }}
           >
-            {!models.length && <option value="">No matching GPUs</option>}
+            {!models.length && (
+              <option value="">No matching configurations</option>
+            )}
             {models.map(id => (
               <option key={id} value={id}>
-                {id.toUpperCase()}
+                {modelLabel(id)}
               </option>
             ))}
           </select>
@@ -217,10 +258,13 @@ export function PriceMarket({
         )}
         {listings.map(o => (
           <option key={o.offerId} value={o.offerId}>
-            {o.providerName} · {o.region} · {cloudLabel(o)} ·{" "}
-            {o.configurationKnown === false
-              ? "Per-GPU rate"
-              : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
+            {o.providerName} · {o.region} ·{" "}
+            {o.kind ? "" : `${cloudLabel(o)} · `}
+            {o.kind
+              ? computeSpecs(o) || o.gpuModelName
+              : o.configurationKnown === false
+                ? "Per-GPU rate"
+                : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
             · ${o.pricePerGpuHr.toFixed(3)}{" "}
             {isCurrent(catalog, o)
               ? "current quoted rate"
@@ -309,7 +353,12 @@ export function PriceMarket({
             state={isCurrent(catalog, offer) ? offer.availability : "unknown"}
           />
           <span className="text-muted-foreground">
-            {billingLabel(offer)} · {cloudLabel(offer)}
+            {billingLabel(offer)}
+            {offer.kind
+              ? offer.terms
+                ? ` · ${offer.terms}`
+                : ""
+              : ` · ${cloudLabel(offer)}`}
             {!isCurrent(catalog, offer) ? " · retained / stale quote" : ""}
           </span>
           <a
@@ -324,6 +373,7 @@ export function PriceMarket({
       )}
       {points.length > 1 ? (
         <MarketPlot
+          unit={unit}
           key={`${chartId}:${hours}:${anchoredEnd ?? "latest"}`}
           points={points}
           color={color}
@@ -361,7 +411,7 @@ export function PriceMarket({
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground mt-4">
-        {billing === "spot"
+        {kind === "gpu" && billing === "spot"
           ? "Nebius spot history includes provider hourly-last prices at completed interval ends. Interruptible pricing is separate from on-demand."
           : "Collector observations from the selected listing. History starts at its first successful collection."}{" "}
         The line connects recorded samples; between-sample prices are unknown.
@@ -374,6 +424,7 @@ export function PriceMarket({
 }
 
 function MarketPlot({
+  unit,
   points,
   color,
   stats,
@@ -381,6 +432,7 @@ function MarketPlot({
   bounds,
   onBoundsChange,
 }: {
+  unit: string;
   points: ReturnType<typeof marketSeries>;
   color: string;
   stats: NonNullable<ReturnType<typeof marketStats>>;
@@ -408,7 +460,7 @@ function MarketPlot({
   return (
     <>
       <TimeSeriesPlot
-        label="Recorded price in USD per GPU-hour. Use the arrow keys to inspect samples."
+        label={`Recorded price in USD per ${unit}. Use the arrow keys to inspect samples.`}
         times={visible.map(point => point.time)}
         series={[
           {

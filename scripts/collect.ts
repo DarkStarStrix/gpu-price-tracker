@@ -8,6 +8,8 @@ import {
   evidenceSchema,
   exclusionSchema,
   historySchema,
+  computeListings,
+  isCurrent,
   leaseRatesSchema,
 } from "../shared/catalog";
 import { measurePool } from "../shared/movement";
@@ -179,7 +181,37 @@ export async function main() {
     collect(previous, sources(), at),
     collectCompute(previous?.compute ?? [], at),
   ]);
-  const snapshot = snapshotSchema.parse({ ...gpu, compute });
+  const combined = { ...gpu, compute };
+  const samples = computeListings(combined)
+    .filter(
+      offer =>
+        offer.observedAt === at && isCurrent(combined, offer, Date.parse(at))
+    )
+    .map(offer =>
+      historySchema.parse({
+        offerId: offer.offerId,
+        providerId: offer.providerId,
+        gpuModelId: offer.gpuModelId,
+        cloudType: offer.cloudType,
+        pricePerGpuHr: offer.pricePerGpuHr,
+        billingModel: offer.billingModel,
+        observedAt: offer.observedAt,
+        dataSource: offer.dataSource,
+        sourceUrl: offer.sourceUrl,
+        historyOrigin: "collector",
+      })
+    );
+  const snapshot = snapshotSchema.parse({
+    ...combined,
+    history: [
+      ...new Map(
+        [...gpu.history, ...samples].map(point => [
+          `${point.offerId}:${point.observedAt}`,
+          point,
+        ])
+      ).values(),
+    ],
+  });
   await mkdir(dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
   await writeFile(temporary, writeSnapshot(snapshot));

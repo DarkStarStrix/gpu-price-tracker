@@ -1,21 +1,21 @@
 import { useId, useState } from "react";
-import type { GpuOffer } from "@shared/catalog";
+import { listingUnit, type Listing } from "@shared/catalog";
 
-const metrics = [
-  { label: "USD / GPU-hour", read: (offer: GpuOffer) => offer.pricePerGpuHr },
-  { label: "VRAM / GPU", read: (offer: GpuOffer) => offer.vramPerGpuGb },
+const gpuMetrics = [
+  { label: "USD / GPU-hour", read: (offer: Listing) => offer.pricePerGpuHr },
+  { label: "VRAM / GPU", read: (offer: Listing) => offer.vramPerGpuGb },
   {
     label: "GPUs / node",
-    read: (offer: GpuOffer) =>
+    read: (offer: Listing) =>
       offer.configurationKnown === false ? null : offer.gpuCount,
   },
   {
     label: "USD / node-hour",
-    read: (offer: GpuOffer) =>
+    read: (offer: Listing) =>
       offer.configurationKnown === false ? null : offer.totalNodePriceHr,
   },
-  { label: "vCPUs", read: (offer: GpuOffer) => offer.vcpus },
-  { label: "System RAM", read: (offer: GpuOffer) => offer.ramGb },
+  { label: "vCPUs", read: (offer: Listing) => offer.vcpus },
+  { label: "System RAM", read: (offer: Listing) => offer.ramGb },
 ];
 
 const seriesStyles = [
@@ -27,20 +27,38 @@ const centerX = 240;
 const centerY = 155;
 const chartRadius = 108;
 
-function point(index: number, ratio: number) {
-  const angle = (index / metrics.length) * 2 * Math.PI - Math.PI / 2;
+function point(index: number, ratio: number, count: number) {
+  const angle = (index / count) * 2 * Math.PI - Math.PI / 2;
   return [
     centerX + chartRadius * ratio * Math.cos(angle),
     centerY + chartRadius * ratio * Math.sin(angle),
   ] as const;
 }
 
-function ring(ratio: number) {
-  return metrics.map((_, index) => point(index, ratio).join(",")).join(" ");
+function ring(ratio: number, count: number) {
+  return Array.from({ length: count }, (_, index) =>
+    point(index, ratio, count).join(",")
+  ).join(" ");
 }
 
-export function OfferRadar({ offers }: { offers: GpuOffer[] }) {
+export function OfferRadar({ offers }: { offers: Listing[] }) {
   const id = useId();
+  const kind = offers[0]?.kind;
+  const metrics = kind
+    ? [
+        {
+          label: `USD / ${listingUnit(kind)}`,
+          read: (offer: Listing) => offer.pricePerGpuHr,
+        },
+        { label: "vCPUs", read: (offer: Listing) => offer.vcpus },
+        { label: "RAM", read: (offer: Listing) => offer.ramGb },
+        {
+          label: "Disk",
+          read: (offer: Listing) =>
+            offer.kind ? (offer.storageGb ?? null) : null,
+        },
+      ]
+    : gpuMetrics;
   const [hidden, setHidden] = useState<string[]>([]);
   const hiddenIds = offers.every(o => hidden.includes(o.offerId)) ? [] : hidden;
   const visibleCount = offers.filter(
@@ -70,26 +88,28 @@ export function OfferRadar({ offers }: { offers: GpuOffer[] }) {
         aria-labelledby={`${id}-title ${id}-desc`}
         className="comparison-radar__plot"
       >
-        <title id={`${id}-title`}>
-          Radial comparison of selected GPU offers
-        </title>
+        <title id={`${id}-title`}>Radial comparison of selected offers</title>
         <desc id={`${id}-desc`}>
-          Six axes compare prices and hardware specifications. Exact values are
-          in the table below.
+          Axes compare prices and hardware specifications. Exact values are in
+          the table below.
         </desc>
         <g fill="none" stroke="#7795b6" strokeOpacity={0.36}>
           {[0.25, 0.5, 0.75, 1].map(ratio => (
-            <polygon key={ratio} points={ring(ratio)} />
+            <polygon key={ratio} points={ring(ratio, metrics.length)} />
           ))}
           {axes.map(({ label }, index) => {
-            const [x, y] = point(index, 1);
+            const [x, y] = point(index, 1, metrics.length);
             return <line key={label} x1={centerX} y1={centerY} x2={x} y2={y} />;
           })}
         </g>
         {axes.map(({ label, max }, index) => {
-          const vertical = index === 0 || index === 3;
-          const [x, y] = point(index, vertical ? 1.24 : 1.13);
-          const anchor = vertical ? "middle" : index < 3 ? "start" : "end";
+          const vertical = index === 0 || index === metrics.length / 2;
+          const [x, y] = point(index, vertical ? 1.24 : 1.13, metrics.length);
+          const anchor = vertical
+            ? "middle"
+            : index < metrics.length / 2
+              ? "start"
+              : "end";
           return (
             <text
               key={label}
@@ -111,7 +131,7 @@ export function OfferRadar({ offers }: { offers: GpuOffer[] }) {
             const value = values[seriesIndex];
             return value === null || max === 0
               ? null
-              : point(index, value / max);
+              : point(index, value / max, metrics.length);
           });
           const complete = points.every(p => p !== null);
           return (

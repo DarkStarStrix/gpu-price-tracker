@@ -1,6 +1,6 @@
 import { providerLogo } from "@/lib/data";
 import { X, ExternalLink } from "lucide-react";
-import type { GpuOffer, Snapshot } from "@shared/catalog";
+import { listingUnit, type Listing, type Snapshot } from "@shared/catalog";
 import { marketSeries, marketStats } from "@shared/market";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
@@ -9,6 +9,32 @@ import { OfferRadar } from "./OfferRadar";
 import { CopyViewLink } from "./CopyViewLink";
 import { JobCostCalculator } from "./JobCostCalculator";
 import { historyPeriods, type HistoryHours } from "@/lib/view-link";
+type DetailRow = [string, (o: Listing) => string];
+const computeRows: DetailRow[] = [
+  ["Disk", o => (o.kind && o.storageGb ? `${o.storageGb} GB` : "Not reported")],
+  ["Billing details", o => (o.kind ? (o.terms ?? "—") : "—")],
+];
+const gpuRows: DetailRow[] = [
+  ["Cloud tier", cloudLabel],
+  [
+    "Node configuration",
+    o =>
+      o.configurationKnown === false
+        ? "Per-GPU rate; node size not specified"
+        : `${o.gpuCount} GPU${(o.gpuCount ?? 0) > 1 ? "s" : ""}`,
+  ],
+  [
+    "USD / node-hour",
+    o =>
+      o.configurationKnown === false
+        ? "Not specified"
+        : `$${o.totalNodePriceHr.toFixed(3)}`,
+  ],
+  [
+    "VRAM / GPU",
+    o => (o.vramPerGpuGb === null ? "Not reported" : `${o.vramPerGpuGb} GB`),
+  ],
+];
 export function ComparisonDrawer({
   offers,
   onClose,
@@ -20,7 +46,7 @@ export function ComparisonDrawer({
   shareUrl,
   missingSharedCount,
 }: {
-  offers: GpuOffer[];
+  offers: Listing[];
   onClose: () => void;
   history?: Snapshot;
   hours: HistoryHours;
@@ -34,28 +60,12 @@ export function ComparisonDrawer({
   const mixed =
     new Set(offers.map(o => `${o.gpuModelId}:${o.billingModel ?? "on-demand"}`))
       .size > 1;
-  const rows: [string, (o: GpuOffer) => string][] = [
-    ["USD / GPU-hour", o => `$${o.pricePerGpuHr.toFixed(3)}`],
+  const kind = offers[0].kind;
+  const rows: [string, (o: Listing) => string][] = [
+    [`USD / ${listingUnit(kind)}`, o => `$${o.pricePerGpuHr.toFixed(4)}`],
     ["Billing", billingLabel],
-    ["Cloud tier", cloudLabel],
-    [
-      "Node configuration",
-      o =>
-        o.configurationKnown === false
-          ? "Per-GPU rate; node size not specified"
-          : `${o.gpuCount} GPU${o.gpuCount > 1 ? "s" : ""}`,
-    ],
-    [
-      "USD / node-hour",
-      o =>
-        o.configurationKnown === false
-          ? "Not specified"
-          : `$${o.totalNodePriceHr.toFixed(3)}`,
-    ],
-    [
-      "VRAM / GPU",
-      o => (o.vramPerGpuGb === null ? "Not reported" : `${o.vramPerGpuGb} GB`),
-    ],
+    ...(!kind ? gpuRows : []),
+    ...(kind ? computeRows : []),
     ["vCPUs", o => (o.vcpus === null ? "Not reported" : String(o.vcpus))],
     ["System RAM", o => (o.ramGb === null ? "Not reported" : `${o.ramGb} GB`)],
     ["Region", o => o.region],
@@ -130,8 +140,8 @@ export function ComparisonDrawer({
         )}
         {mixed && (
           <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded text-xs">
-            This selection mixes GPU models or billing types. Check both when
-            comparing rates.
+            This selection mixes {kind ? "configurations" : "GPU models"} or
+            billing types. Check both when comparing rates.
           </p>
         )}
         <OfferRadar offers={offers} />
@@ -225,12 +235,12 @@ export function ComparisonDrawer({
                   <td key={o.offerId} className="p-3">
                     <a
                       className="text-teal underline"
-                      href={o.sourceUrl}
+                      href={o.kind ? o.providerLink : o.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {o.dataSource === "pricing_page"
-                        ? "Published pricing"
+                      {o.kind || o.dataSource === "pricing_page"
+                        ? "Pricing details"
                         : "Provider API"}{" "}
                       ↗
                     </a>
