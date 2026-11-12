@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef } from "react";
-import { z } from "zod";
+import { z } from "zod/mini";
 
 const alertSchema = z.object({
-  gpuModelId: z.string().min(1).max(200),
-  targetPrice: z.number().finite().positive(),
-  createdAt: z.number().finite().nonnegative(),
+  gpuModelId: z.string().check(z.minLength(1), z.maxLength(200)),
+  targetPrice: z.number().check(z.positive()),
+  createdAt: z.number().check(z.nonnegative()),
 });
 export type PriceAlert = z.infer<typeof alertSchema>;
 const STORAGE_KEY = "gpu-price-alerts";

@@ -3,10 +3,17 @@ import App from "./App";
 import { loadCatalog } from "./lib/catalog";
 import "./index.css";
 const root = createRoot(document.getElementById("root")!);
+let mounted = false;
+function mountDashboard() {
+  if (mounted) return;
+  mounted = true;
+  root.render(<App />);
+}
+
 async function start() {
   try {
     await loadCatalog();
-    root.render(<App />);
+    mountDashboard();
   } catch {
     root.render(
       <main className="container py-16">
@@ -28,10 +35,7 @@ void start();
 function refreshPublishedData() {
   if (document.visibilityState === "visible")
     void loadCatalog()
-      .then(() => {
-        // Recover the initial error screen when data becomes available.
-        root.render(<App />);
-      })
+      .then(mountDashboard)
       .catch(() => {});
 }
 setInterval(refreshPublishedData, 60_000);

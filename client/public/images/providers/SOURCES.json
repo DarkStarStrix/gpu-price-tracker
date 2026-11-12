@@ -47,7 +47,8 @@
   {
     "id": "runcrate",
     "source": "https://www.runcrate.ai/android-chrome-512x512.png",
-    "file": "runcrate.png"
+    "file": "runcrate.webp",
+    "bytes": 2136
   },
   {
     "id": "hotaisle",

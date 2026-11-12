@@ -1,35 +1,10 @@
 /*
-  MarketPulse — Premium animated market metrics banner
-  Design: Data Observatory v2 — animated counters, teal glow, depth layers
+  MarketPulse — Current market metrics
 */
 
-import { useEffect, useState } from "react";
 import { catalog, eligibleOffers } from "@/lib/catalog";
 import { displayQuote } from "@shared/market";
 import { Activity, TrendingDown, Server, Cpu } from "lucide-react";
-
-function useCountUp(target: number, duration = 800, delay = 0) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let frame = 0;
-    const timer = setTimeout(() => {
-      const start = performance.now();
-      const step = (now: number) => {
-        const elapsed = now - start;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        setValue(Math.round(eased * target));
-        if (progress < 1) frame = requestAnimationFrame(step);
-      };
-      frame = requestAnimationFrame(step);
-    }, delay);
-    return () => {
-      clearTimeout(timer);
-      cancelAnimationFrame(frame);
-    };
-  }, [target, duration, delay]);
-  return value;
-}
 
 export function MarketPulse() {
   const offers = eligibleOffers();
@@ -66,7 +41,6 @@ export function MarketPulse() {
         }
         missing={offers.length === 0}
         accent="teal"
-        delay={0}
       />
       <MetricCard
         icon={<Server className="w-4 h-4" />}
@@ -75,7 +49,6 @@ export function MarketPulse() {
         suffix=""
         subtext="tracked cloud platforms"
         accent="navy"
-        delay={80}
       />
       <MetricCard
         icon={<TrendingDown className="w-4 h-4" />}
@@ -88,7 +61,6 @@ export function MarketPulse() {
         subtext="On-demand · USD / GPU-hour"
         missing={metrics.lowestH100 === null}
         accent="sage"
-        delay={160}
       />
       <MetricCard
         icon={<Cpu className="w-4 h-4" />}
@@ -97,7 +69,6 @@ export function MarketPulse() {
         suffix=""
         subtext="tracked configurations"
         accent="coral"
-        delay={240}
       />
     </div>
   );
@@ -111,7 +82,6 @@ function MetricCard({
   prefix = "",
   subtext,
   accent,
-  delay = 0,
   divisor = 1,
   decimals = 0,
   missing = false,
@@ -123,14 +93,12 @@ function MetricCard({
   prefix?: string;
   subtext: string;
   accent: string;
-  delay?: number;
   missing?: boolean;
   divisor?: number;
   decimals?: number;
 }) {
-  const animated = useCountUp(value, 900, delay);
   const displayValue =
-    decimals > 0 ? (animated / divisor).toFixed(decimals) : animated.toString();
+    decimals > 0 ? (value / divisor).toFixed(decimals) : value.toString();
 
   const accentMap: Record<
     string,
@@ -170,8 +138,7 @@ function MetricCard({
 
   return (
     <div
-      className={`relative overflow-hidden ${s.bg} border border-border rounded-lg px-5 py-4 transition-all duration-300 ${s.glow} animate-fade-up`}
-      style={{ animationDelay: `${delay}ms` }}
+      className={`relative overflow-hidden ${s.bg} border border-border rounded-lg px-5 py-4 transition-all duration-300 ${s.glow}`}
     >
       {/* Top accent bar */}
       <div

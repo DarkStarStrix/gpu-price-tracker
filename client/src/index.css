@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/dm-sans-latin-v17.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: optional;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex-mono-400-latin-v23.woff2") format("woff2");
+  font-weight: 400;
+  font-display: optional;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex-mono-500-latin-v23.woff2") format("woff2");
+  font-weight: 500;
+  font-display: optional;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex-mono-600-latin-v23.woff2") format("woff2");
+  font-weight: 600;
+  font-display: optional;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -357,6 +382,15 @@
       transparent 1px
     );
     background-size: var(--grid-size) var(--grid-size);
+  }
+
+  @media (min-width: 1024px) {
+    .hero-blueprint {
+      background: url("/images/gpu-blueprint.webp") right center / contain
+        no-repeat;
+      mix-blend-mode: multiply;
+      opacity: 0.88;
+    }
   }
 
   /* ── Fine grid lines ── */

@@ -63,7 +63,10 @@ it("renders retained prices and provider inventory without presenting stale stoc
     const providers = [...host.querySelectorAll("button")].find(
       button => button.textContent === "Providers"
     )!;
-    await act(() => providers.click());
+    await act(async () => {
+      providers.click();
+      await vi.dynamicImportSettled();
+    });
     expect(host.textContent).toContain("Last observed prices");
     expect(host.textContent).toContain("4 offers");
     expect(host.textContent).not.toMatch(/refresh overdue/i);

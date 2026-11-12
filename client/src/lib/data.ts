@@ -163,6 +163,7 @@ export function providerLogo(id: string): string {
     vultr: "ico",
     paperspace: "webp",
     hotaisle: "svg",
+    runcrate: "webp",
   };
   return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
 }

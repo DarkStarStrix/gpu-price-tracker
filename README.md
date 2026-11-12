@@ -50,7 +50,7 @@ Pricing pages establish a published rate, not stock. Missing stock becomes a **C
 
 GitHub Actions is scheduled to collect around the clock at minutes 8/23/38/53 UTC, then commit observations, build, and deploy Pages. GitHub can delay or skip scheduled runs. The browser checks the published snapshot every minute and when returning to the tab. **Refresh** checks immediately and reports whether a newer snapshot arrived. **Run collector on GitHub** opens the workflow, where users with repository write access can select **Run workflow**. Refresh the dashboard after deployment completes.
 
-The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, crosshair, brush, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
+The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, sample inspection, start and end sliders, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
 Pool replay shows recorded listing additions/removals, price changes, stock changes and counts. Filters include GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
 
@@ -61,7 +61,7 @@ Price alerts are local to this browser and evaluated while the app is open. Inva
 - `shared/catalog.ts` owns snapshot validation, prices, timestamps and provenance.
 - `scripts/http.ts` owns bounded provider requests; adapters own extraction and units.
 - `scripts/collect.ts` owns provider replacement, seven-day history and local atomic publication.
-- `client/src/lib/catalog.ts` owns browser loading, refresh serialization and subscriptions.
+- `shared/browser-snapshot.ts` defines the current and chart files derived from the full published snapshot. `client/src/lib/catalog.ts` owns browser loading, revision matching, refresh serialization and subscriptions.
 - `shared/market.ts`, `shared/movement.ts` and `shared/offer-view.ts` own market calculations and filters.
 - `ProviderIdentity` owns the common official logo, billing, cloud tier and source treatment.
 

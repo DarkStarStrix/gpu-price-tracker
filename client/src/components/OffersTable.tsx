@@ -21,7 +21,7 @@ import {
   cloudTiers,
   reconcileSelection,
 } from "@shared/offer-view";
-import { catalog } from "@/lib/catalog";
+import { catalog, fullCatalog, historyLoadError } from "@/lib/catalog";
 import { formatPrice, providerLogo } from "@/lib/data";
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import { AvailabilityBadge } from "./AvailabilityBadge";
@@ -636,9 +636,15 @@ function OfferRow({
   hasAlert: boolean;
   onViewHistory?: () => void;
 }) {
-  const history = priceHistorySummary(catalog, offer.offerId);
-  const historyLabel =
-    history.state === "empty"
+  const history =
+    fullCatalog?.generatedAt === catalog.generatedAt
+      ? priceHistorySummary(fullCatalog, offer.offerId)
+      : undefined;
+  const historyLabel = !history
+    ? historyLoadError
+      ? "History unavailable"
+      : "Loading history…"
+    : history.state === "empty"
       ? "No samples"
       : history.state === "collecting"
         ? "First sample"
@@ -738,7 +744,7 @@ function OfferRow({
             onClick={onViewHistory}
             aria-label={`View history for ${description}`}
             title={
-              history.firstAt
+              history?.firstAt
                 ? `${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`
                 : undefined
             }
@@ -748,7 +754,7 @@ function OfferRow({
         ) : (
           <span>{historyLabel}</span>
         )}
-        {history.stats && (
+        {history?.stats && (
           <small>
             {history.stats.count}{" "}
             {history.stats.count === 1 ? "sample" : "samples"}

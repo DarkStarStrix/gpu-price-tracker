@@ -18,13 +18,13 @@ flowchart LR
   B --> I[Short-lived public source evidence]
 ```
 
-The collector owns writes. The workflow serializes publication. The browser is a read-only consumer apart from local price-alert storage. A snapshot is installed as a whole after validation; consumers subscribe to a revision rather than fetching independently.
+The collector owns writes. The workflow serializes publication. The browser is a read-only consumer apart from local price-alert storage. The build derives a preloaded current catalog and a compact chart history from the same snapshot. The browser validates the current catalog before installing it and only attaches chart data with the same observation timestamp. Consumers subscribe to a revision through the shared store.
 
 ## 3. Evidence and ranked bottlenecks
 
 The cleanup baseline contained eight working public providers, four disconnected adapters, unused generated UI/theme scaffolding, duplicated HTTP readers and dependency advisories. Alert storage trusted arbitrary parsed JSON; CSV escaping covered formula prefixes only in the first character. These paths have explicit regression coverage after cleanup.
 
-Remaining operational constraints are provider HTML drift, delayed GitHub schedules, seven-day storage growth, and stock information that most price catalogs do not supply. A successful fetch cannot establish rentable capacity. Recharts 2 is retained for chart compatibility; its dependency graph is audited, but migration to its maintained major is separate work.
+Remaining operational constraints are provider HTML drift, delayed GitHub schedules, seven-day storage growth, and stock information that most price catalogs do not supply. A successful fetch cannot establish rentable capacity. The Trends route uses local SVG plots with keyboard inspection, a selectable range and pool replay. The history request starts when the route opens or the overview chart approaches the viewport.
 
 ## 4. Competing hypotheses and designs
 

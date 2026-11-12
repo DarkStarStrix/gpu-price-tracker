@@ -5,13 +5,11 @@
   staggered section entrances, blueprint illustration integration
 */
 
-import { useState, useEffect } from "react";
+import { lazy, startTransition, Suspense, useState, useEffect } from "react";
 import { LiveH100 } from "@/components/LiveH100";
 import { MarketPulse } from "@/components/MarketPulse";
 import { QuickComparison } from "@/components/QuickComparison";
-import { OffersTable } from "@/components/OffersTable";
-import { ProviderCards } from "@/components/ProviderCards";
-import { PriceTrends } from "@/components/PriceTrends";
+import { TrendsPanel } from "@/components/TrendsPanel";
 import { Activity, RefreshCw, ChevronRight, ArrowRight } from "lucide-react";
 import {
   catalog,
@@ -20,6 +18,7 @@ import {
   lastCheckedAt,
   lastCheckResult,
   loadCatalog,
+  loadHistory,
 } from "@/lib/catalog";
 import { displayQuote } from "@shared/market";
 import { formatPrice } from "@/lib/data";
@@ -27,8 +26,19 @@ import { isStale, isCurrent } from "@shared/catalog";
 
 // Generated assets
 const HERO_BG = `${import.meta.env.BASE_URL}images/provider-network.svg`;
-const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.jpg`;
+const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.webp`;
 const CONSTELLATION = `${import.meta.env.BASE_URL}images/provider-network.svg`;
+const loadOffers = () =>
+  import("@/components/OffersTable").then(module => ({
+    default: module.OffersTable,
+  }));
+const OffersTable = lazy(loadOffers);
+const warmOffers = () => void loadOffers().catch(() => {});
+const ProviderCards = lazy(() =>
+  import("@/components/ProviderCards").then(module => ({
+    default: module.ProviderCards,
+  }))
+);
 
 type Tab = "overview" | "offers" | "providers" | "trends";
 
@@ -44,6 +54,7 @@ export default function Home() {
   const [initialGpu, setInitialGpu] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [scrolled, setScrolled] = useState(false);
+  const generatedAt = catalog.generatedAt;
   const offers = catalog.offers;
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
   const providerCount = new Set(offers.map(o => o.providerId)).size;
@@ -56,8 +67,12 @@ export default function Home() {
 
   function navigate(tab: Tab, gpu = "") {
     if (tab === activeTab) return;
-    if (tab === "offers") setInitialGpu(gpu);
-    setActiveTab(tab);
+    if (tab === "offers") {
+      startTransition(() => {
+        setInitialGpu(gpu);
+        setActiveTab(tab);
+      });
+    } else setActiveTab(tab);
     window.scrollTo(0, 0);
   }
 
@@ -65,6 +80,25 @@ export default function Home() {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "offers") void loadHistory().catch(() => {});
+  }, [activeTab, generatedAt]);
+
+  useEffect(() => {
+    const connection = (
+      navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }
+    ).connection;
+    if (connection?.saveData || connection?.effectiveType?.endsWith("2g"))
+      return;
+    // The overview has already mounted. Warm the primary destination after its first paint.
+    const timer = window.setTimeout(() => {
+      if (document.visibilityState === "visible") warmOffers();
+    }, 700);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
@@ -79,7 +113,7 @@ export default function Home() {
       >
         <div className="container flex items-center justify-between h-[60px]">
           {/* Logo */}
-          <div className="flex items-center gap-3 animate-slide-right">
+          <div className="flex items-center gap-3">
             <div className="relative w-9 h-9 rounded-lg bg-[oklch(0.22_0.045_255)] flex items-center justify-center shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.3)]">
               <Activity className="w-4.5 h-4.5 text-[oklch(0.62_0.19_218)]" />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[oklch(0.60_0.18_155)] border-2 border-[var(--paper)] pulse-dot" />
@@ -95,11 +129,13 @@ export default function Home() {
           </div>
 
           {/* Tab navigation — desktop */}
-          <nav className="hidden md:flex items-center gap-0.5 animate-fade-in delay-120">
+          <nav className="hidden md:flex items-center gap-0.5">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => navigate(tab.id)}
+                onPointerEnter={tab.id === "offers" ? warmOffers : undefined}
+                onFocus={tab.id === "offers" ? warmOffers : undefined}
                 aria-current={activeTab === tab.id ? "page" : undefined}
                 className={`relative px-4 py-2 text-sm rounded-md transition-all duration-200 ${
                   activeTab === tab.id
@@ -116,7 +152,7 @@ export default function Home() {
           </nav>
 
           {/* Right controls */}
-          <div className="flex items-center gap-1.5 animate-fade-in delay-240">
+          <div className="flex items-center gap-1.5">
             {/* Clock + Refresh — always visible */}
             <span className="font-data text-[10px] text-muted-foreground hidden lg:block mr-1">
               {new Date(catalog.generatedAt).toLocaleTimeString([], {
@@ -158,6 +194,8 @@ export default function Home() {
           <button
             key={tab.id}
             onClick={() => navigate(tab.id)}
+            onPointerEnter={tab.id === "offers" ? warmOffers : undefined}
+            onFocus={tab.id === "offers" ? warmOffers : undefined}
             aria-current={activeTab === tab.id ? "page" : undefined}
             className={`px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-all duration-200 ${
               activeTab === tab.id
@@ -226,20 +264,14 @@ export default function Home() {
 
           {/* GPU Diagram — right side decorative */}
           <div
-            className="absolute right-0 top-0 bottom-0 w-[45%] hidden lg:block"
-            style={{ opacity: 0.88, mixBlendMode: "multiply" }}
-          >
-            <img
-              src={GPU_DIAGRAM}
-              alt=""
-              className="w-full h-full object-contain object-right"
-            />
-          </div>
+            aria-hidden="true"
+            className="hero-blueprint absolute right-0 top-0 bottom-0 w-[45%] hidden lg:block"
+          />
 
           <div className="container relative py-16 md:py-20">
             <div className="max-w-xl">
               {/* Eyebrow */}
-              <div className="flex items-center gap-2 mb-5 animate-slide-right">
+              <div className="flex items-center gap-2 mb-5">
                 <span className="mono-label text-[oklch(0.62_0.19_218)]">
                   Market Intelligence
                 </span>
@@ -250,13 +282,13 @@ export default function Home() {
               </div>
 
               {/* Headline */}
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] text-balance animate-fade-up delay-60">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] text-balance">
                 GPU Compute
                 <br />
                 <span className="gradient-text-teal">Price Observatory</span>
               </h1>
 
-              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md animate-fade-up delay-120">
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md">
                 Normalized GPU pricing from official provider sources. Compare
                 hourly rates, cloud tiers, and reported availability — with a
                 source and observation time for every offer.
@@ -265,9 +297,11 @@ export default function Home() {
               <LiveH100 />
 
               {/* CTA row */}
-              <div className="mt-7 flex items-center gap-3 animate-fade-up delay-180">
+              <div className="mt-7 flex items-center gap-3">
                 <button
                   onClick={() => navigate("offers")}
+                  onPointerEnter={warmOffers}
+                  onFocus={warmOffers}
                   className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200 shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.25)]"
                 >
                   Browse All Offers
@@ -283,7 +317,7 @@ export default function Home() {
               </div>
 
               {/* Inline stats row */}
-              <div className="mt-8 flex items-center gap-6 animate-fade-up delay-240">
+              <div className="mt-8 flex items-center gap-6">
                 {[
                   { label: "B200 floor", value: floor("b200-sxm") },
                   { label: "RTX 4090 floor", value: floor("rtx-4090") },
@@ -308,7 +342,7 @@ export default function Home() {
         className={`container ${activeTab === "offers" ? "py-5" : "py-10"}`}
       >
         {activeTab === "overview" && (
-          <div className="animate-fade-up">
+          <div>
             <MarketPulse />
 
             {/* Section header */}
@@ -355,6 +389,10 @@ export default function Home() {
                 <img
                   src={GPU_DIAGRAM}
                   alt="GPU node cluster diagram"
+                  loading="lazy"
+                  decoding="async"
+                  width={1080}
+                  height={608}
                   className="w-full h-full object-contain opacity-55"
                 />
               </div>
@@ -367,18 +405,20 @@ export default function Home() {
               </h2>
               <div className="flex-1 section-rule" />
             </div>
-            <PriceTrends initialOfferId={historyOfferId} />
+            <TrendsPanel initialOfferId={historyOfferId} belowFold />
           </div>
         )}
 
         {activeTab === "offers" && (
-          <OffersTable
-            initialGpu={initialGpu}
-            onViewHistory={id => {
-              setHistoryOfferId(id);
-              navigate("trends");
-            }}
-          />
+          <Suspense fallback={<p role="status">Loading offers…</p>}>
+            <OffersTable
+              initialGpu={initialGpu}
+              onViewHistory={id => {
+                setHistoryOfferId(id);
+                navigate("trends");
+              }}
+            />
+          </Suspense>
         )}
 
         {activeTab === "providers" && (
@@ -404,7 +444,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <ProviderCards />
+            <Suspense fallback={<p role="status">Loading providers…</p>}>
+              <ProviderCards />
+            </Suspense>
           </div>
         )}
 
@@ -416,7 +458,7 @@ export default function Home() {
                 Recorded prices · rolling seven-day history
               </span>
             </div>
-            <PriceTrends initialOfferId={historyOfferId} />
+            <TrendsPanel initialOfferId={historyOfferId} />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <strong className="text-foreground font-medium">Note:</strong>{" "}

@@ -1,21 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getProvider } from "@/lib/data";
-import { catalog } from "@/lib/catalog";
 import { marketSeries, marketStats } from "@shared/market";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
-import { isCurrent } from "@shared/catalog";
+import { isCurrent, type Snapshot } from "@shared/catalog";
 import { AvailabilityBadge } from "./AvailabilityBadge";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  ReferenceLine,
-  Brush,
-} from "recharts";
+import { TimeSeriesPlot } from "./TimeSeriesPlot";
 const date = (t: number) =>
   new Date(t).toLocaleString([], {
     month: "short",
@@ -25,8 +14,10 @@ const date = (t: number) =>
   });
 export function PriceMarket({
   initialOfferId = "",
+  snapshot: catalog,
 }: {
   initialOfferId?: string;
+  snapshot: Snapshot;
 }) {
   const initial =
     catalog.offers.find(o => o.offerId === initialOfferId) ??
@@ -72,15 +63,16 @@ export function PriceMarket({
   const historicalChoice = historical.find(h => h.offerId === selected);
   const chartId =
     historicalChoice?.offerId ?? offer?.offerId ?? historical[0]?.offerId;
-  const points = chartId
-    ? marketSeries(catalog, chartId, Date.now() - hours * 3600000)
-    : [];
+  const points = useMemo(
+    () =>
+      chartId
+        ? marketSeries(catalog, chartId, Date.now() - hours * 3600000)
+        : [],
+    [catalog, chartId, hours]
+  );
   const stats = marketStats(points);
   const color = (stats?.change ?? 0) >= 0 ? "#059669" : "#dc2626";
   const headline = hover?.price ?? stats?.last;
-  const reduced =
-    typeof matchMedia !== "undefined" &&
-    matchMedia("(prefers-reduced-motion: reduce)").matches;
   const reset = () => {
     setHover(null);
     setSelected("");
@@ -219,78 +211,13 @@ export function PriceMarket({
         </div>
       )}
       {points.length > 1 ? (
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart
-            data={points}
-            margin={{ top: 12, right: 16, left: 4, bottom: 4 }}
-            onMouseMove={e => {
-              const p = e.activePayload?.[0]?.payload;
-              if (p) setHover(p);
-            }}
-            onMouseLeave={() => setHover(null)}
-          >
-            <defs>
-              <linearGradient id="marketFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor={color} stopOpacity={0.2} />
-                <stop offset="1" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              vertical={false}
-              strokeDasharray="3 4"
-              stroke="#e5e7eb"
-            />
-            <XAxis
-              dataKey="time"
-              type="number"
-              domain={["dataMin", "dataMax"]}
-              tickFormatter={date}
-              tick={{ fontSize: 10 }}
-              minTickGap={80}
-            />
-            <YAxis
-              orientation="right"
-              domain={[
-                (v: number) => Math.max(0, v - Math.max(v * 0.04, 0.01)),
-                (v: number) => v + Math.max(v * 0.04, 0.01),
-              ]}
-              tickFormatter={v => `$${v.toFixed(3)}`}
-              tick={{ fontSize: 10 }}
-              width={68}
-            />
-            <Tooltip
-              labelFormatter={v => date(Number(v))}
-              formatter={(v: number) => [
-                `$${v.toFixed(3)} / GPU-hour`,
-                "Recorded price",
-              ]}
-              cursor={{ stroke: color, strokeDasharray: "4 4" }}
-              contentStyle={{ fontSize: 11, borderRadius: 8 }}
-            />
-            <ReferenceLine
-              y={stats!.first}
-              stroke="#94a3b8"
-              strokeDasharray="4 4"
-            />
-            <Area
-              dataKey="price"
-              type="linear"
-              stroke={color}
-              strokeWidth={2}
-              fill="url(#marketFill)"
-              isAnimationActive={!reduced}
-              animationDuration={250}
-              connectNulls={false}
-            />
-            <Brush
-              dataKey="time"
-              height={22}
-              tickFormatter={date}
-              stroke="#1596a5"
-              travellerWidth={6}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <MarketPlot
+          key={`${chartId}:${hours}`}
+          points={points}
+          color={color}
+          reference={stats!.first}
+          onInspect={setHover}
+        />
       ) : (
         <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
           {points.length === 1
@@ -327,5 +254,86 @@ export function PriceMarket({
         snapshots every minute.
       </p>
     </div>
+  );
+}
+
+function MarketPlot({
+  points,
+  color,
+  reference,
+  onInspect,
+}: {
+  points: ReturnType<typeof marketSeries>;
+  color: string;
+  reference: number;
+  onInspect: (point: { time: number; price: number } | null) => void;
+}) {
+  const [start, setStart] = useState(0);
+  const [end, setEnd] = useState<number | null>(null);
+  const first = Math.min(start, points.length - 2);
+  const last = Math.max(
+    first + 1,
+    Math.min(end ?? points.length - 1, points.length - 1)
+  );
+  const visible = points.slice(first, last + 1);
+  const stats = marketStats(visible)!;
+  const formatPrice = (value: number) => `$${value.toFixed(3)}`;
+  return (
+    <>
+      <TimeSeriesPlot
+        key={`${first}:${last}`}
+        label="Recorded price in USD per GPU-hour. Use the arrow keys to inspect samples."
+        times={visible.map(point => point.time)}
+        series={[
+          {
+            label: "Recorded price",
+            color,
+            values: visible.map(point => point.price),
+          },
+        ]}
+        domain={[
+          Math.max(0, stats.low - Math.max(stats.low * 0.04, 0.01)),
+          stats.high + Math.max(stats.high * 0.04, 0.01),
+        ]}
+        height={285}
+        formatTime={date}
+        formatValue={formatPrice}
+        reference={reference}
+        onInspect={index => onInspect(index === null ? null : visible[index])}
+      />
+      <div className="grid grid-cols-2 gap-4 mt-1 text-xs text-muted-foreground">
+        <label>
+          Chart start
+          <input
+            type="range"
+            min={0}
+            max={last - 1}
+            value={first}
+            aria-valuetext={date(points[first].time)}
+            onChange={event => {
+              setStart(Number(event.target.value));
+              onInspect(null);
+            }}
+            className="w-full accent-teal"
+          />
+        </label>
+        <label>
+          Chart end
+          <input
+            type="range"
+            min={first + 1}
+            max={points.length - 1}
+            value={last}
+            aria-valuetext={date(points[last].time)}
+            onChange={event => {
+              const value = Number(event.target.value);
+              setEnd(value === points.length - 1 ? null : value);
+              onInspect(null);
+            }}
+            className="w-full accent-teal"
+          />
+        </label>
+      </div>
+    </>
   );
 }

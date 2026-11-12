@@ -2,18 +2,16 @@ import { PriceMarket } from "./PriceMarket";
 import { PoolInventory } from "./PoolInventory";
 import { useState, useEffect } from "react";
 import { Play, Pause, SkipForward } from "lucide-react";
-import { catalog } from "@/lib/catalog";
+import type { Snapshot } from "@shared/catalog";
 import { getProvider } from "@/lib/data";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { TimeSeriesPlot } from "./TimeSeriesPlot";
+
+const stockSeries = [
+  { key: "available", label: "Available", color: "#16a34a" },
+  { key: "limited", label: "Limited", color: "#d97706" },
+  { key: "unavailable", label: "Unavailable", color: "#dc2626" },
+  { key: "unknown", label: "Stock not reported", color: "#94a3b8" },
+] as const;
 
 const timeLabel = (v: number) =>
   new Date(v).toLocaleString([], {
@@ -106,17 +104,19 @@ function ReplayControls({
 }
 export function PriceTrends({
   initialOfferId = "",
+  snapshot,
 }: {
   initialOfferId?: string;
+  snapshot: Snapshot;
 }) {
   return (
     <section className="mb-10">
-      <PriceMarket initialOfferId={initialOfferId} />
-      <PoolMovement />
+      <PriceMarket initialOfferId={initialOfferId} snapshot={snapshot} />
+      <PoolMovement snapshot={snapshot} />
     </section>
   );
 }
-function PoolMovement() {
+function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
   const [provider, setProvider] = useState("runpod");
   const pool = catalog.poolHistory ?? [];
   const data = pool
@@ -125,6 +125,16 @@ function PoolMovement() {
   const times = data.map(p => Date.parse(p.observedAt));
   const replay = useReplay(times.length, provider);
   const selected = data[replay.index];
+  const visible = data.slice(0, replay.index + 1);
+  const series = stockSeries.map(({ key, label, color }) => ({
+    label,
+    color,
+    values: visible.map(point => point[key]),
+  }));
+  const ceiling = Math.max(
+    4,
+    Math.ceil(Math.max(...series.flatMap(line => line.values)) / 4) * 4
+  );
   const source = catalog.sources.find(s => s.id === provider);
   return (
     <div className="bg-card border border-border rounded-xl p-5 mt-6 shadow-[var(--shadow-sm)]">
@@ -188,53 +198,32 @@ function PoolMovement() {
           Baseline recorded. Turnover appears after the next successful refresh.
         </p>
       ) : (
-        <ResponsiveContainer width="100%" height={250}>
-          <LineChart
-            data={data
-              .slice(0, replay.index + 1)
-              .map(p => ({ ...p, time: Date.parse(p.observedAt) }))}
-          >
-            <CartesianGrid
-              vertical={false}
-              strokeDasharray="4 4"
-              stroke="#e5e6e2"
-            />
-            <XAxis
-              dataKey="time"
-              type="number"
-              domain={[times[0], times[times.length - 1]]}
-              tickFormatter={timeLabel}
-              tick={{ fontSize: 10 }}
-            />
-            <YAxis allowDecimals={false} width={36} tick={{ fontSize: 10 }} />
-            <Tooltip
-              labelFormatter={v => timeLabel(Number(v))}
-              contentStyle={{ borderRadius: 10, fontSize: 11 }}
-            />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            {(["available", "limited", "unavailable", "unknown"] as const).map(
-              key => (
-                <Line
-                  key={key}
-                  dataKey={key}
-                  name={key === "unknown" ? "Stock not reported" : key}
-                  type="stepAfter"
-                  stroke={
-                    {
-                      available: "#16a34a",
-                      limited: "#d97706",
-                      unavailable: "#dc2626",
-                      unknown: "#94a3b8",
-                    }[key]
-                  }
-                  strokeWidth={2}
-                  dot={data.length < 4}
-                  isAnimationActive={false}
+        <>
+          <TimeSeriesPlot
+            key={provider}
+            label="Reported listing availability. Use the arrow keys to inspect samples."
+            times={times.slice(0, replay.index + 1)}
+            timeEnd={times.at(-1)}
+            series={series}
+            domain={[0, ceiling]}
+            height={225}
+            formatTime={timeLabel}
+            formatValue={String}
+            step
+          />
+          <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {series.map(line => (
+              <li key={line.label} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="w-3 h-0.5"
+                  style={{ background: line.color }}
                 />
-              )
-            )}
-          </LineChart>
-        </ResponsiveContainer>
+                {line.label}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       <p className="text-xs text-muted-foreground mt-4">
         Counts describe observed catalog listings, not physical GPUs or global

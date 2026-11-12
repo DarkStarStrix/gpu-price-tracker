@@ -1,74 +1,80 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 
-const timestamp = z.string().datetime();
-const positive = z.number().finite().positive();
+const timestamp = z.iso.datetime();
+const positive = z.number().check(z.positive());
+const nonempty = z.string().check(z.minLength(1));
+const httpsUrl = z.url().check(z.startsWith("https://"));
+const sha256 = z.string().check(z.regex(/^[a-f0-9]{64}$/));
+const count = z.int().check(z.nonnegative());
 export const offerSchema = z
   .object({
-    offerId: z.string().min(1),
-    providerId: z.string().min(1),
-    providerName: z.string().min(1),
-    gpuModelId: z.string().min(1),
-    gpuModelName: z.string().min(1),
-    gpuCount: positive.int(),
-    configurationKnown: z.boolean().optional(),
-    billingModel: z.enum(["on-demand", "spot"]).optional(),
-    vramPerGpuGb: positive.nullable(),
-    vcpus: positive.nullable(),
-    ramGb: positive.nullable(),
+    offerId: nonempty,
+    providerId: nonempty,
+    providerName: nonempty,
+    gpuModelId: nonempty,
+    gpuModelName: nonempty,
+    gpuCount: z.int().check(z.positive()),
+    configurationKnown: z.optional(z.boolean()),
+    billingModel: z.optional(z.enum(["on-demand", "spot"])),
+    vramPerGpuGb: z.nullable(positive),
+    vcpus: z.nullable(positive),
+    ramGb: z.nullable(positive),
     region: z.string(),
     pricePerGpuHr: positive,
     totalNodePriceHr: positive,
     availability: z.enum(["available", "limited", "unavailable", "unknown"]),
-    providerLink: z.string().url().startsWith("https://"),
-    sourceUrl: z.string().url().startsWith("https://"),
+    providerLink: httpsUrl,
+    sourceUrl: httpsUrl,
     cloudType: z.string(),
     dataSource: z.enum(["api", "pricing_page"]),
-    sourcePriceHr: positive.optional(),
-    priceBasis: z.enum(["per_gpu_hour", "per_instance_hour"]).optional(),
-    sourceSha256: z
-      .string()
-      .regex(/^[a-f0-9]{64}$/)
-      .optional(),
+    sourcePriceHr: z.optional(positive),
+    priceBasis: z.optional(z.enum(["per_gpu_hour", "per_instance_hour"])),
+    sourceSha256: z.optional(sha256),
     observedAt: timestamp,
   })
-  .refine(
-    o => Math.abs(o.pricePerGpuHr * o.gpuCount - o.totalNodePriceHr) < 0.00001,
-    "Per-GPU and node price must agree"
+  .check(
+    z.refine(
+      o =>
+        Math.abs(o.pricePerGpuHr * o.gpuCount - o.totalNodePriceHr) < 0.00001,
+      { message: "Per-GPU and node price must agree" }
+    )
   )
-  .superRefine((offer, ctx) => {
-    if (offer.dataSource === "pricing_page") {
-      if (offer.availability !== "unknown")
-        ctx.addIssue({
-          code: "custom",
-          message: "A pricing page cannot establish availability",
-        });
-      if (!offer.sourcePriceHr || !offer.priceBasis || !offer.sourceSha256)
-        ctx.addIssue({
-          code: "custom",
-          message: "Pricing-page provenance is required",
-        });
-    }
-    if (offer.sourcePriceHr !== undefined && offer.priceBasis) {
-      const expected =
-        offer.priceBasis === "per_instance_hour"
-          ? offer.totalNodePriceHr
-          : offer.pricePerGpuHr;
-      if (Math.abs(expected - offer.sourcePriceHr) > 0.00001)
-        ctx.addIssue({
-          code: "custom",
-          message: "Raw price basis does not agree with normalized price",
-        });
-    }
-  });
+  .check(
+    z.superRefine((offer, ctx) => {
+      if (offer.dataSource === "pricing_page") {
+        if (offer.availability !== "unknown")
+          ctx.addIssue({
+            code: "custom",
+            message: "A pricing page cannot establish availability",
+          });
+        if (!offer.sourcePriceHr || !offer.priceBasis || !offer.sourceSha256)
+          ctx.addIssue({
+            code: "custom",
+            message: "Pricing-page provenance is required",
+          });
+      }
+      if (offer.sourcePriceHr !== undefined && offer.priceBasis) {
+        const expected =
+          offer.priceBasis === "per_instance_hour"
+            ? offer.totalNodePriceHr
+            : offer.pricePerGpuHr;
+        if (Math.abs(expected - offer.sourcePriceHr) > 0.00001)
+          ctx.addIssue({
+            code: "custom",
+            message: "Raw price basis does not agree with normalized price",
+          });
+      }
+    })
+  );
 export type GpuOffer = z.infer<typeof offerSchema>;
 export const evidenceSchema = z.object({
-  sourceUrl: z.string().url().startsWith("https://"),
+  sourceUrl: httpsUrl,
   retrievedAt: timestamp,
-  contentSha256: z.string().regex(/^[a-f0-9]{64}$/),
-  parserVersion: z.string().min(1),
+  contentSha256: sha256,
+  parserVersion: nonempty,
 });
 export const exclusionSchema = z.object({
-  row: z.string().min(1).max(256),
+  row: z.string().check(z.minLength(1), z.maxLength(256)),
   reason: z.enum(["quote_required", "inconsistent_price", "ambiguous_model"]),
 });
 export type SourceEvidence = z.infer<typeof evidenceSchema>;
@@ -85,34 +91,33 @@ export const historySchema = z.object({
   gpuModelId: z.string(),
   cloudType: z.string(),
   pricePerGpuHr: positive,
-  billingModel: z.enum(["on-demand", "spot"]).optional(),
-  historyOrigin: z.enum(["collector", "provider_hourly_last"]).optional(),
+  billingModel: z.optional(z.enum(["on-demand", "spot"])),
+  historyOrigin: z.optional(z.enum(["collector", "provider_hourly_last"])),
   observedAt: timestamp,
-  dataSource: z.enum(["api", "pricing_page"]).optional(),
-  sourceUrl: z.string().url().startsWith("https://").optional(),
-  sourceSha256: z
-    .string()
-    .regex(/^[a-f0-9]{64}$/)
-    .optional(),
+  dataSource: z.optional(z.enum(["api", "pricing_page"])),
+  sourceUrl: z.optional(httpsUrl),
+  sourceSha256: z.optional(sha256),
 });
 export const poolPointSchema = z
   .object({
     providerId: z.string(),
     observedAt: timestamp,
     baseline: z.boolean(),
-    total: z.number().int().nonnegative(),
-    available: z.number().int().nonnegative(),
-    limited: z.number().int().nonnegative(),
-    unavailable: z.number().int().nonnegative(),
-    unknown: z.number().int().nonnegative(),
-    added: z.number().int().nonnegative(),
-    removed: z.number().int().nonnegative(),
-    priceChanges: z.number().int().nonnegative(),
-    availabilityChanges: z.number().int().nonnegative(),
+    total: count,
+    available: count,
+    limited: count,
+    unavailable: count,
+    unknown: count,
+    added: count,
+    removed: count,
+    priceChanges: count,
+    availabilityChanges: count,
   })
-  .refine(
-    p => p.total === p.available + p.limited + p.unavailable + p.unknown,
-    "Pool counts must agree"
+  .check(
+    z.refine(
+      p => p.total === p.available + p.limited + p.unavailable + p.unknown,
+      { message: "Pool counts must agree" }
+    )
   );
 export type PoolPoint = z.infer<typeof poolPointSchema>;
 export const snapshotSchema = z
@@ -125,52 +130,54 @@ export const snapshotSchema = z
         name: z.string(),
         status: z.enum(["ok", "error", "not_configured", "not_connected"]),
         checkedAt: timestamp,
-        lastSuccessAt: timestamp.nullable(),
+        lastSuccessAt: z.nullable(timestamp),
         message: z.string(),
-        evidence: evidenceSchema.optional(),
-        exclusions: z.array(exclusionSchema).optional(),
+        evidence: z.optional(evidenceSchema),
+        exclusions: z.optional(z.array(exclusionSchema)),
       })
     ),
     offers: z.array(offerSchema),
     history: z.array(historySchema),
-    poolHistory: z.array(poolPointSchema).optional(),
+    poolHistory: z.optional(z.array(poolPointSchema)),
   })
-  .superRefine((s, ctx) => {
-    if (new Set(s.offers.map(o => o.offerId)).size !== s.offers.length)
-      ctx.addIssue({ code: "custom", message: "Duplicate offer IDs" });
-    if (new Set(s.sources.map(o => o.id)).size !== s.sources.length)
-      ctx.addIssue({ code: "custom", message: "Duplicate source IDs" });
-    if (
-      s.history.some(
-        h => Date.parse(h.observedAt) > Date.parse(s.generatedAt)
-      ) ||
-      s.poolHistory?.some(
-        p => Date.parse(p.observedAt) > Date.parse(s.generatedAt)
-      )
-    )
-      ctx.addIssue({ code: "custom", message: "History is in the future" });
-    for (const offer of s.offers) {
-      const source = s.sources.find(source => source.id === offer.providerId);
+  .check(
+    z.superRefine((s, ctx) => {
+      if (new Set(s.offers.map(o => o.offerId)).size !== s.offers.length)
+        ctx.addIssue({ code: "custom", message: "Duplicate offer IDs" });
+      if (new Set(s.sources.map(o => o.id)).size !== s.sources.length)
+        ctx.addIssue({ code: "custom", message: "Duplicate source IDs" });
       if (
-        offer.dataSource === "pricing_page" &&
-        (!source?.evidence ||
-          source.evidence.contentSha256 !== offer.sourceSha256 ||
-          source.evidence.sourceUrl !== offer.sourceUrl ||
-          source.evidence.retrievedAt !== offer.observedAt)
+        s.history.some(
+          h => Date.parse(h.observedAt) > Date.parse(s.generatedAt)
+        ) ||
+        s.poolHistory?.some(
+          p => Date.parse(p.observedAt) > Date.parse(s.generatedAt)
+        )
       )
-        ctx.addIssue({
-          code: "custom",
-          message: "Pricing-page offer does not match source evidence",
-        });
-      if (!s.sources.some(source => source.id === offer.providerId))
-        ctx.addIssue({ code: "custom", message: "Offer has no source" });
-      if (Date.parse(offer.observedAt) > Date.parse(s.generatedAt))
-        ctx.addIssue({
-          code: "custom",
-          message: "Observation is in the future",
-        });
-    }
-  });
+        ctx.addIssue({ code: "custom", message: "History is in the future" });
+      for (const offer of s.offers) {
+        const source = s.sources.find(source => source.id === offer.providerId);
+        if (
+          offer.dataSource === "pricing_page" &&
+          (!source?.evidence ||
+            source.evidence.contentSha256 !== offer.sourceSha256 ||
+            source.evidence.sourceUrl !== offer.sourceUrl ||
+            source.evidence.retrievedAt !== offer.observedAt)
+        )
+          ctx.addIssue({
+            code: "custom",
+            message: "Pricing-page offer does not match source evidence",
+          });
+        if (!s.sources.some(source => source.id === offer.providerId))
+          ctx.addIssue({ code: "custom", message: "Offer has no source" });
+        if (Date.parse(offer.observedAt) > Date.parse(s.generatedAt))
+          ctx.addIssue({
+            code: "custom",
+            message: "Observation is in the future",
+          });
+      }
+    })
+  );
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export function isStale(observedAt: string, now = Date.now()) {
   return now - Date.parse(observedAt) > 2 * 60 * 60 * 1000;
