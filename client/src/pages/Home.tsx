@@ -423,7 +423,7 @@ export default function Home() {
               </div>
             </div>
             <Suspense fallback={<p role="status">Loading providers…</p>}>
-              <ProviderCards />
+              <ProviderCards snapshot={catalog} />
             </Suspense>
           </div>
         )}

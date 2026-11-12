@@ -6,12 +6,10 @@
 import { buildProviderSummaries, formatPrice, providerLogo } from "@/lib/data";
 import { CategoryBadge } from "./CategoryBadge";
 import { ExternalLink, MapPin, Cpu, BarChart2, Clock } from "lucide-react";
-import { catalog } from "@/lib/catalog";
+import { isStale, type Snapshot } from "@shared/catalog";
 
-function timeAgo(date: Date | null | undefined): string {
-  if (!date) return "never";
-  const d = date instanceof Date ? date : new Date(date);
-  const diffMs = Date.now() - d.getTime();
+function timeAgo(at: string, now: number): string {
+  const diffMs = now - Date.parse(at);
   const diffMin = Math.floor(diffMs / 60_000);
   if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
@@ -25,38 +23,45 @@ const PROVIDER_ACCENT: Record<string, string> = {
   coreweave: "from-[oklch(0.52_0.16_255)] to-[oklch(0.62_0.19_218)]",
   paperspace: "from-[oklch(0.62_0.19_218)] to-[oklch(0.60_0.18_155)]",
 };
+const INACTIVE_STATUS = {
+  not_configured: "Credentials required",
+  error: "Refresh failed",
+  not_connected: "Not connected",
+};
 
-export function ProviderCards() {
-  const summaries = buildProviderSummaries().filter(s =>
-    catalog.sources.some(
-      source => source.id === s.provider.id && source.lastSuccessAt !== null
-    )
-  );
+export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
+  const now = Date.now();
+  const summaries = buildProviderSummaries(snapshot, now);
+
+  if (!summaries.length) {
+    return (
+      <p className="mb-10 text-sm text-muted-foreground">
+        The current snapshot has no provider reports.
+      </p>
+    );
+  }
 
   return (
     <section className="mb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {summaries.map((summary, idx) => {
+          const { source, profile, pricingUrl } = summary;
           const accentGradient =
-            PROVIDER_ACCENT[summary.provider.id] ?? PROVIDER_ACCENT.paperspace;
-          const source = catalog.sources.find(
-            s => s.id === summary.provider.id
-          );
-          const connected = source?.status === "ok" && !summary.retained;
-          const status =
-            source?.status === "ok" && summary.retained
-              ? "Last observed prices"
-              : connected
-                ? "Connected"
-                : source?.status === "not_configured"
-                  ? "Credentials required"
-                  : source?.status === "error"
-                    ? "Refresh failed"
-                    : "Not connected";
+            PROVIDER_ACCENT[source.id] ?? PROVIDER_ACCENT.paperspace;
+          const connected =
+            source.status === "ok" &&
+            source.lastSuccessAt !== null &&
+            !isStale(source.lastSuccessAt, now) &&
+            !summary.retained;
+          let status = "Last successful check is stale";
+          if (source.status !== "ok") status = INACTIVE_STATUS[source.status];
+          else if (connected)
+            status = summary.offerCount ? "Connected" : "No offers listed";
+          const website = profile?.website ?? pricingUrl;
 
           return (
-            <div
-              key={summary.provider.id}
+            <article
+              key={source.id}
               className="elevated-card rounded-xl overflow-hidden animate-fade-up flex flex-col"
               style={{ animationDelay: `${idx * 70}ms` }}
             >
@@ -67,36 +72,42 @@ export function ProviderCards() {
               <div className="px-5 pt-5 pb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 shrink-0 rounded-xl bg-white border border-border/60 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={providerLogo(summary.provider.id)}
-                      alt={`${summary.provider.name} logo`}
-                      width={36}
-                      height={36}
-                      className="w-9 h-9 object-contain"
-                      loading="lazy"
-                    />
+                    {profile ? (
+                      <img
+                        src={providerLogo(source.id)}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="w-9 h-9 object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Cpu className="w-5 h-5 text-muted-foreground" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-foreground">
-                      {summary.provider.name}
+                      {source.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <CategoryBadge category={summary.provider.category} />
+                      {profile && <CategoryBadge category={profile.category} />}
                       <span className="font-data text-[10px] text-muted-foreground">
                         {summary.offerCount} offers
                       </span>
                     </div>
                   </div>
                 </div>
-                <a
-                  aria-label={`Visit ${summary.provider.name}`}
-                  href={summary.provider.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[oklch(0.62_0.19_218)] hover:bg-teal-subtle transition-all duration-150 hover:scale-110"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                {website && (
+                  <a
+                    aria-label={`Visit ${source.name}`}
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-[oklch(0.62_0.19_218)] hover:bg-teal-subtle transition-all duration-150 hover:scale-110"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
               </div>
 
               <div className="px-5 pb-4 text-xs text-muted-foreground">
@@ -117,10 +128,10 @@ export function ProviderCards() {
                         : "On-demand"}
                   </span>
                 )}
-                {!connected && source?.status === "error" && (
-                  <p className="mt-2">{source.message}</p>
+                {source.status === "error" && !source.lastSuccessAt && (
+                  <p className="mt-2">Awaiting the first successful refresh.</p>
                 )}
-                {!!source?.exclusions?.length && (
+                {!!source.exclusions?.length && (
                   <details className="mt-2">
                     <summary className="cursor-pointer">
                       {source.exclusions.length} rows excluded
@@ -156,7 +167,7 @@ export function ProviderCards() {
                   <div className="flex flex-wrap gap-1">
                     {!summary.gpuInventory.length && (
                       <span className="text-xs text-muted-foreground">
-                        Awaiting data
+                        No GPU listings
                       </span>
                     )}
                     {summary.gpuInventory.slice(0, 4).map(gpu => (
@@ -246,10 +257,16 @@ export function ProviderCards() {
                   <summary className="cursor-pointer hover:text-foreground">
                     Source details
                   </summary>
-                  <p className="mt-2">{summary.provider.notes}</p>
-                  {source?.evidence && (
+                  {profile && <p className="mt-2">{profile.notes}</p>}
+                  <p className="mt-2">
+                    Last checked{" "}
+                    <time dateTime={source.checkedAt}>
+                      {new Date(source.checkedAt).toLocaleString()}
+                    </time>
+                  </p>
+                  {pricingUrl && (
                     <a
-                      href={source.evidence.sourceUrl}
+                      href={pricingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 mt-2 underline"
@@ -261,13 +278,20 @@ export function ProviderCards() {
                 <div className="flex items-center gap-1 shrink-0">
                   <Clock className="w-3 h-3 text-muted-foreground" />
                   <span className="font-data text-[10px] text-muted-foreground whitespace-nowrap">
-                    {source?.lastSuccessAt
-                      ? `Updated ${timeAgo(new Date(source.lastSuccessAt))}`
-                      : "No observations"}
+                    {source.lastSuccessAt ? (
+                      <time
+                        dateTime={source.lastSuccessAt}
+                        title={new Date(source.lastSuccessAt).toLocaleString()}
+                      >
+                        Updated {timeAgo(source.lastSuccessAt, now)}
+                      </time>
+                    ) : (
+                      "No successful check"
+                    )}
                   </span>
                 </div>
               </div>
-            </div>
+            </article>
           );
         })}
       </div>

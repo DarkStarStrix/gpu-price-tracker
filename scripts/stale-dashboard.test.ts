@@ -35,9 +35,9 @@ it("keeps last observed overview prices, GPU inventory and provider summaries af
     lowestPrice: 2.69,
     availability: "unknown",
   });
-  expect(
-    buildProviderSummaries().find(s => s.provider.id === "runpod")?.offerCount
-  ).toBe(4);
+  expect(buildProviderSummaries(snapshot)).toMatchObject([
+    { source: { id: "runpod" }, offerCount: 4, retained: true },
+  ]);
 });
 
 import { displayQuote, h100Quote } from "../shared/market";

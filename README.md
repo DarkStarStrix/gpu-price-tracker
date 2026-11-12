@@ -63,6 +63,8 @@ Pricing pages establish a published rate, not stock. Missing stock becomes a **C
 
 GitHub Actions is scheduled to collect around the clock at minutes 8/23/38/53 UTC, then commit observations, build, and deploy Pages. GitHub can delay or skip scheduled runs. The browser checks the published snapshot every minute and when returning to the tab. **Refresh** checks immediately and reports whether a newer snapshot arrived. **Run collector on GitHub** opens the workflow, where users with repository write access can select **Run workflow**. Refresh the dashboard after deployment completes.
 
+The **Providers** tab creates a profile for every source in the published snapshot and updates in place as newer snapshots arrive. Listings, regions, billing models, prices, and refresh status come from the snapshot. **Source details** links to the pricing evidence and shows the latest check time. The card's **Updated** time records the last successful check.
+
 The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, sample inspection, start and end sliders, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
 **Price movers only** shows listings with at least two different recorded prices in the selected period, including listings that returned to their starting price.

@@ -30,8 +30,10 @@ export interface GpuModel {
 
 export type Offer = GpuOffer & { retained: boolean };
 
-export interface ProviderSummary {
-  provider: Provider;
+interface ProviderSummary {
+  source: Snapshot["sources"][number];
+  profile: Provider | undefined;
+  pricingUrl: string | undefined;
   gpuInventory: string[];
   lowestPrices: Record<string, number>;
   regionCoverage: string[];
@@ -124,7 +126,7 @@ export const PROVIDERS: Provider[] = [
   },
 ];
 
-// Catalog is validated and installed once before the dashboard mounts.
+// Each validated snapshot replaces the dashboard's offer projection.
 export let OFFERS: Offer[] = [];
 export function configureCatalog(snapshot: Snapshot) {
   OFFERS = snapshot.offers.map(o => {
@@ -261,14 +263,18 @@ export function buildComparisons(gpuModelIds?: string[]): ComparisonRow[] {
 
 // ─── Provider Summary Builder ────────────────────────────────────────────────
 
-export function buildProviderSummaries(): ProviderSummary[] {
-  return PROVIDERS.map(provider => {
-    const providerOffers = OFFERS.filter(o => o.providerId === provider.id);
-    const gpuIds = Array.from(new Set(providerOffers.map(o => o.gpuModelId)));
-    const gpuInventory = gpuIds.map(id => getGpuModel(id)?.name ?? id);
+export function buildProviderSummaries(
+  snapshot: Snapshot,
+  now = Date.now()
+): ProviderSummary[] {
+  return snapshot.sources.map(source => {
+    const providerOffers = snapshot.offers.filter(
+      o => o.providerId === source.id
+    );
+    const gpuInventory = [...new Set(providerOffers.map(o => o.gpuModelName))];
     const lowestPrices: Record<string, number> = {};
     for (const offer of providerOffers) {
-      const gpuName = getGpuModel(offer.gpuModelId)?.name ?? offer.gpuModelId;
+      const gpuName = offer.gpuModelName;
       if (
         !lowestPrices[gpuName] ||
         offer.pricePerGpuHr < lowestPrices[gpuName]
@@ -277,11 +283,13 @@ export function buildProviderSummaries(): ProviderSummary[] {
       }
     }
     const regionCoverage = Array.from(
-      new Set(providerOffers.map(o => o.region))
+      new Set(providerOffers.map(o => o.region).filter(Boolean))
     );
 
     return {
-      provider,
+      source,
+      profile: getProvider(source.id),
+      pricingUrl: source.evidence?.sourceUrl ?? providerOffers[0]?.sourceUrl,
       gpuInventory,
       lowestPrices,
       regionCoverage,
@@ -289,7 +297,7 @@ export function buildProviderSummaries(): ProviderSummary[] {
       billingModels: [
         ...new Set(providerOffers.map(o => o.billingModel ?? "on-demand")),
       ],
-      retained: providerOffers.some(o => o.retained),
+      retained: providerOffers.some(o => !isCurrent(snapshot, o, now)),
     };
   });
 }
