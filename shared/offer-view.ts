@@ -1,12 +1,15 @@
 import { isCurrent, type Snapshot, type GpuOffer } from "./catalog";
 export const billingLabel = (o: GpuOffer) =>
   o.billingModel === "spot" ? "Spot · interruptible" : "On-demand";
+export const cloudTiers: [string, string][] = [
+  ["secure", "Secure Cloud"],
+  ["community", "Community Cloud"],
+  ["vm", "VM"],
+  ["bare-metal", "Bare metal"],
+];
 export const cloudLabel = (o: GpuOffer) =>
-  o.cloudType === "secure"
-    ? "Secure Cloud"
-    : o.cloudType === "community"
-      ? "Community Cloud"
-      : "Cloud tier unspecified";
+  cloudTiers.find(([id]) => id === o.cloudType)?.[1] ??
+  "Cloud tier unspecified";
 export interface PoolFilters {
   gpu: string;
   billing: string;

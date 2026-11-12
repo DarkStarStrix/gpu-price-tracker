@@ -25,17 +25,22 @@ pnpm preview
 
 ## Public data coverage
 
-| Provider   | Collected data                           | Important interpretation                                                                                             |
-| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| RunPod     | Public GraphQL catalog and stock reports | Secure and Community are separate cloud tiers; catalog prices are per GPU-hour, with no asserted node configuration. |
-| CoreWeave  | Official regional on-demand price tables | Node rates are divided by GPU count once. Spot, inference, CPU and quote-only rows are excluded.                     |
-| Paperspace | Official DigitalOcean machine pricing    | Conflicting multi-GPU prices and ambiguous model labels are excluded explicitly.                                     |
-| Hyperstack | Official on-demand GPU price cards       | Maximum CPU/RAM specifications are not presented as allocated resources.                                             |
-| Verda      | Official regular single-GPU instances    | Distinct CPU/RAM configurations retain separate listing identities.                                                  |
-| Crusoe     | Official current on-demand rates         | Future December 1 prices are excluded; collection stops at that transition until the parser is reviewed.             |
-| Vultr      | Public plans endpoint                    | Node prices and total VRAM are normalized per GPU; empty locations do not prove availability.                        |
-| Nebius     | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                |
-| Runcrate   | Public GPU pricing feed                  | Lowest listed per-GPU rate per type. Types with no orderable option are excluded; no node configuration is asserted. |
+| Provider       | Collected data                           | Important interpretation                                                                                             |
+| -------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| RunPod         | Public GraphQL catalog and stock reports | Secure and Community are separate cloud tiers; catalog prices are per GPU-hour, with no asserted node configuration. |
+| CoreWeave      | Official regional on-demand price tables | Node rates are divided by GPU count once. Spot, inference, CPU and quote-only rows are excluded.                     |
+| Paperspace     | Official DigitalOcean machine pricing    | Conflicting multi-GPU prices and ambiguous model labels are excluded explicitly.                                     |
+| Hyperstack     | Official on-demand GPU price cards       | Maximum CPU/RAM specifications are not presented as allocated resources.                                             |
+| Verda          | Official regular single-GPU instances    | Distinct CPU/RAM configurations retain separate listing identities.                                                  |
+| Crusoe         | Official current on-demand rates         | Future December 1 prices are excluded; collection stops at that transition until the parser is reviewed.             |
+| Vultr          | Public plans endpoint                    | Node prices and total VRAM are normalized per GPU; empty locations do not prove availability.                        |
+| Nebius         | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                |
+| Runcrate       | Public GPU pricing feed                  | Lowest listed per-GPU rate per type. Types with no orderable option are excluded; no node configuration is asserted. |
+| Hot Aisle      | Official MI300X pricing                  | Published per-GPU rates for 1-, 2- and 4-GPU VMs and 8-GPU bare metal.                                               |
+| DigitalOcean   | Official GPU Droplet pricing             | On-demand and spot node rates, with 1- and 8-GPU SKUs kept separate.                                                 |
+| Civo           | Official NVIDIA GPU pricing              | On-demand hourly node rates. Commitment-only plans are excluded.                                                     |
+| Jarvislabs     | Official USD instance pricing            | Single-GPU on-demand and spot rates from the public USD table.                                                       |
+| Massed Compute | Official on-demand GPU pricing           | Published node configurations and hourly rates. Quote-only configurations are excluded.                              |
 
 The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 

@@ -18,7 +18,6 @@ export interface Provider {
   name: string;
   category: ProviderCategory;
   website: string;
-  billingModel: BillingModel;
   notes: string;
 }
 
@@ -36,6 +35,7 @@ export interface ProviderSummary {
   lowestPrices: Record<string, number>;
   regionCoverage: string[];
   offerCount: number;
+  billingModels: BillingModel[];
   retained: boolean;
 }
 
@@ -69,24 +69,29 @@ export const PROVIDERS: Provider[] = [
       ["crusoe", "Crusoe", "https://www.crusoe.ai"],
       ["vultr", "Vultr", "https://www.vultr.com"],
       ["nebius", "Nebius", "https://nebius.com"],
+      ["hotaisle", "Hot Aisle", "https://hotaisle.xyz"],
+      ["digitalocean", "DigitalOcean", "https://www.digitalocean.com"],
+      ["civo", "Civo", "https://www.civo.com"],
+      ["jarvislabs", "Jarvislabs", "https://jarvislabs.ai"],
+      ["massedcompute", "Massed Compute", "https://massedcompute.com"],
     ] as const
   ).map(([id, name, website]) => ({
     id,
     name,
     website,
     category: "stable" as const,
-    billingModel: id === "nebius" ? ("spot" as const) : ("on-demand" as const),
     notes:
       id === "nebius"
         ? "Public interruptible spot prices and provider hourly history. Capacity unknown."
-        : "Official current USD on-demand rates. Capacity is not checked.",
+        : id === "digitalocean" || id === "jarvislabs"
+          ? "Official USD on-demand and spot rates."
+          : "Official current USD on-demand rates. Capacity is not checked.",
   })),
   {
     id: "runpod",
     name: "RunPod",
     category: "shifting_pool",
     website: "https://www.runpod.io",
-    billingModel: "on-demand",
     notes:
       "Public Secure and Community catalog rates. Capacity reported separately.",
   },
@@ -95,7 +100,6 @@ export const PROVIDERS: Provider[] = [
     name: "CoreWeave",
     category: "stable",
     website: "https://www.coreweave.com",
-    billingModel: "on-demand",
     notes: "Official published on-demand rates. Capacity is not checked.",
   },
   {
@@ -103,7 +107,6 @@ export const PROVIDERS: Provider[] = [
     name: "Paperspace",
     category: "stable",
     website: "https://www.paperspace.com",
-    billingModel: "on-demand",
     notes: "Official machine pricing tables. Capacity is not checked.",
   },
   {
@@ -111,7 +114,6 @@ export const PROVIDERS: Provider[] = [
     name: "Runcrate",
     category: "stable",
     website: "https://www.runcrate.ai",
-    billingModel: "on-demand",
     notes:
       "Public pricing feed, lowest listed rate per GPU-hour. Types with no orderable option are excluded.",
   },
@@ -160,6 +162,7 @@ export function providerLogo(id: string): string {
     hyperstack: "webp",
     vultr: "ico",
     paperspace: "webp",
+    hotaisle: "svg",
   };
   return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
 }
@@ -277,6 +280,9 @@ export function buildProviderSummaries(): ProviderSummary[] {
       lowestPrices,
       regionCoverage,
       offerCount: providerOffers.length,
+      billingModels: [
+        ...new Set(providerOffers.map(o => o.billingModel ?? "on-demand")),
+      ],
       retained: providerOffers.some(o => o.retained),
     };
   });

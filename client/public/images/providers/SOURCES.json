@@ -48,5 +48,30 @@
     "id": "runcrate",
     "source": "https://www.runcrate.ai/android-chrome-512x512.png",
     "file": "runcrate.png"
+  },
+  {
+    "id": "hotaisle",
+    "source": "https://hotaisle.xyz/assets/branding/hotaisle-favicon.svg",
+    "file": "hotaisle.svg"
+  },
+  {
+    "id": "digitalocean",
+    "source": "https://docs.digitalocean.com/apple-touch-icon.png",
+    "file": "digitalocean.png"
+  },
+  {
+    "id": "civo",
+    "source": "https://www.civo.com/favicon-96x96.png",
+    "file": "civo.png"
+  },
+  {
+    "id": "jarvislabs",
+    "source": "https://jarvislabs.ai/img/jarvislabs-app-icon.png?v=4",
+    "file": "jarvislabs.png"
+  },
+  {
+    "id": "massedcompute",
+    "source": "https://massedcompute.com/wp-content/uploads/2026/05/m-mark-red-100.png",
+    "file": "massedcompute.png"
   }
 ]

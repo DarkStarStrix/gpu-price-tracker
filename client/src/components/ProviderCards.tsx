@@ -110,9 +110,11 @@ export function ProviderCards() {
                 </span>
                 {summary.offerCount > 0 && (
                   <span className="ml-2 text-[10px] font-data text-muted-foreground">
-                    {summary.provider.billingModel === "spot"
-                      ? "Spot · interruptible"
-                      : "On-demand"}
+                    {summary.billingModels.length > 1
+                      ? "On-demand + spot"
+                      : summary.billingModels[0] === "spot"
+                        ? "Spot · interruptible"
+                        : "On-demand"}
                   </span>
                 )}
                 {!connected && source?.status === "error" && (

@@ -2,7 +2,7 @@ import { ProviderIdentity } from "./ProviderIdentity";
 import { useState } from "react";
 import { catalog } from "@/lib/catalog";
 import { isCurrent } from "@shared/catalog";
-import { filterPool, type PoolFilters } from "@shared/offer-view";
+import { cloudTiers, filterPool, type PoolFilters } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 export function PoolInventory({ provider }: { provider: string }) {
   const empty: PoolFilters = {
@@ -29,14 +29,7 @@ export function PoolInventory({ provider }: { provider: string }) {
         ["spot", "Spot · interruptible"],
       ],
     ],
-    [
-      "cloud",
-      "All cloud tiers",
-      [
-        ["secure", "Secure Cloud"],
-        ["community", "Community Cloud"],
-      ],
-    ],
+    ["cloud", "All cloud tiers", cloudTiers],
     [
       "availability",
       "Any availability",

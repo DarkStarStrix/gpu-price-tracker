@@ -7,7 +7,7 @@ import { toCSV } from "@shared/csv";
 
 import { useState, useMemo } from "react";
 import { catalog } from "@/lib/catalog";
-import { reconcileSelection } from "@shared/offer-view";
+import { cloudTiers, reconcileSelection } from "@shared/offer-view";
 import { isCurrent } from "@shared/catalog";
 
 import { formatPrice } from "@/lib/data";
@@ -437,8 +437,11 @@ export function OffersTable({
             className="p-2 text-sm bg-background border border-border rounded-lg"
           >
             <option value="">All cloud tiers</option>
-            <option value="secure">Secure Cloud</option>
-            <option value="community">Community Cloud</option>
+            {cloudTiers.map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
           </select>
           <div className="flex items-center gap-2">
             <label className="mono-label text-muted-foreground">Max $/hr</label>

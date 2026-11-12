@@ -5,6 +5,7 @@ import { offerSchema, type GpuOffer } from "../shared/catalog";
 import { gpuId } from "./gpu";
 export { gpuId } from "./gpu";
 import type { SourceResult } from "../shared/catalog";
+import { additionalPricingSources } from "./additional-pricing";
 import { expandedSources } from "./expanded-sources";
 import { publicPricingSources } from "./pricing-pages";
 
@@ -114,5 +115,6 @@ export function sources(): Source[] {
     },
     ...publicPricingSources(),
     ...expandedSources(),
+    ...additionalPricingSources(),
   ];
 }
