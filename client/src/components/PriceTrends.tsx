@@ -1,5 +1,4 @@
 import { PriceMarket } from "./PriceMarket";
-import { PoolInventory } from "./PoolInventory";
 import { useState, useEffect } from "react";
 import { Play, Pause, SkipForward } from "lucide-react";
 import type { Snapshot } from "@shared/catalog";
@@ -140,14 +139,14 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
     <div className="bg-card border border-border rounded-xl p-5 mt-6 shadow-[var(--shadow-sm)]">
       <div className="flex justify-between items-center gap-4 mb-4">
         <div>
-          <h3 className="font-semibold">Shifting offer pool</h3>
+          <h3 className="font-semibold">Provider movement timeline</h3>
           <p className="text-sm text-muted-foreground mt-1">
             Listing turnover and reported availability between successful
             refreshes
           </p>
         </div>
         <select
-          aria-label="Pool provider"
+          aria-label="Timeline provider"
           className="bg-card border border-border rounded-md p-2 text-xs"
           value={provider}
           onChange={e => setProvider(e.target.value)}
@@ -165,8 +164,6 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
           observations.
         </p>
       )}
-      <PoolInventory key={provider} provider={provider} />
-      <h4 className="text-sm font-semibold mb-3">Provider movement timeline</h4>
       <ReplayControls replay={replay} times={times} />
       {selected && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-xs font-data">

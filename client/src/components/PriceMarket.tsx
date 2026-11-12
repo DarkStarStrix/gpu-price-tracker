@@ -73,6 +73,16 @@ export function PriceMarket({
   const stats = marketStats(points);
   const color = (stats?.change ?? 0) >= 0 ? "#059669" : "#dc2626";
   const headline = hover?.price ?? stats?.last;
+  let changeLabel;
+  if (stats && stats.count > 1) {
+    if (stats.high === stats.low) {
+      changeLabel = "Unchanged in this range";
+    } else if (stats.change === 0) {
+      changeLabel = "0.00% net · varied in this range";
+    } else {
+      changeLabel = `${stats.change > 0 ? "+" : ""}${stats.change.toFixed(3)} (${stats.percent.toFixed(2)}%)`;
+    }
+  }
   const reset = () => {
     setHover(null);
     setSelected("");
@@ -155,10 +165,12 @@ export function PriceMarket({
             <strong className="font-data text-3xl">
               {headline !== undefined ? `$${headline.toFixed(3)}` : "—"}
             </strong>
-            {stats && stats.count > 1 && (
-              <span className="text-sm font-data" style={{ color }}>
-                {stats.change >= 0 ? "+" : ""}
-                {stats.change.toFixed(3)} ({stats.percent.toFixed(2)}%)
+            {changeLabel && (
+              <span
+                className="text-sm font-data"
+                style={{ color: stats?.change ? color : undefined }}
+              >
+                {changeLabel}
               </span>
             )}
           </div>

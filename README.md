@@ -52,7 +52,7 @@ GitHub Actions is scheduled to collect around the clock at minutes 8/23/38/53 UT
 
 The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, sample inspection, start and end sliders, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
-Pool replay shows recorded listing additions/removals, price changes, stock changes and counts. Filters include GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
+The provider movement timeline replays recorded listing additions/removals, price changes, stock changes and counts. The Offers page filters current listings by GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
 
 Price alerts are local to this browser and evaluated while the app is open. Invalid saved entries are discarded individually. Failed browser storage is reported without claiming the alert was saved. No email or background notifications are sent. CSV export protects spreadsheet cells from formula injection.
 
@@ -63,7 +63,6 @@ Price alerts are local to this browser and evaluated while the app is open. Inva
 - `scripts/collect.ts` owns provider replacement, seven-day history and local atomic publication.
 - `shared/browser-snapshot.ts` defines the current and chart files derived from the full published snapshot. `client/src/lib/catalog.ts` owns browser loading, revision matching, refresh serialization and subscriptions.
 - `shared/market.ts`, `shared/movement.ts` and `shared/offer-view.ts` own market calculations and filters.
-- `ProviderIdentity` owns the common official logo, billing, cloud tier and source treatment.
 
 Success replaces a provider's full listing set, including an authoritative empty set. Failure preserves the last verified offers without advancing their timestamps or inventing history. Malformed previous snapshots stop collection. Provider exception text is not published. Public source payloads and receipts are retained separately as a one-day Actions artifact, including rejected pages for diagnosis.
 

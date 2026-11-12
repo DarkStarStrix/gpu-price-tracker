@@ -36,7 +36,7 @@ Remaining operational constraints are provider HTML drift, delayed GitHub schedu
 
 ## 5. Chosen architecture and rationale
 
-The collector and browser store remain deep modules with small interfaces. Source adapters vary behind the `Source.fetch(at)` seam; normalized results hide extraction details from publication. The HTTP module provides bounded reads behind one interface for all public provider adapters. ProviderIdentity concentrates logo, billing, cloud tier and source display so one fix benefits offer rows, pool cards and comparison headers.
+The collector and browser store remain deep modules with small interfaces. Source adapters vary behind the `Source.fetch(at)` seam; normalized results hide extraction details from publication. The HTTP module provides bounded reads behind one interface for all public provider adapters.
 
 Depth is judged by behavior exercised through the interface, not file size. These shared implementations provide leverage for callers and locality for maintenance. Pass-through theme, toast, tooltip and class-name wrappers were removed because they had no active callers requiring that behavior.
 
@@ -52,7 +52,7 @@ Depth is judged by behavior exercised through the interface, not file size. Thes
 | Market/filter helpers | Pure snapshot queries                    | Preserve exact offer identity, physical variant and billing type. Stale/failed sources do not establish a current floor or fresh stock. Display queries may return explicitly labeled last observations when there is no current quote; strict current-market queries continue to abstain. |
 | Price alerts          | `usePriceAlerts`                         | Validate each stored entry and new target; no inherited-key lookups; persist before reporting save success; keep earlier state if storage fails.                                                                                                                                           |
 | CSV                   | `toCSV(rows)`                            | Quote every cell; escape quotes; neutralize formula/control prefixes including hidden leading whitespace.                                                                                                                                                                                  |
-| Provider display      | `ProviderIdentity({offer})`              | Local official provider asset, billing distinct from cloud tier, linked evidence. No invented availability.                                                                                                                                                                                |
+| Provider display      | Offers and comparison                    | Local official provider asset, billing distinct from cloud tier, linked evidence. No invented availability.                                                                                                                                                                                |
 
 RunPod provides a per-GPU catalog rate and a separate one-GPU stock report; neither asserts a full rentable node configuration. CoreWeave and Vultr node prices are divided once. Pricing-page observations require raw price, basis, retrieval timestamp, source URL and content hash. Nebius hourly history stays labeled `provider_hourly_last`, separate from collector observations. Unsupported pagination, ambiguous models, contradictory rates and effective-date transitions fail closed or produce explicit row exclusions.
 
