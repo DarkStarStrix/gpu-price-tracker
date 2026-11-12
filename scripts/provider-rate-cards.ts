@@ -18,6 +18,7 @@ const pages = {
   oblivus: "https://oblivus.com/pricing",
   gcp: "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
   sixtytwo: "https://sixtytwo.ai/capacity",
+  sesterce: "https://cloud.sesterce.com/compute",
 } as const satisfies Partial<Record<AddedProviderId, string>>;
 type CardId = keyof typeof pages;
 const pageByteLimits: Partial<Record<CardId, number>> = {
@@ -77,6 +78,68 @@ function card(id: CardId, html: string, at: string) {
       parserVersion: `${id}-html-1`,
     },
   };
+}
+
+export function parseSesterce(html: string, at: string): SourceResult {
+  const $ = load(html);
+  const { offer, evidence } = card("sesterce", html, at);
+  const headings = "GPU|Cost From|vRAM|vCPU|RAM|Regions|Cost From";
+  if (
+    !$("dl")
+      .toArray()
+      .some(
+        row =>
+          $(row)
+            .children("dt")
+            .map((_, cell) => clean($(cell).text()))
+            .get()
+            .join("|") === headings
+      )
+  )
+    throw new Error("Sesterce pricing columns changed");
+  const offers: GpuOffer[] = [];
+  $("dl").each((_, row) => {
+    const cells = $(row).children("dt,dd");
+    const href = cells
+      .first()
+      .find('a[href^="/compute/new?gpuType="]')
+      .attr("href");
+    if (!href) return;
+    const link = new URL(href, pages.sesterce);
+    const id = link.searchParams.get("gpuType");
+    const count = Number(link.searchParams.get("numGpus"));
+    if (id === "CPU" && count === 0) return;
+    const prices = [clean(cells.eq(1).text()), clean(cells.last().text())];
+    if (
+      cells.length !== 7 ||
+      !id ||
+      !/^[A-Za-z0-9_]+$/.test(id) ||
+      !Number.isSafeInteger(count) ||
+      count < 1 ||
+      prices[0] !== prices[1]
+    )
+      throw new Error("Unexpected Sesterce configuration");
+    const model = id
+      .replace(/^RTXPro/, "RTX PRO ")
+      .replace(/^RTX(?=\d)/, "RTX ")
+      .replace(/_(\d+)G$/, " $1 GB")
+      .replace(/^GAUDI2$/, "Intel Gaudi 2")
+      .replace(/Ada$/, " Ada");
+    offers.push(
+      offer(model, {
+        id: `${id}:${count}`,
+        link: link.href,
+        count,
+        vram: gb(clean(cells.eq(2).text())) / count,
+        vcpus: Number(clean(cells.eq(3).text())),
+        ram: gb(clean(cells.eq(4).text())),
+        rate: usd(prices[0], /^\$(\d+(?:\.\d+)?)\/h$/),
+        basis: "per_instance_hour",
+      })
+    );
+  });
+  if (!offers.length) throw new Error("Empty Sesterce GPU catalog");
+  return { offers, evidence };
 }
 
 export function parseThunder(html: string, at: string): SourceResult {
@@ -434,6 +497,7 @@ export function providerRateCardSources(): Source[] {
       ["oblivus", parseOblivus],
       ["gcp", parseGoogleCloud],
       ["sixtytwo", parseSixtytwo],
+      ["sesterce", parseSesterce],
     ] as const
   ).map(([id, parse]) => ({
     id,

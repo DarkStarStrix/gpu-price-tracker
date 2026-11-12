@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Cpu, ExternalLink, Layers3 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   computeKinds,
   type ComputeKind,
@@ -9,17 +9,13 @@ import { isStale } from "@shared/catalog";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { hourlyPrice } from "@/lib/data";
 
-const icons = { cpu: Cpu, tpu: Layers3, sandbox: Box };
-const kinds = Object.keys(computeKinds) as ComputeKind[];
-
 export function ComputeRates({
   feeds,
-  initialKind,
+  kind,
 }: {
   feeds: ComputeFeed[];
-  initialKind: ComputeKind;
+  kind: ComputeKind;
 }) {
-  const [kind, setKind] = useState(initialKind);
   const [provider, setProvider] = useState("");
   const [billing, setBilling] = useState("");
   const now = Date.now();
@@ -53,34 +49,13 @@ export function ComputeRates({
     <section aria-labelledby="compute-title">
       <div className="mb-5">
         <h2 id="compute-title" className="text-2xl font-semibold">
-          Compute prices
+          {computeKinds[kind].label}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          CPU instances, TPU chips, and running sandboxes. Prices in USD.
+          Published rates in USD per {computeKinds[kind].unit}.
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap gap-1.5" aria-label="Compute type">
-          {kinds.map(id => {
-            const Icon = icons[id];
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={id === kind}
-                onClick={() => {
-                  setKind(id);
-                  setProvider("");
-                  setBilling("");
-                }}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${kind === id ? "border-primary bg-teal-subtle text-teal" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-              >
-                <Icon aria-hidden="true" className="size-4" />{" "}
-                {computeKinds[id].label}
-              </button>
-            );
-          })}
-        </div>
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="Compute provider"

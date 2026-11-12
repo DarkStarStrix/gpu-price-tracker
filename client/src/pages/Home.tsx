@@ -34,7 +34,7 @@ import { displayQuote } from "@shared/market";
 import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 import { readViewLink } from "@/lib/view-link";
-import type { ComputeKind } from "@shared/compute";
+import { computeKinds, type ComputeKind } from "@shared/compute";
 
 // Generated assets
 const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.webp`;
@@ -56,12 +56,11 @@ const ComputeRates = lazy(() =>
   }))
 );
 
-type Tab = "overview" | "offers" | "compute" | "providers" | "trends";
+type Tab = "overview" | "offers" | "providers" | "trends";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "offers", label: "All Offers" },
-  { id: "compute", label: "CPU & More" },
   { id: "providers", label: "Providers" },
   { id: "trends", label: "Trends" },
 ];
@@ -74,7 +73,7 @@ export default function Home() {
     sharedView?.view === "trends" ? sharedView.id : ""
   );
   const [initialGpu, setInitialGpu] = useState("");
-  const [initialCompute, setInitialCompute] = useState<ComputeKind>("cpu");
+  const [offerKind, setOfferKind] = useState<"gpu" | ComputeKind>("gpu");
   const [dark, setDark] = useState(() =>
     document.documentElement.classList.contains("dark")
   );
@@ -94,7 +93,7 @@ export default function Home() {
       : "—";
   };
 
-  function navigate(tab: Tab, gpu = "") {
+  function navigate(tab: Tab, gpu = "", kind: "gpu" | ComputeKind = "gpu") {
     if (tab === activeTab) return;
     if (sharedView) {
       const url = new URL(window.location.href);
@@ -105,6 +104,7 @@ export default function Home() {
     if (tab === "offers") {
       startTransition(() => {
         setInitialGpu(gpu);
+        setOfferKind(kind);
         setActiveTab(tab);
       });
     } else setActiveTab(tab);
@@ -121,8 +121,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (activeTab === "offers") void loadHistory().catch(() => {});
-  }, [activeTab, generatedAt]);
+    if (activeTab === "offers" && offerKind === "gpu")
+      void loadHistory().catch(() => {});
+  }, [activeTab, generatedAt, offerKind]);
 
   useEffect(() => {
     const connection = (
@@ -273,10 +274,7 @@ export default function Home() {
         <ComputeTicker
           snapshot={catalog}
           onGpu={gpu => navigate("offers", gpu)}
-          onCompute={kind => {
-            setInitialCompute(kind);
-            navigate("compute");
-          }}
+          onCompute={kind => navigate("offers", "", kind)}
         />
       )}
 
@@ -458,25 +456,50 @@ export default function Home() {
         )}
 
         {activeTab === "offers" && (
-          <Suspense fallback={<p role="status">Loading offers…</p>}>
-            <OffersTable
-              initialGpu={initialGpu}
-              shared={sharedView?.view === "offers" ? sharedView : undefined}
-              onViewHistory={id => {
-                setHistoryOfferId(id);
-                navigate("trends");
-              }}
-            />
-          </Suspense>
-        )}
-
-        {activeTab === "compute" && (
-          <Suspense fallback={<p role="status">Loading compute prices…</p>}>
-            <ComputeRates
-              feeds={catalog.compute ?? []}
-              initialKind={initialCompute}
-            />
-          </Suspense>
+          <>
+            <div
+              role="group"
+              aria-label="Offer compute type"
+              className="mb-4 flex flex-wrap gap-1.5"
+            >
+              {(
+                ["gpu", ...Object.keys(computeKinds)] as ("gpu" | ComputeKind)[]
+              ).map(kind => (
+                <button
+                  type="button"
+                  key={kind}
+                  aria-pressed={offerKind === kind}
+                  onClick={() => setOfferKind(kind)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${offerKind === kind ? "border-primary bg-teal-subtle text-teal" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+                >
+                  {kind === "gpu" ? "GPUs" : computeKinds[kind].label}
+                </button>
+              ))}
+            </div>
+            <div hidden={offerKind !== "gpu"}>
+              <Suspense fallback={<p role="status">Loading offers…</p>}>
+                <OffersTable
+                  initialGpu={initialGpu}
+                  shared={
+                    sharedView?.view === "offers" ? sharedView : undefined
+                  }
+                  onViewHistory={id => {
+                    setHistoryOfferId(id);
+                    navigate("trends");
+                  }}
+                />
+              </Suspense>
+            </div>
+            {offerKind !== "gpu" && (
+              <Suspense fallback={<p role="status">Loading compute prices…</p>}>
+                <ComputeRates
+                  key={offerKind}
+                  feeds={catalog.compute ?? []}
+                  kind={offerKind}
+                />
+              </Suspense>
+            )}
+          </>
         )}
 
         {activeTab === "providers" && (
@@ -500,6 +523,22 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            <aside className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3">
+              <div>
+                <h3 className="text-sm font-semibold">Vast.ai</h3>
+                <p className="text-xs text-muted-foreground">
+                  Browse pricing and availability on Vast.ai.
+                </p>
+              </div>
+              <a
+                href="https://cloud.vast.ai/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-teal hover:underline"
+              >
+                Open marketplace ↗
+              </a>
+            </aside>
             <Suspense fallback={<p role="status">Loading providers…</p>}>
               <ProviderCards snapshot={catalog} />
             </Suspense>

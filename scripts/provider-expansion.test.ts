@@ -13,6 +13,7 @@ import {
   parseCanopy,
   parseGoogleCloud,
   parseOvh,
+  parseSesterce,
   parseSixtytwo,
   parseThunder,
 } from "./provider-rate-cards";
@@ -21,6 +22,24 @@ import { estimateJobCost } from "../shared/job-cost";
 import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
 
 const at = "2026-11-12T03:00:00Z";
+
+it("reads Sesterce node rates and rejects disagreement between the price columns", () => {
+  const html = `<dl><dt>GPU</dt><dt>Cost From</dt><dt>vRAM</dt><dt>vCPU</dt><dt>RAM</dt><dt>Regions</dt><dt>Cost From</dt></dl>
+    <dl><dt><a href="/compute/new?gpuType=H100&amp;numGpus=8">H100</a></dt>
+    <dt>$28.16/h</dt><dt>640 GB</dt><dt>192</dt><dt>960 GB</dt><dt>+2</dt><dt>$28.16/h</dt></dl>`;
+  expect(parseSesterce(html, at).offers).toMatchObject([
+    {
+      gpuCount: 8,
+      vramPerGpuGb: 80,
+      pricePerGpuHr: 3.52,
+      totalNodePriceHr: 28.16,
+      availability: "unknown",
+    },
+  ]);
+  expect(() => parseSesterce(html.replace("$28.16/h", "$4.52/h"), at)).toThrow(
+    "Sesterce configuration"
+  );
+});
 
 it("normalizes Spheron whole-node rates once and rejects incomplete pages", () => {
   const row = {

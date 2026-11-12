@@ -420,13 +420,8 @@
     background: var(--teal-light);
   }
   .compute-ticker {
-    scroll-behavior: smooth;
-    scroll-snap-type: x proximity;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
-  }
-  .compute-ticker > button {
-    scroll-snap-align: start;
   }
   :where(button, a, select, input, [tabindex]):focus-visible {
     outline: 2px solid var(--ring);
@@ -479,8 +474,7 @@
       var(--paper);
   }
   .dark .observatory-art img {
-    mix-blend-mode: screen;
-    filter: invert(1) hue-rotate(165deg);
+    mix-blend-mode: normal;
   }
 
   .observatory-art {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { isCurrent, isStale, type Snapshot } from "@shared/catalog";
 import { computeKinds, type ComputeKind } from "@shared/compute";
 import { hourlyPrice } from "@/lib/data";
@@ -28,10 +28,11 @@ export function ComputeTicker({
   onCompute: (kind: ComputeKind) => void;
 }) {
   const track = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState({
-    left: false,
-    right: false,
-  });
+  const [paused, setPaused] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  const hovering = useRef(false);
+  const group = useRef<HTMLDivElement>(null);
   const now = Date.now();
   const gpu = new Map<string, { price: number; providers: Set<string> }>();
   for (const offer of snapshot.offers) {
@@ -93,25 +94,41 @@ export function ComputeTicker({
   const cards = [...gpuCards.slice(0, 3), ...otherCards, ...gpuCards.slice(3)];
   useEffect(() => {
     const node = track.current;
-    if (!node) return;
-    const update = () => {
-      const left = node.scrollLeft > 1;
-      const right = node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
-      setScrollPosition(current =>
-        current.left === left && current.right === right
-          ? current
-          : { left, right }
-      );
-    };
-    update();
-    const observer = new ResizeObserver(update);
+    const original = group.current;
+    if (!node || !original || paused) return;
+    let width = original.offsetWidth;
+    let viewportWidth = node.clientWidth;
+    const observer = new ResizeObserver(() => {
+      width = original.offsetWidth;
+      viewportWidth = node.clientWidth;
+    });
+    observer.observe(original);
     observer.observe(node);
-    node.addEventListener("scroll", update, { passive: true });
-    return () => {
-      observer.disconnect();
-      node.removeEventListener("scroll", update);
+    let frame = 0;
+    let previous = 0;
+    let position = node.scrollLeft;
+    let lastWritten = position;
+    const advance = (time: number) => {
+      const elapsed = previous ? Math.min(time - previous, 50) : 0;
+      previous = time;
+      if (node.scrollLeft !== lastWritten) position = node.scrollLeft;
+      if (
+        width > viewportWidth &&
+        !hovering.current &&
+        !node.contains(document.activeElement)
+      ) {
+        position = (position + elapsed * 0.032) % width;
+        node.scrollLeft = position;
+      }
+      lastWritten = node.scrollLeft;
+      frame = requestAnimationFrame(advance);
     };
-  }, [cards.length]);
+    frame = requestAnimationFrame(advance);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [cards.length, paused]);
   if (!cards.length) return null;
 
   function scroll(direction: number) {
@@ -131,31 +148,63 @@ export function ComputeTicker({
             On-demand price floors
           </p>
         </div>
-        <div ref={track} className="compute-ticker flex flex-1 overflow-x-auto">
-          {cards.map(card => (
-            <button
-              key={card.id}
-              type="button"
-              onClick={card.open}
-              className="min-w-37 shrink-0 border-l border-border px-3 py-2.5 text-left hover:bg-muted focus-visible:bg-muted"
+        <div
+          ref={track}
+          className="compute-ticker flex flex-1 overflow-x-auto"
+          onMouseEnter={() => {
+            hovering.current = true;
+          }}
+          onMouseLeave={() => {
+            hovering.current = false;
+          }}
+        >
+          {[false, true].map(copy => (
+            <div
+              key={String(copy)}
+              ref={copy ? undefined : group}
+              aria-hidden={copy || undefined}
+              className="flex w-max shrink-0"
             >
-              <span className="block whitespace-nowrap text-xs font-semibold">
-                {card.label}
-              </span>
-              <span className="whitespace-nowrap font-data text-xs text-teal">
-                {hourlyPrice.format(card.price)}
-              </span>
-              <span className="ml-1 whitespace-nowrap text-[10px] text-muted-foreground">
-                / {card.unit}
-              </span>
-            </button>
+              {cards.map(card => (
+                <button
+                  key={card.id}
+                  tabIndex={copy ? -1 : undefined}
+                  type="button"
+                  onClick={card.open}
+                  className="min-w-37 shrink-0 border-l border-border px-3 py-2.5 text-left hover:bg-muted focus-visible:bg-muted"
+                >
+                  <span className="block whitespace-nowrap text-xs font-semibold">
+                    {card.label}
+                  </span>
+                  <span className="whitespace-nowrap font-data text-xs text-teal">
+                    {hourlyPrice.format(card.price)}
+                  </span>
+                  <span className="ml-1 whitespace-nowrap text-[10px] text-muted-foreground">
+                    / {card.unit}
+                  </span>
+                </button>
+              ))}
+            </div>
           ))}
         </div>
         <div className="flex shrink-0 gap-1">
           <button
             type="button"
+            aria-label={
+              paused ? "Play compute watchlist" : "Pause compute watchlist"
+            }
+            onClick={() => setPaused(value => !value)}
+            className="header-control"
+          >
+            {paused ? (
+              <Play className="size-4" />
+            ) : (
+              <Pause className="size-4" />
+            )}
+          </button>
+          <button
+            type="button"
             aria-label="Scroll compute watchlist left"
-            disabled={!scrollPosition.left}
             onClick={() => scroll(-1)}
             className="header-control"
           >
@@ -164,7 +213,6 @@ export function ComputeTicker({
           <button
             type="button"
             aria-label="Scroll compute watchlist right"
-            disabled={!scrollPosition.right}
             onClick={() => scroll(1)}
             className="header-control"
           >

@@ -1,4 +1,11 @@
 export const addedProviders = {
+  sesterce: {
+    name: "Sesterce",
+    website: "https://cloud.sesterce.com/compute",
+    category: "stable",
+    notes:
+      "Starting hourly rates for GPU configurations on the public compute catalog. Check regional stock and final rates with Sesterce.",
+  },
   spheron: {
     name: "Spheron AI",
     website: "https://www.spheron.ai",

@@ -57,6 +57,7 @@ pnpm preview
 | Spheron AI      | Public paginated marketplace API        | On-demand and Spot node rates with provider-reported stock and regions.                                                 |
 | VoltageGPU      | Public price and stock snapshot         | Standard price floors have unspecified machine sizes. Confidential VMs and dedicated nodes retain their full counts.    |
 | Sixtytwo        | Public capacity listings                | Exact USD per-GPU-hour lease quotes appear on the profile with quantity, term and published ready date.                |
+| Sesterce        | Public compute catalog                   | Starting configuration rates are divided by the node's GPU count. Regional stock is unverified.                        |
 
 The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 
