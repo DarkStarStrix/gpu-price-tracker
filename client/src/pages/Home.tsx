@@ -1,7 +1,7 @@
 /*
   Home — GPU Price Tracker Dashboard v2
   Design: "Data Observatory" — Scientific Instrument Panel, Premium Edition
-  Key upgrades: animated hero, glassmorphic nav, scan-line effect,
+  Key upgrades: animated hero, sticky navigation, scan-line effect,
   staggered section entrances, blueprint illustration integration
 */
 
@@ -53,7 +53,6 @@ export default function Home() {
   const [historyOfferId, setHistoryOfferId] = useState("");
   const [initialGpu, setInitialGpu] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
-  const [scrolled, setScrolled] = useState(false);
   const generatedAt = catalog.generatedAt;
   const offers = catalog.offers;
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
@@ -77,12 +76,6 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
     if (activeTab === "offers") void loadHistory().catch(() => {});
   }, [activeTab, generatedAt]);
 
@@ -104,14 +97,8 @@ export default function Home() {
   return (
     <div className="min-h-screen graph-paper grain">
       {/* ── Navigation ──────────────────────────────────────────────────── */}
-      <header
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "glass-card border-b"
-            : "bg-transparent border-b border-transparent"
-        }`}
-      >
-        <div className="container flex items-center justify-between h-[60px]">
+      <header className="sticky top-0 z-50 h-[60px] border-b border-border bg-background">
+        <div className="container flex items-center justify-between h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="relative w-9 h-9 rounded-lg bg-[oklch(0.22_0.045_255)] flex items-center justify-center shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.3)]">
@@ -189,7 +176,7 @@ export default function Home() {
       </header>
 
       {/* ── Mobile tab bar ──────────────────────────────────────────────── */}
-      <div className="md:hidden sticky top-[60px] z-40 glass-card border-b px-4 py-2 flex gap-1 overflow-x-auto">
+      <div className="md:hidden sticky top-[60px] z-40 bg-background border-b border-border px-4 py-2 flex gap-1 overflow-x-auto overscroll-x-contain">
         {TABS.map(tab => (
           <button
             key={tab.id}

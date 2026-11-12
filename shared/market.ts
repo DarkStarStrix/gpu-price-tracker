@@ -67,6 +67,37 @@ export function marketStats(points: { price: number }[]) {
   };
 }
 
+export function movingListingIds(
+  snapshot: Snapshot,
+  since: number,
+  until: number
+) {
+  const prices = new Map<string, Map<number, number>>();
+  for (const point of snapshot.history) {
+    const time = Date.parse(point.observedAt);
+    if (time < since || time > until) continue;
+    let listing = prices.get(point.offerId);
+    if (!listing) {
+      listing = new Map();
+      prices.set(point.offerId, listing);
+    }
+    // Match marketSeries when observations share a timestamp.
+    listing.set(time, point.pricePerGpuHr);
+  }
+
+  const moved = new Set<string>();
+  for (const [id, observations] of prices) {
+    const first = observations.values().next().value;
+    for (const price of observations.values()) {
+      if (price !== first) {
+        moved.add(id);
+        break;
+      }
+    }
+  }
+  return moved;
+}
+
 export function priceHistorySummary(
   snapshot: Snapshot,
   offerId: string,

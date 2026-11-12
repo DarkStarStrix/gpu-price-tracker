@@ -33,7 +33,7 @@ export function TimeSeriesPlot({
 }) {
   const plot = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(600);
-  const [inspected, setInspected] = useState<number | null>(null);
+  const [inspectedTime, setInspectedTime] = useState<number | null>(null);
   const fillId = useId();
 
   useEffect(() => {
@@ -59,12 +59,14 @@ export function TimeSeriesPlot({
   const y = (value: number) =>
     bottom - ((value - low) / (high - low)) * (bottom - top);
   const tickCount = Math.min(5, Math.max(2, Math.floor(width / 115)));
-  const active =
-    inspected === null ? null : Math.min(inspected, times.length - 1);
+  const activeIndex =
+    inspectedTime === null ? -1 : times.indexOf(inspectedTime);
+  const active = activeIndex < 0 ? null : activeIndex;
 
   function inspect(index: number | null) {
-    if (active === index) return;
-    setInspected(index);
+    const time = index === null ? null : times[index];
+    if (inspectedTime === time) return;
+    setInspectedTime(time);
     onInspect?.(index);
   }
 
@@ -87,16 +89,21 @@ export function TimeSeriesPlot({
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
         height={height}
+        className="block touch-pan-y"
         role="img"
         aria-label={label}
         tabIndex={0}
         onPointerMove={event => {
+          if (event.pointerType === "touch") return;
           const bounds = event.currentTarget.getBoundingClientRect();
+          if (!bounds.width) return;
           const offset =
             ((event.clientX - bounds.left) * width) / bounds.width - left;
           inspect(nearest(first + (offset / (right - left)) * (last - first)));
         }}
         onPointerLeave={() => inspect(null)}
+        onPointerCancel={() => inspect(null)}
+        onWheel={() => inspect(null)}
         onBlur={() => inspect(null)}
         onKeyDown={event => {
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;

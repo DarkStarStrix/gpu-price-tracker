@@ -69,18 +69,18 @@ function ReplayControls({
   times: number[];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-4 text-xs font-data">
+    <div className="grid grid-cols-[max-content_1fr] sm:grid-cols-[6rem_minmax(0,1fr)_11rem] items-center gap-x-3 gap-y-2 mb-4 text-xs font-data">
       <button
         disabled={times.length < 2}
         onClick={replay.toggle}
-        className="flex items-center gap-2 border border-border rounded-md px-3 py-2 disabled:opacity-40"
+        className="w-24 flex items-center justify-center gap-2 border border-border rounded-md px-3 py-2 disabled:opacity-40"
       >
         {replay.playing ? <Pause size={14} /> : <Play size={14} />}{" "}
         {replay.playing ? "Pause" : "Replay"}
       </button>
       <input
         aria-label="Observation timeline"
-        className="flex-1 min-w-24 accent-teal"
+        className="trend-range min-w-0 w-full"
         type="range"
         min={0}
         max={Math.max(0, times.length - 1)}
@@ -88,12 +88,12 @@ function ReplayControls({
         disabled={times.length < 2}
         onChange={e => replay.seek(Number(e.target.value))}
       />
-      <span aria-live="off">
+      <span aria-live="off" className="col-span-2 sm:col-span-1 tabular-nums">
         {times.length ? timeLabel(times[replay.index]) : "Collecting history"}
       </span>
       <button
         onClick={replay.latest}
-        className="flex items-center gap-1 text-teal"
+        className="col-span-2 justify-self-start flex items-center gap-1 text-teal"
       >
         <SkipForward size={14} />
         {replay.live ? "Latest" : "Return to latest"}
@@ -132,7 +132,19 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
   }));
   const ceiling = Math.max(
     4,
-    Math.ceil(Math.max(...series.flatMap(line => line.values)) / 4) * 4
+    Math.ceil(
+      data.reduce(
+        (max, point) =>
+          Math.max(
+            max,
+            point.available,
+            point.limited,
+            point.unavailable,
+            point.unknown
+          ),
+        0
+      ) / 4
+    ) * 4
   );
   const source = catalog.sources.find(s => s.id === provider);
   return (

@@ -52,6 +52,8 @@ GitHub Actions is scheduled to collect around the clock at minutes 8/23/38/53 UT
 
 The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, sample inspection, start and end sliders, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
 
+**Price movers only** shows listings with at least two different recorded prices in the selected period, including listings that returned to their starting price.
+
 The provider movement timeline replays recorded listing additions/removals, price changes, stock changes and counts. The Offers page filters current listings by GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
 
 Price alerts are local to this browser and evaluated while the app is open. Invalid saved entries are discarded individually. Failed browser storage is reported without claiming the alert was saved. No email or background notifications are sent. CSV export protects spreadsheet cells from formula injection.
