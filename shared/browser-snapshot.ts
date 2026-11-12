@@ -36,7 +36,7 @@ const historyFileSchema = z.object({
 });
 
 export function overviewSnapshot(snapshot: Snapshot): Snapshot {
-  const { version, generatedAt, sources, offers, history } = snapshot;
+  const { version, generatedAt, sources, offers, compute, history } = snapshot;
   const ids = new Set(
     ["on-demand", "spot"].map(
       billing =>
@@ -50,6 +50,7 @@ export function overviewSnapshot(snapshot: Snapshot): Snapshot {
     generatedAt,
     sources,
     offers,
+    compute,
     history: history.filter(
       point => ids.has(point.offerId) && Date.parse(point.observedAt) >= since
     ),

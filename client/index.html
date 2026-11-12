@@ -1,20 +1,38 @@
 <!doctype html>
 <html lang="en">
-
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      let preferredTheme;
+      try {
+        preferredTheme = localStorage.getItem("compute-tracker-theme");
+      } catch {}
+      document.documentElement.classList.toggle(
+        "dark",
+        preferredTheme
+          ? preferredTheme === "dark"
+          : matchMedia("(prefers-color-scheme: dark)").matches
+      );
+    </script>
     <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <meta name="description" content="GPU Price Observatory: source-backed GPU pricing, availability observations, and collected history. No accounts or subscriptions." />
+      name="description"
+      content="GPU Price Observatory: source-backed GPU pricing, availability observations, and collected history. No accounts or subscriptions."
+    />
     <title>GPU Price Tracker</title>
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/dm-sans-latin-v17.woff2" media="(min-width: 768px)" crossorigin fetchpriority="low" />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/dm-sans-latin-v17.woff2"
+      media="(min-width: 768px)"
+      crossorigin
+      fetchpriority="low"
+    />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-
   </body>
-
 </html>

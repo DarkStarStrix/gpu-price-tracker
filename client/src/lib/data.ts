@@ -188,6 +188,12 @@ export function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 
+export const hourlyPrice = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 6,
+});
+
 export function categoryLabel(cat: ProviderCategory): string {
   switch (cat) {
     case "stable":

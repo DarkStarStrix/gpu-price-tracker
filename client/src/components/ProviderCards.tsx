@@ -114,7 +114,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                     href={website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-[oklch(0.62_0.19_218)] hover:bg-teal-subtle transition-all duration-150 hover:scale-110"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-teal hover:bg-teal-subtle transition-all duration-150 hover:scale-110"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -123,7 +123,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
 
               <div className="px-5 pb-4 text-xs text-muted-foreground">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-data ${connected ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-data ${connected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-slate-400"}`}
@@ -184,13 +184,13 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                     {summary.gpuInventory.slice(0, 4).map(gpu => (
                       <span
                         key={gpu}
-                        className="font-data text-[9px] px-1.5 py-0.5 bg-[oklch(0.94_0.006_85)] rounded text-foreground leading-tight"
+                        className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground leading-tight"
                       >
                         {gpu}
                       </span>
                     ))}
                     {summary.gpuInventory.length > 4 && (
-                      <span className="font-data text-[9px] px-1.5 py-0.5 bg-[oklch(0.94_0.006_85)] rounded text-muted-foreground">
+                      <span className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
                         +{summary.gpuInventory.length - 4}
                       </span>
                     )}
@@ -230,7 +230,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                       {summary.regionCoverage.map(region => (
                         <span
                           key={region}
-                          className="font-data text-[9px] px-1.5 py-0.5 bg-[oklch(0.94_0.006_85)] rounded text-foreground"
+                          className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground"
                         >
                           {region}
                         </span>
@@ -319,7 +319,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
               )}
 
               {/* Footer: notes + last polled */}
-              <div className="mt-auto px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between gap-2">
+              <div className="mt-auto px-5 py-3 bg-secondary border-t border-border/40 flex items-center justify-between gap-2">
                 <details className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0">
                   <summary className="cursor-pointer hover:text-foreground">
                     Source details

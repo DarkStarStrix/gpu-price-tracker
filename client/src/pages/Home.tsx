@@ -10,7 +10,17 @@ import { LiveH100 } from "@/components/LiveH100";
 import { MarketPulse } from "@/components/MarketPulse";
 import { QuickComparison } from "@/components/QuickComparison";
 import { TrendsPanel } from "@/components/TrendsPanel";
-import { Activity, RefreshCw, ChevronRight, ArrowRight } from "lucide-react";
+import { ComputeTicker } from "@/components/ComputeTicker";
+import {
+  Activity,
+  ArrowRight,
+  ChevronRight,
+  Cpu,
+  Github,
+  Moon,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
 import {
   catalog,
   snapshotLoadError,
@@ -24,6 +34,7 @@ import { displayQuote } from "@shared/market";
 import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 import { readViewLink } from "@/lib/view-link";
+import type { ComputeKind } from "@shared/compute";
 
 // Generated assets
 const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.webp`;
@@ -39,14 +50,20 @@ const ProviderCards = lazy(() =>
     default: module.ProviderCards,
   }))
 );
+const ComputeRates = lazy(() =>
+  import("@/components/ComputeRates").then(module => ({
+    default: module.ComputeRates,
+  }))
+);
 
-type Tab = "overview" | "offers" | "providers" | "trends";
+type Tab = "overview" | "offers" | "compute" | "providers" | "trends";
 
-const TABS: { id: Tab; label: string; desc: string }[] = [
-  { id: "overview", label: "Overview", desc: "Market snapshot" },
-  { id: "offers", label: "All Offers", desc: "Observed offers" },
-  { id: "providers", label: "Providers", desc: "Connections" },
-  { id: "trends", label: "Trends", desc: "7-day history" },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "offers", label: "All Offers" },
+  { id: "compute", label: "CPU & More" },
+  { id: "providers", label: "Providers" },
+  { id: "trends", label: "Trends" },
 ];
 
 export default function Home() {
@@ -57,12 +74,18 @@ export default function Home() {
     sharedView?.view === "trends" ? sharedView.id : ""
   );
   const [initialGpu, setInitialGpu] = useState("");
+  const [initialCompute, setInitialCompute] = useState<ComputeKind>("cpu");
+  const [dark, setDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
   const [activeTab, setActiveTab] = useState<Tab>(
     sharedView?.view ?? "overview"
   );
   const generatedAt = catalog.generatedAt;
   const offers = catalog.offers;
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
+  const snapshotTime = new Date(generatedAt);
+  const snapshotHealthy = !snapshotLoadError && freshOffers.length > 0;
   const providerCount = new Set(offers.map(o => o.providerId)).size;
   const floor = (id: string) => {
     const quote = displayQuote(catalog, id);
@@ -88,6 +111,15 @@ export default function Home() {
     window.scrollTo(0, 0);
   }
 
+  function toggleTheme() {
+    const next = !dark;
+    document.documentElement.classList.toggle("dark", next);
+    setDark(next);
+    try {
+      localStorage.setItem("compute-tracker-theme", next ? "dark" : "light");
+    } catch {}
+  }
+
   useEffect(() => {
     if (activeTab === "offers") void loadHistory().catch(() => {});
   }, [activeTab, generatedAt]);
@@ -110,26 +142,35 @@ export default function Home() {
   return (
     <div className="min-h-screen dashboard-surface">
       {/* ── Navigation ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 h-[60px] border-b border-border bg-background">
-        <div className="container flex items-center justify-between h-full">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 rounded-lg bg-[oklch(0.22_0.045_255)] flex items-center justify-center shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.3)]">
-              <Activity className="w-4.5 h-4.5 text-[oklch(0.62_0.19_218)]" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[oklch(0.60_0.18_155)] border-2 border-[var(--paper)] pulse-dot" />
-            </div>
-            <div>
-              <div className="text-sm font-bold tracking-tight text-foreground leading-none">
+      <header className="sticky top-0 z-50 h-[60px] border-b border-border bg-card">
+        <div className="container flex items-center justify-between gap-2 h-full">
+          <button
+            type="button"
+            onClick={() => navigate("overview")}
+            aria-label="GPU Price Tracker home"
+            className="flex shrink-0 items-center gap-2.5 rounded-lg text-left"
+          >
+            <span
+              className="header-brand-mark grid size-9 place-items-center rounded-xl"
+              aria-hidden="true"
+            >
+              <Cpu className="size-5" strokeWidth={1.6} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold leading-tight tracking-tight">
                 GPU Price Tracker
-              </div>
-              <div className="mono-label text-muted-foreground mt-0.5">
-                Compute Market Intelligence
-              </div>
-            </div>
-          </div>
+              </span>
+              <span className="hidden sm:block mt-0.5 text-[10px] font-data text-muted-foreground">
+                Compute price observatory
+              </span>
+            </span>
+          </button>
 
           {/* Tab navigation — desktop */}
-          <nav className="hidden md:flex items-center gap-0.5">
+          <nav
+            aria-label="Dashboard"
+            className="hidden lg:flex items-center gap-0.5"
+          >
             {TABS.map(tab => (
               <button
                 key={tab.id}
@@ -137,10 +178,10 @@ export default function Home() {
                 onPointerEnter={tab.id === "offers" ? warmOffers : undefined}
                 onFocus={tab.id === "offers" ? warmOffers : undefined}
                 aria-current={activeTab === tab.id ? "page" : undefined}
-                className={`relative px-4 py-2 text-sm rounded-md transition-all duration-200 ${
+                className={`relative whitespace-nowrap px-2.5 xl:px-4 py-2 text-sm rounded-md transition-colors ${
                   activeTab === tab.id
                     ? "text-foreground font-medium tab-active-indicator"
-                    : "text-muted-foreground hover:text-foreground hover:bg-[oklch(0.94_0.006_85)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {tab.label}
@@ -151,45 +192,65 @@ export default function Home() {
             ))}
           </nav>
 
-          {/* Right controls */}
-          <div className="flex items-center gap-1.5">
-            {/* Clock + Refresh — always visible */}
-            <span className="font-data text-[10px] text-muted-foreground hidden lg:block mr-1">
-              {new Date(catalog.generatedAt).toLocaleTimeString([], {
+          <div className="flex shrink-0 items-center gap-1.5">
+            <time
+              dateTime={generatedAt}
+              title={`Snapshot published ${snapshotTime.toLocaleString()}`}
+              className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1.5 font-data text-[10px] text-muted-foreground"
+            >
+              <span
+                aria-hidden="true"
+                className={`size-1.5 rounded-full ${snapshotHealthy ? "bg-emerald-500" : "bg-amber-500"}`}
+              />
+              {snapshotHealthy ? "Updated" : "Last snapshot"}{" "}
+              {snapshotTime.toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-            </span>
+            </time>
             <button
               type="button"
               aria-label="Refresh prices"
               title="Check for a newer published price snapshot"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+              className="header-control sm:px-2.5"
               disabled={snapshotRefreshing}
               onClick={() => {
                 void loadCatalog().catch(() => {});
               }}
             >
               <RefreshCw
-                className={`w-3 h-3 ${snapshotRefreshing ? "animate-spin" : ""}`}
+                className={`size-4 ${snapshotRefreshing ? "animate-spin" : ""}`}
               />
-              <span className="hidden md:inline">
+              <span className="hidden sm:inline">
                 {snapshotRefreshing ? "Checking…" : "Refresh"}
               </span>
             </button>
-
+            <button
+              type="button"
+              className="header-control"
+              onClick={toggleTheme}
+              aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+              title={dark ? "Light mode" : "Dark mode"}
+            >
+              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
             <a
               href="https://github.com/DarkStarStrix/gpu-price-tracker"
-              className="text-xs text-muted-foreground hover:text-foreground px-2"
+              aria-label="GitHub repository"
+              title="GitHub repository"
+              className="header-control"
             >
-              GitHub
+              <Github className="size-4" />
             </a>
           </div>
         </div>
       </header>
 
       {/* ── Mobile tab bar ──────────────────────────────────────────────── */}
-      <div className="md:hidden sticky top-[60px] z-40 bg-background border-b border-border px-4 py-2 flex gap-1 overflow-x-auto overscroll-x-contain">
+      <nav
+        aria-label="Dashboard"
+        className="lg:hidden sticky top-[60px] z-40 bg-background border-b border-border px-4 py-2 flex gap-1 overflow-x-auto overscroll-x-contain"
+      >
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -199,14 +260,25 @@ export default function Home() {
             aria-current={activeTab === tab.id ? "page" : undefined}
             className={`px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-all duration-200 ${
               activeTab === tab.id
-                ? "bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] font-medium"
+                ? "bg-muted text-foreground font-semibold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab.label}
           </button>
         ))}
-      </div>
+      </nav>
+
+      {activeTab === "overview" && (
+        <ComputeTicker
+          snapshot={catalog}
+          onGpu={gpu => navigate("offers", gpu)}
+          onCompute={kind => {
+            setInitialCompute(kind);
+            navigate("compute");
+          }}
+        />
+      )}
 
       <div className="container pt-4">
         <div className="text-xs text-muted-foreground border border-border rounded-lg px-4 py-3 bg-card">
@@ -248,7 +320,7 @@ export default function Home() {
             <div className="max-w-xl">
               {/* Eyebrow */}
               <div className="flex items-center gap-2 mb-5">
-                <span className="mono-label text-[oklch(0.62_0.19_218)]">
+                <span className="mono-label text-teal">
                   Market Intelligence
                 </span>
                 <span className="w-8 h-px bg-[oklch(0.62_0.19_218_/_0.4)]" />
@@ -265,9 +337,10 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md">
-                Normalized GPU pricing from official provider sources. Compare
-                hourly rates, cloud tiers, and reported availability — with a
-                source and observation time for every offer.
+                Compare GPU, CPU, and TPU pricing from official provider
+                sources. Explore hourly rates, cloud tiers, and reported
+                availability — with a source and observation time for every
+                offer.
               </p>
 
               <LiveH100 />
@@ -278,7 +351,7 @@ export default function Home() {
                   onClick={() => navigate("offers")}
                   onPointerEnter={warmOffers}
                   onFocus={warmOffers}
-                  className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200 shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.25)]"
+                  className="primary-action group flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
                 >
                   Browse All Offers
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
@@ -343,9 +416,7 @@ export default function Home() {
             {/* Interstitial — blueprint + methodology */}
             <div className="my-12 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 items-center py-8 border-y border-border/60">
               <div className="animate-fade-up delay-60">
-                <div className="mono-label text-[oklch(0.62_0.19_218)] mb-3">
-                  Methodology
-                </div>
+                <div className="mono-label text-teal mb-3">Methodology</div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   How We Track Prices
                 </h3>
@@ -364,7 +435,7 @@ export default function Home() {
                     .map(src => (
                       <span
                         key={src}
-                        className="category-badge bg-[oklch(0.22_0.045_255_/_0.06)] text-[oklch(0.42_0.04_255)]"
+                        className="category-badge bg-muted text-muted-foreground"
                       >
                         {src}
                       </span>
@@ -399,6 +470,15 @@ export default function Home() {
           </Suspense>
         )}
 
+        {activeTab === "compute" && (
+          <Suspense fallback={<p role="status">Loading compute prices…</p>}>
+            <ComputeRates
+              feeds={catalog.compute ?? []}
+              initialKind={initialCompute}
+            />
+          </Suspense>
+        )}
+
         {activeTab === "providers" && (
           <div className="animate-fade-up">
             {/* Provider constellation header */}
@@ -410,9 +490,7 @@ export default function Home() {
               />
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--paper)] via-[var(--paper)/70%] to-transparent flex items-center px-8">
                 <div>
-                  <div className="mono-label text-[oklch(0.62_0.19_218)] mb-1">
-                    Network Map
-                  </div>
+                  <div className="mono-label text-teal mb-1">Network Map</div>
                   <h2 className="text-2xl font-bold text-foreground">
                     Provider Profiles
                   </h2>
@@ -453,11 +531,11 @@ export default function Home() {
       </main>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-[oklch(0.96_0.006_85)]">
+      <footer className="border-t border-border bg-secondary">
         <div className="container py-7 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Activity className="w-3.5 h-3.5 text-[oklch(0.62_0.19_218)]" />
+              <Activity className="w-3.5 h-3.5 text-teal" />
               <span className="text-sm font-semibold text-foreground">
                 GPU Price Tracker
               </span>
@@ -479,7 +557,7 @@ export default function Home() {
                 .map(p => (
                   <span
                     key={p}
-                    className="font-data text-[10px] px-2 py-0.5 bg-[oklch(0.92_0.006_85)] rounded text-foreground"
+                    className="font-data text-[10px] px-2 py-0.5 bg-muted rounded text-foreground"
                   >
                     {p}
                   </span>

@@ -2,6 +2,21 @@
   --offer-link: #075b75;
   --offer-ink: #17364b;
   --offer-soft: #e9f3f6;
+  --offer-header: #eaf2f5;
+  --offer-hover: #edf6f8;
+  --offer-alert: #a63b21;
+  --offer-spot: #624388;
+  --offer-retained: #805010;
+}
+.dark .offer-market {
+  --offer-link: var(--link);
+  --offer-ink: var(--foreground);
+  --offer-soft: var(--accent);
+  --offer-header: var(--muted);
+  --offer-hover: #243745;
+  --offer-alert: #ffab91;
+  --offer-spot: #d5bafa;
+  --offer-retained: #f7ca83;
 }
 
 .offer-market__intro {
@@ -162,7 +177,7 @@
   line-height: 1.4;
 }
 .offer-market__table thead {
-  background: #eaf2f5;
+  background: var(--offer-header);
   color: var(--offer-ink);
 }
 .offer-market__table th,
@@ -189,10 +204,10 @@
 }
 .offer-market__table tbody tr:hover,
 .offer-market__table tbody tr[data-selected="true"] {
-  background: #edf6f8;
+  background: var(--offer-hover);
 }
 .offer-market__table tbody tr[data-alert="true"] .offer-rate strong {
-  color: #a63b21;
+  color: var(--offer-alert);
 }
 .offer-market__table .offer-select {
   width: 2.5rem;
@@ -208,7 +223,7 @@
 .offer-select input {
   width: 1rem;
   height: 1rem;
-  accent-color: #08738c;
+  accent-color: var(--offer-link);
 }
 .offer-market__table small {
   display: block;
@@ -236,7 +251,7 @@
   object-fit: contain;
 }
 .offer-spot {
-  color: #624388;
+  color: var(--offer-spot);
   font-weight: 650;
 }
 .offer-market__table .offer-rate {
@@ -247,7 +262,7 @@
   font-size: 1rem;
 }
 .offer-rate small.offer-retained {
-  color: #805010;
+  color: var(--offer-retained);
 }
 .offer-history {
   min-width: 6.75rem;
@@ -268,7 +283,7 @@
   padding-inline: 0.35rem;
 }
 .offer-icon-button[data-alert-set="true"] {
-  color: #a63b21;
+  color: var(--offer-alert);
 }
 .offer-source {
   display: inline-flex;

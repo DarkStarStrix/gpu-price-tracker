@@ -20,6 +20,8 @@ flowchart LR
 
 The collector owns writes. The workflow serializes publication. The browser is a read-only consumer apart from local price-alert storage. The build derives a preloaded current catalog and a compact chart history from the same snapshot. The browser validates the current catalog before installing it and only attaches chart data with the same observation timestamp. Consumers subscribe to a revision through the shared store.
 
+The same collector publishes an optional compute catalog alongside GPU offers. CPU rates are per whole instance-hour, TPU rates per chip-hour, and sandbox rates per running sandbox-hour. Each compute feed tracks its last observation separately so a failed CPU or TPU refresh retains its previous rates and leaves GPU collection independent. The browser shows compute listings in their own tab and labels retained rates.
+
 ## 3. Evidence and ranked bottlenecks
 
 The cleanup baseline contained eight working public providers, four disconnected adapters, unused generated UI/theme scaffolding, duplicated HTTP readers and dependency advisories. Alert storage trusted arbitrary parsed JSON; CSV escaping covered formula prefixes only in the first character. These paths have explicit regression coverage after cleanup.

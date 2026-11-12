@@ -25,14 +25,14 @@ const stateStyles: Record<
     container:
       "bg-[oklch(0.60_0.18_155_/_0.08)] border border-[oklch(0.60_0.18_155_/_0.2)]",
     dot: "bg-[oklch(0.60_0.18_155)]",
-    text: "text-[oklch(0.42_0.15_155)]",
+    text: "text-[oklch(0.42_0.15_155)] dark:text-emerald-300",
     pulse: true,
   },
   limited: {
     container:
       "bg-[oklch(0.68_0.18_80_/_0.08)] border border-[oklch(0.68_0.18_80_/_0.2)]",
     dot: "bg-[oklch(0.68_0.18_80)]",
-    text: "text-[oklch(0.48_0.14_80)]",
+    text: "text-[oklch(0.48_0.14_80)] dark:text-amber-300",
     pulse: false,
   },
   unknown: {
@@ -45,7 +45,7 @@ const stateStyles: Record<
     container:
       "bg-[oklch(0.58_0.22_25_/_0.07)] border border-[oklch(0.58_0.22_25_/_0.2)]",
     dot: "bg-[oklch(0.58_0.22_25)]",
-    text: "text-[oklch(0.42_0.16_25)]",
+    text: "text-[oklch(0.42_0.16_25)] dark:text-red-300",
     pulse: false,
   },
 };

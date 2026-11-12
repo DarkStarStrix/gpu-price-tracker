@@ -86,8 +86,8 @@ function ComparisonCard({
       <div className="px-5 py-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
           {/* VRAM badge */}
-          <div className="w-10 h-10 rounded-lg bg-[oklch(0.22_0.045_255_/_0.06)] flex flex-col items-center justify-center border border-[oklch(0.22_0.045_255_/_0.08)]">
-            <span className="font-data text-xs font-semibold text-[oklch(0.42_0.04_255)] leading-none">
+          <div className="w-10 h-10 rounded-lg bg-muted flex flex-col items-center justify-center border border-border">
+            <span className="font-data text-xs font-semibold text-muted-foreground leading-none">
               {row.vramGb || "—"}
             </span>
             <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">
@@ -155,7 +155,7 @@ function ComparisonCard({
                 </span>
                 {p.retained && (
                   <span
-                    className="text-[9px] text-amber-700"
+                    className="text-[9px] text-amber-700 dark:text-amber-300"
                     title={`Observed ${new Date(p.observedAt).toLocaleString()}`}
                   >
                     Last observed ·{" "}
@@ -180,7 +180,7 @@ function ComparisonCard({
                   href={p.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-[oklch(0.62_0.19_218)] hover:bg-teal-subtle transition-colors duration-150"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-teal hover:bg-teal-subtle transition-colors duration-150"
                 >
                   <ExternalLink className="w-3 h-3" />
                 </a>
@@ -191,7 +191,7 @@ function ComparisonCard({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex flex-wrap gap-2 items-center justify-between">
+      <div className="px-5 py-3 bg-secondary border-t border-border/40 flex flex-wrap gap-2 items-center justify-between">
         {onBrowseOffers && (
           <button
             type="button"
@@ -205,7 +205,7 @@ function ComparisonCard({
         {row.providers.length > 3 && (
           <button
             onClick={onToggle}
-            className="flex items-center gap-1 text-[11px] text-[oklch(0.62_0.19_218)] hover:text-[oklch(0.52_0.19_218)] transition-colors ml-auto"
+            className="flex items-center gap-1 text-[11px] text-teal hover:text-teal transition-colors ml-auto"
           >
             {isExpanded ? (
               <>

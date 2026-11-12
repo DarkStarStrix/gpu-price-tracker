@@ -103,7 +103,8 @@ export function PriceMarket({
     [catalog, chartId, windowStart, windowEnd]
   );
   const stats = marketStats(points);
-  const color = (stats?.change ?? 0) >= 0 ? "#059669" : "#dc2626";
+  const color =
+    (stats?.change ?? 0) >= 0 ? "var(--sage)" : "var(--destructive)";
   const headline = hover?.price ?? stats?.last;
   let changeLabel;
   if (stats && stats.count > 1) {

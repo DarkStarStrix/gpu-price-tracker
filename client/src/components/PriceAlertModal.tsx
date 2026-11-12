@@ -150,7 +150,7 @@ export function PriceAlertModal({
           {existingAlert && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[oklch(0.65_0.18_25_/_0.08)] border border-[oklch(0.65_0.18_25_/_0.2)]">
               <Bell className="w-3 h-3 text-[oklch(0.62_0.18_25)]" />
-              <span className="text-xs text-[oklch(0.45_0.12_25)]">
+              <span className="text-xs text-[oklch(0.45_0.12_25)] dark:text-red-300">
                 Active alert at{" "}
                 <span className="font-data font-semibold">
                   ${existingAlert.targetPrice.toFixed(2)}/hr
@@ -174,8 +174,8 @@ export function PriceAlertModal({
               saved
                 ? "bg-[oklch(0.60_0.18_155)] text-white"
                 : isValid
-                  ? "bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] hover:bg-[oklch(0.28_0.045_255)]"
-                  : "bg-[oklch(0.92_0.006_85)] text-muted-foreground cursor-not-allowed"
+                  ? "primary-action"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
           >
             {saved ? (

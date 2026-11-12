@@ -1,4 +1,5 @@
 import { z } from "zod/mini";
+import { computeFeedSchema } from "./compute";
 
 const timestamp = z.iso.datetime();
 const positive = z.number().check(z.positive());
@@ -161,6 +162,7 @@ export const snapshotSchema = z
       })
     ),
     offers: z.array(offerSchema),
+    compute: z.optional(z.array(computeFeedSchema)),
     history: z.array(historySchema),
     poolHistory: z.optional(z.array(poolPointSchema)),
   })
@@ -170,6 +172,20 @@ export const snapshotSchema = z
         ctx.addIssue({ code: "custom", message: "Duplicate offer IDs" });
       if (new Set(s.sources.map(o => o.id)).size !== s.sources.length)
         ctx.addIssue({ code: "custom", message: "Duplicate source IDs" });
+      if (
+        s.compute &&
+        (new Set(s.compute.map(feed => feed.providerId)).size !==
+          s.compute.length ||
+          s.compute.some(
+            feed =>
+              feed.observedAt &&
+              Date.parse(feed.observedAt) > Date.parse(s.generatedAt)
+          ))
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "Invalid compute feed identity or time",
+        });
       if (
         s.sources.some(
           source =>

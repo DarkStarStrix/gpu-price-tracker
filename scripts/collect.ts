@@ -13,6 +13,7 @@ import {
 import { measurePool } from "../shared/movement";
 import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
 import { sources, type Source } from "./providers";
+import { collectCompute } from "./compute-feeds";
 
 export async function collect(
   previous: Snapshot | null,
@@ -173,13 +174,22 @@ export async function main() {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
-  const snapshot = await collect(previous, sources());
+  const at = new Date().toISOString();
+  const [gpu, compute] = await Promise.all([
+    collect(previous, sources(), at),
+    collectCompute(previous?.compute ?? [], at),
+  ]);
+  const snapshot = snapshotSchema.parse({ ...gpu, compute });
   await mkdir(dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
   await writeFile(temporary, writeSnapshot(snapshot));
   await rename(temporary, file);
   for (const source of snapshot.sources)
     console.log(`${source.name}: ${source.status} — ${source.message}`);
+  for (const feed of compute)
+    console.log(
+      `${feed.providerName} compute: ${feed.status} — ${feed.rates.length} published rates`
+    );
   if (!snapshot.sources.some(s => s.status === "ok"))
     console.warn(
       "No source refreshed successfully; snapshot reports degraded collection."
