@@ -85,7 +85,7 @@ Before publication, collect against all active providers and inspect statuses an
 
 ## 10. Migration and execution plan
 
-Snapshot schema remains version 1; optional fields and existing historical identities remain compatible. Disconnected Prime Intellect/Lambda/TensorDock/Fluidstack implementations and their unused logos/secret configuration are removed. Existing committed data and fixtures are preserved; successful collection publishes the configured public source statuses while retaining earlier history within the rolling window.
+Snapshot schema remains version 1; optional fields and existing historical identities remain compatible. Lambda uses its public on-demand pricing page. Disconnected Prime Intellect/TensorDock/Fluidstack implementations and their unused logos/secret configuration are removed. Existing committed data and fixtures are preserved; successful collection publishes the configured public source statuses while retaining earlier history within the rolling window.
 
 Deploy through the existing workflow after local gates. Rollback uses a reviewed revert of application/config changes while preserving newer observations; never reset the data history to roll back the UI. Future provider additions must establish first-party units, effective dates, availability semantics and complete pagination before joining the source registry.
 

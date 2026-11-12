@@ -5,6 +5,7 @@ import {
   parseDigitalOcean,
   parseHotAisle,
   parseJarvislabs,
+  parseLambda,
   parseMassedCompute,
 } from "./additional-pricing";
 import { collect } from "./collect";
@@ -14,6 +15,51 @@ import { filterPool } from "../shared/offer-view";
 const at = "2026-11-11T23:00:00.000Z";
 const fixture = (id: string) =>
   readFileSync(new URL(`./fixtures/${id}.html`, import.meta.url), "utf8");
+
+it("reads Lambda's instance size tabs and skips separate reserved cluster rates", () => {
+  const { offers } = parseLambda(fixture("lambda"), at);
+  expect(offers.map(offer => offer.gpuCount)).toEqual([8, 4, 2, 1]);
+  expect(offers[0]).toMatchObject({
+    offerId: "lambda:h100-sxm-8:on-demand",
+    pricePerGpuHr: 4.59,
+    totalNodePriceHr: 36.72,
+    priceBasis: "per_gpu_hour",
+    vramPerGpuGb: 80,
+    vcpus: 208,
+    ramGb: 1800,
+    availability: "unknown",
+  });
+  expect(offers.slice(1).every(offer => offer.gpuModelId === "b200-sxm")).toBe(
+    true
+  );
+});
+
+it("rejects a Lambda page with a missing or mislabeled size table", () => {
+  const html = fixture("lambda");
+  expect(() =>
+    parseLambda(
+      html.replace('aria-labelledby="size-0"', 'aria-labelledby="missing"'),
+      at
+    )
+  ).toThrow();
+  expect(() => parseLambda(html.replace("VRAM/GPU", "VRAM"), at)).toThrow(
+    "Missing Lambda instance size table"
+  );
+});
+
+it("publishes Lambda rates only once the provider's effective time is reached", () => {
+  const notice =
+    "<p>These prices take effect November 16, 2026, at 00:00 UTC.</p>";
+  const html = fixture("lambda").replaceAll(
+    "</table>\n</div>",
+    `</table>${notice}\n</div>`
+  );
+  expect(parseLambda(html, at).offers).toEqual([]);
+  expect(parseLambda(html, "2026-11-16T00:00:00.000Z").offers).toHaveLength(4);
+  expect(() =>
+    parseLambda(html.replaceAll("November 16, 2026", "soon"), at)
+  ).toThrow("Unrecognized Lambda price effective date");
+});
 
 it("keeps Hot Aisle VM and bare-metal counts and multiplies the per-GPU rate once", () => {
   const html = fixture("hotaisle");

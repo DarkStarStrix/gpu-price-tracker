@@ -1,5 +1,10 @@
 [
   {
+    "id": "lambda",
+    "source": "https://lambda.com/hubfs/favicon-48x48-1.svg",
+    "file": "lambda.svg"
+  },
+  {
     "id": "sesterce",
     "source": "https://cloud.sesterce.com/favicon.ico",
     "file": "sesterce.png"

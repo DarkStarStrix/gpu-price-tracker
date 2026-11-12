@@ -101,6 +101,14 @@ export const PROVIDERS: Provider[] = [
     id,
     ...provider,
   })),
+  {
+    id: "lambda",
+    name: "Lambda",
+    website: "https://lambda.com/instances",
+    category: "stable",
+    notes:
+      "Published on-demand GPU instance rates and node configurations. Check regional stock with Lambda.",
+  },
   ...(
     [
       ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],
@@ -207,6 +215,7 @@ export function providerLogo(id: string): string {
     sixtytwo: "svg",
     paperspace: "webp",
     hotaisle: "svg",
+    lambda: "svg",
     runcrate: "webp",
     modal: "svg",
     hetzner: "ico",

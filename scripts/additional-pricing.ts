@@ -18,6 +18,7 @@ const providers = {
   civo: ["Civo", "https://www.civo.com/pricing"],
   jarvislabs: ["Jarvislabs", "https://jarvislabs.ai/pricing"],
   massedcompute: ["Massed Compute", "https://vm.massedcompute.com/pricing"],
+  lambda: ["Lambda", "https://lambda.com/pricing"],
 } as const;
 
 type ProviderId = keyof typeof providers;
@@ -347,6 +348,80 @@ export function parseMassedCompute(html: string, at: string): SourceResult {
   return result("massedcompute", html, at, listings);
 }
 
+export function parseLambda(html: string, at: string): SourceResult {
+  const $ = load(html);
+  const listings: Listing[] = [];
+  const counts = new Set<number>();
+  const effectiveCounts = new Set<number>();
+  const skus = new Set<string>();
+  const sizeLabel = /^([1-9]\d*)x$/;
+  const tabs = new Map(
+    $('[role="tab"][id]')
+      .map((_, tab) => [[$(tab).attr("id"), clean($(tab).text())] as const])
+      .get()
+  );
+  $("table").each((_, element) => {
+    const table = $(element);
+    const headers = table
+      .find("thead th")
+      .map((_, cell) => clean($(cell).text()))
+      .get();
+    if (headers.join("|") !== "Plan|VRAM/GPU|vCPUs|RAM|STORAGE|PRICE/GPU/HR*")
+      return;
+    const label = table.closest('[role="tabpanel"]').attr("aria-labelledby");
+    const count = quantity(tabs.get(label) ?? "", sizeLabel);
+    const rows = table.find("tbody tr");
+    if (counts.has(count) || !rows.length)
+      throw new Error("Invalid Lambda instance size table");
+    counts.add(count);
+    const footer = clean(table.next("p").text());
+    if (/\b(?:take|takes) effect\b|\beffective (?:from|on)\b/i.test(footer)) {
+      const date =
+        /These prices take effect ([A-Za-z]+ \d{1,2}, \d{4}), at (\d{2}:\d{2}) UTC\./.exec(
+          footer
+        );
+      const effectiveAt = date ? Date.parse(`${date[1]} ${date[2]} UTC`) : NaN;
+      if (!Number.isFinite(effectiveAt))
+        throw new Error("Unrecognized Lambda price effective date");
+      if (Date.parse(at) >= effectiveAt) effectiveCounts.add(count);
+    } else {
+      effectiveCounts.add(count);
+    }
+    rows.each((_, row) => {
+      const cells = $(row).children("th,td");
+      const label = clean(cells.eq(0).text());
+      if (cells.length !== headers.length || !label)
+        throw new Error("Invalid Lambda instance row");
+      // Lambda's instance documentation identifies these HGX models as SXM.
+      const model = label.replace(/^NVIDIA HGX ([AH]100)$/, "NVIDIA $1 SXM");
+      const vram = quantity(clean(cells.eq(1).text()), /^(\d+) GB$/);
+      const sku = `${gpuId(model, vram)}-${count}`;
+      if (skus.has(sku)) throw new Error("Duplicate Lambda instance SKU");
+      skus.add(sku);
+      listings.push({
+        sku,
+        model,
+        count,
+        vram,
+        vcpus: quantity(clean(cells.eq(2).text()), /^(\d+)$/),
+        ram: quantity(clean(cells.eq(3).text()), /^(\d+) GiB$/),
+        rate: usd(clean(cells.eq(5).text())),
+        basis: "per_gpu_hour",
+      });
+    });
+  });
+  if (
+    [...tabs.values()].filter(label => sizeLabel.test(label)).length !==
+    counts.size
+  )
+    throw new Error("Missing Lambda instance size table");
+  const parsed = result("lambda", html, at, listings);
+  return {
+    ...parsed,
+    offers: parsed.offers.filter(offer => effectiveCounts.has(offer.gpuCount)),
+  };
+}
+
 export function additionalPricingSources(): Source[] {
   return (
     [
@@ -355,6 +430,7 @@ export function additionalPricingSources(): Source[] {
       ["civo", parseCivo],
       ["jarvislabs", parseJarvislabs],
       ["massedcompute", parseMassedCompute],
+      ["lambda", parseLambda],
     ] as const
   ).map(([id, parse]) => {
     const [name, url] = providers[id];

@@ -37,6 +37,7 @@ pnpm preview
 | Nebius          | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                   |
 | Runcrate        | Public GPU pricing feed                  | Lowest listed per-GPU rate per type. Types with no orderable option are excluded; no node configuration is asserted.    |
 | Hot Aisle       | Official MI300X pricing                  | Published per-GPU rates for 1-, 2- and 4-GPU VMs and 8-GPU bare metal.                                                  |
+| Lambda          | Official GPU instance pricing            | On-demand per-GPU rates by node size. Regional stock is not published in the rate card.                                 |
 | DigitalOcean    | Official GPU Droplet pricing             | On-demand and spot node rates, with 1- and 8-GPU SKUs kept separate.                                                    |
 | Civo            | Official NVIDIA GPU pricing              | On-demand hourly node rates. Commitment-only plans are excluded.                                                        |
 | Jarvislabs      | Official USD instance pricing            | Single-GPU on-demand and spot rates from the public USD table.                                                          |
@@ -59,7 +60,7 @@ pnpm preview
 | Sixtytwo        | Public capacity listings                | Exact USD per-GPU-hour lease quotes appear on the profile with quantity, term and published ready date.                |
 | Sesterce        | Public compute catalog                   | Starting configuration rates are divided by the node's GPU count. Regional stock is unverified.                        |
 
-The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
+The disconnected Prime Intellect, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 
 Pricing pages establish a published rate, not stock. Missing stock becomes a **Check stock** link; explicit available/limited/unavailable reports keep their colored indicators. Failed or old observations remain visible in Offers with their actual timestamps and never count as current market data. Overview, comparisons and provider inventory retain their last observed prices with explicit stale labels when fresh data is unavailable. Old stock reports become stock-check links. The freshness limit is two hours.
 
