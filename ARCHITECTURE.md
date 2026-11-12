@@ -62,7 +62,7 @@ RunPod provides a per-GPU catalog rate and a separate one-GPU stock report; neit
 
 The Actions workflow runs on main pushes, manual dispatch and quarter-hour schedules. Its concurrency group serializes refresh/deploy runs. Build has contents-write permission solely to preserve the snapshot; deploy separately receives Pages/OIDC permissions. No provider secrets are configured or referenced.
 
-The collector retains a rolling seven-day window and deduplicates history by offer ID and observation timestamp. It writes a temporary snapshot then renames it locally. Git commit/push and Pages deployment are subsequent operations, not part of that local atomic write. A failed push/build/deploy fails its workflow step; local success does not prove remote publication.
+The collector retains a rolling seven-day window and deduplicates history by offer ID and observation timestamp. Both history encodings index repeated timestamps. The collector logs snapshot size and point count, rejects files above GitHub’s 100 MiB limit, and writes a temporary snapshot before renaming it locally. Git commit/push and Pages deployment are subsequent operations, not part of that local atomic write. A failed push/build/deploy fails its workflow step; local success does not prove remote publication.
 
 The browser polls every minute and on visibility/focus return, preserving mounted tabs and filters. A failed refresh keeps visible data with an error status. Selection stores IDs and reconciles them against current listings. Dialogs portal to the body, trap focus, restore focus/scroll and cancel pending dismissal timers on unmount.
 

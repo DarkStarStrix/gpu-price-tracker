@@ -240,6 +240,7 @@ export function parseCrusoe(html: string, at: string): SourceResult {
   });
   return pageResult("crusoe", offers, html, at, exclusions);
 }
+export const VULTR_PLANS_URL = urls.vultr;
 const vultrSchema = z.object({
   plans: z.array(
     z.object({
@@ -251,6 +252,21 @@ const vultrSchema = z.object({
       hourly_cost: z.number(),
       vcpu_count: z.number(),
       ram: z.number(),
+      disk: z.number().optional(),
+      disk_count: z.number().optional(),
+      locations: z.array(z.string()).optional(),
+      deploy_ondemand: z.boolean().optional(),
+      deploy_preemptible: z.boolean().optional(),
+      hourly_cost_preemptible: z.number().optional(),
+      location_cost: z
+        .record(
+          z.string(),
+          z.object({
+            hourly_cost: z.number(),
+            hourly_cost_preemptible: z.number().optional(),
+          })
+        )
+        .optional(),
     })
   ),
   meta: z.object({
@@ -258,11 +274,14 @@ const vultrSchema = z.object({
     links: z.object({ next: z.string().nullable() }),
   }),
 });
-export function parseVultr(payload: unknown, at: string): SourceResult {
+export function readVultrPlans(payload: unknown) {
   const d = vultrSchema.parse(payload);
   if (d.meta.links.next || d.plans.length !== d.meta.total)
     throw new Error("Incomplete Vultr catalog");
-  const offers = d.plans
+  return d.plans;
+}
+export function parseVultr(payload: unknown, at: string): SourceResult {
+  const offers = readVultrPlans(payload)
     .filter(p => (p.gpu_count ?? 0) > 0)
     .map(p => {
       if (!p.gpu_type || !p.gpu_vram_gb)
@@ -287,7 +306,7 @@ export function parseVultr(payload: unknown, at: string): SourceResult {
         pricePerGpuHr: p.hourly_cost / count,
         totalNodePriceHr: p.hourly_cost,
         availability: "unknown",
-        providerLink: "https://www.vultr.com/pricing/",
+        providerLink: "https://docs.vultr.com/product-overviews/cloud-gpu",
         sourceUrl: urls.vultr,
         cloudType: "on-demand",
         dataSource: "api",

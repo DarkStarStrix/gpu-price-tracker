@@ -26,31 +26,45 @@ export function h100Quote(
     o => o.availability !== "unavailable"
   );
 }
+type MarketPoint = {
+  time: number;
+  price: number;
+  origin: "collector" | "provider_hourly_last";
+};
+
+function marketSeriesByOffer(
+  snapshot: Snapshot,
+  ids: string[],
+  since: number,
+  until: number
+) {
+  const series = new Map(ids.map(id => [id, new Map<number, MarketPoint>()]));
+  for (const point of snapshot.history) {
+    const values = series.get(point.offerId);
+    if (!values) continue;
+    const time = Date.parse(point.observedAt);
+    if (time < since || time > until) continue;
+    values.set(time, {
+      time,
+      price: point.pricePerGpuHr,
+      origin: point.historyOrigin ?? "collector",
+    });
+  }
+  return new Map(
+    [...series].map(([id, values]) => [
+      id,
+      [...values.values()].sort((a, b) => a.time - b.time),
+    ])
+  );
+}
+
 export function marketSeries(
   snapshot: Snapshot,
   offerId: string,
   since: number,
   until = Date.now()
 ) {
-  return [
-    ...new Map(
-      snapshot.history
-        .filter(
-          h =>
-            h.offerId === offerId &&
-            Date.parse(h.observedAt) >= since &&
-            Date.parse(h.observedAt) <= until
-        )
-        .map(h => [
-          Date.parse(h.observedAt),
-          {
-            time: Date.parse(h.observedAt),
-            price: h.pricePerGpuHr,
-            origin: h.historyOrigin ?? "collector",
-          },
-        ])
-    ).values(),
-  ].sort((a, b) => a.time - b.time);
+  return marketSeriesByOffer(snapshot, [offerId], since, until).get(offerId)!;
 }
 export function marketStats(points: { price: number }[]) {
   if (!points.length) return null;
@@ -103,7 +117,22 @@ export function priceHistorySummary(
   offerId: string,
   now = Date.now()
 ) {
-  const points = marketSeries(snapshot, offerId, now - 7 * 86400_000, now);
+  return priceHistorySummaries(snapshot, [offerId], now).get(offerId)!;
+}
+
+export function priceHistorySummaries(
+  snapshot: Snapshot,
+  ids: string[],
+  now = Date.now()
+) {
+  if (!ids.length) return new Map<string, ReturnType<typeof summarizeSeries>>();
+  const series = marketSeriesByOffer(snapshot, ids, now - 7 * 86400_000, now);
+  return new Map(
+    [...series].map(([id, points]) => [id, summarizeSeries(points)])
+  );
+}
+
+function summarizeSeries(points: MarketPoint[]) {
   const stats = marketStats(points);
   return {
     stats,

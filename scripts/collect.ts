@@ -201,21 +201,27 @@ export async function main() {
         historyOrigin: "collector",
       })
     );
+  const sampledIds = new Set(samples.map(point => point.offerId));
   const snapshot = snapshotSchema.parse({
     ...combined,
     history: [
-      ...new Map(
-        [...gpu.history, ...samples].map(point => [
-          `${point.offerId}:${point.observedAt}`,
-          point,
-        ])
-      ).values(),
+      ...gpu.history.filter(
+        point => point.observedAt !== at || !sampledIds.has(point.offerId)
+      ),
+      ...samples,
     ],
   });
   await mkdir(dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, writeSnapshot(snapshot));
+  const serialized = writeSnapshot(snapshot);
+  const bytes = Buffer.byteLength(serialized);
+  if (bytes > 100 * 1024 * 1024)
+    throw new Error("Snapshot exceeds GitHub's 100 MiB file limit");
+  await writeFile(temporary, serialized);
   await rename(temporary, file);
+  console.log(
+    `Snapshot: ${snapshot.history.length.toLocaleString("en-US")} history points, ${(bytes / 1024 / 1024).toFixed(2)} MiB`
+  );
   for (const source of snapshot.sources)
     console.log(`${source.name}: ${source.status} — ${source.message}`);
   for (const feed of compute)
@@ -231,8 +237,13 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 ) {
-  main().catch(() => {
-    console.error("Collection could not safely read or publish the snapshot.");
+  main().catch(error => {
+    console.error(
+      error instanceof Error &&
+        error.message === "Snapshot exceeds GitHub's 100 MiB file limit"
+        ? error.message
+        : "Collection could not safely read or publish the snapshot."
+    );
     process.exitCode = 1;
   });
 }

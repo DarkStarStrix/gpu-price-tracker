@@ -16,7 +16,7 @@ const computeRateSchema = z.object({
   region: z.optional(label),
   billing: z.enum(["on-demand", "spot"]),
   price: positive,
-  vcpus: z.optional(z.int().check(z.positive())),
+  vcpus: z.optional(positive),
   memoryGb: z.optional(positive),
   storageGb: z.optional(positive),
   providerLink: z.optional(z.url().check(z.startsWith("https://"))),

@@ -72,14 +72,31 @@ export const PROVIDERS: Provider[] = [
       ["e2b", "E2B", "https://e2b.dev/"],
       ["daytona", "Daytona", "https://www.daytona.io/"],
       ["modal", "Modal", "https://modal.com/"],
+      ["boat", "boat", "https://boat.dev/"],
+      ["vercel", "Vercel", "https://vercel.com/sandbox"],
+      [
+        "cloudflare",
+        "Cloudflare",
+        "https://developers.cloudflare.com/sandbox/",
+      ],
+      ["freestyle", "Freestyle", "https://www.freestyle.sh/docs/vms"],
+      ["blaxel", "Blaxel", "https://blaxel.ai/pricing"],
+      ["northflank", "Northflank", "https://northflank.com/product/sandboxes"],
     ] as const
   ).map(([id, name, website]) => ({
     id,
     name,
     website,
     category: "stable" as const,
-    notes: "Published sandbox CPU and memory usage rates.",
+    notes: "Published sandbox configurations and usage rates.",
   })),
+  {
+    id: "hetzner",
+    name: "Hetzner",
+    website: "https://www.hetzner.com/cloud/",
+    category: "stable",
+    notes: "USD Cloud CPU rates by datacenter, before VAT and optional IPv4.",
+  },
   ...Object.entries(addedProviders).map(([id, provider]) => ({
     id,
     ...provider,
@@ -89,7 +106,11 @@ export const PROVIDERS: Provider[] = [
       ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],
       ["verda", "Verda", "https://verda.com"],
       ["crusoe", "Crusoe", "https://www.crusoe.ai"],
-      ["vultr", "Vultr", "https://www.vultr.com"],
+      [
+        "vultr",
+        "Vultr",
+        "https://docs.vultr.com/product-overviews/cloud-compute",
+      ],
       ["nebius", "Nebius", "https://nebius.com"],
       ["hotaisle", "Hot Aisle", "https://hotaisle.xyz"],
       ["digitalocean", "DigitalOcean", "https://www.digitalocean.com"],
@@ -188,6 +209,11 @@ export function providerLogo(id: string): string {
     hotaisle: "svg",
     runcrate: "webp",
     modal: "svg",
+    hetzner: "ico",
+    boat: "ico",
+    vercel: "ico",
+    blaxel: "ico",
+    northflank: "ico",
   };
   return `${import.meta.env.BASE_URL}images/providers/${id}.${extensions[id] ?? "png"}`;
 }

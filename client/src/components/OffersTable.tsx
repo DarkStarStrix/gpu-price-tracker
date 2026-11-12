@@ -32,7 +32,10 @@ import {
 } from "@shared/catalog";
 import { computeKinds } from "@shared/compute";
 import { toCSV } from "@shared/csv";
-import { priceHistorySummary } from "@shared/market";
+import {
+  priceHistorySummaries,
+  type priceHistorySummary,
+} from "@shared/market";
 import {
   billingLabel,
   cloudTiers,
@@ -255,7 +258,22 @@ export function OffersTable({
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const firstIndex = (currentPage - 1) * pageSize;
-  const visible = filtered.slice(firstIndex, firstIndex + pageSize);
+  const visible = useMemo(
+    () => filtered.slice(firstIndex, firstIndex + pageSize),
+    [filtered, firstIndex]
+  );
+  const historySnapshot =
+    fullCatalog?.generatedAt === snapshot.generatedAt ? fullCatalog : undefined;
+  const historyByListing = useMemo(
+    () =>
+      historySnapshot
+        ? priceHistorySummaries(
+            historySnapshot,
+            visible.map(({ offer }) => offer.offerId)
+          )
+        : undefined,
+    [historySnapshot, visible]
+  );
   const reported = filtered.filter(
     item => item.availability !== "unknown"
   ).length;
@@ -537,6 +555,7 @@ export function OffersTable({
               <OfferRow
                 key={offer.offerId}
                 offer={offer}
+                history={historyByListing?.get(offer.offerId)}
                 onEstimate={() => setCostOffer(offer)}
                 onWatch={() => setWatchOffer(offer)}
                 retained={retained}
@@ -783,6 +802,7 @@ function SortHeader({
 
 function OfferRow({
   offer,
+  history,
   onEstimate,
   onWatch,
   retained,
@@ -796,6 +816,7 @@ function OfferRow({
   onViewHistory,
 }: {
   offer: Listing;
+  history?: ReturnType<typeof priceHistorySummary>;
   onEstimate: () => void;
   onWatch: () => void;
   retained: boolean;
@@ -808,10 +829,6 @@ function OfferRow({
   hasAlert: boolean;
   onViewHistory?: () => void;
 }) {
-  const history =
-    fullCatalog?.generatedAt === catalog.generatedAt
-      ? priceHistorySummary(fullCatalog, offer.offerId)
-      : undefined;
   const historyLabel = !history
     ? historyLoadError
       ? "History unavailable"

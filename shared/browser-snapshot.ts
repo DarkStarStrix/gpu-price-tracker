@@ -102,14 +102,13 @@ export function encodeHistory(
     }
     const sample: HistoryFile["points"][number] = [
       index,
-      preserveEvidence
-        ? indexOf(times, timeIndices, point.observedAt)
-        : point.observedAt,
+      indexOf(times, timeIndices, point.observedAt),
       point.pricePerGpuHr,
     ];
-    if (!preserveEvidence) sample.push(point.historyOrigin ?? "collector");
-    else if (point.historyOrigin || point.sourceSha256)
+    if (preserveEvidence && (point.historyOrigin || point.sourceSha256))
       sample.push(point.historyOrigin ?? null);
+    else if (point.historyOrigin === "provider_hourly_last")
+      sample.push(point.historyOrigin);
     if (preserveEvidence && point.sourceSha256)
       sample.push(indexOf(hashes, hashIndices, point.sourceSha256));
     return sample;

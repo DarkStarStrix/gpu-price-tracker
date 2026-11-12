@@ -5,6 +5,7 @@ import {
   type ComputeFeed,
   type ComputeRate,
 } from "../shared/compute";
+import { computeExpansion } from "./compute-expansion";
 import { fetchPublicText } from "./http";
 import { linode, readLinodePlans } from "./provider-feeds";
 
@@ -354,6 +355,7 @@ async function json(url: string): Promise<unknown> {
 }
 
 const computeSources = [
+  ...computeExpansion,
   {
     providerId: "spheron",
     providerName: "Spheron AI",
@@ -387,7 +389,8 @@ const computeSources = [
     providerId: "linode",
     providerName: "Akamai Cloud",
     url: linode,
-    providerLink: "https://www.akamai.com/cloud/pricing",
+    providerLink:
+      "https://techdocs.akamai.com/cloud-computing/docs/how-to-choose-a-compute-instance-plan",
     dataSource: "api",
     kinds: ["cpu"],
     collect: async () => parseLinodeCpu(await json(linode)),

@@ -50,7 +50,8 @@ export const addedProviders = {
   },
   linode: {
     name: "Akamai Cloud",
-    website: "https://www.linode.com",
+    website:
+      "https://techdocs.akamai.com/cloud-computing/docs/how-to-choose-a-compute-instance-plan",
     category: "stable",
     notes:
       "Public GPU Linode plan prices. Regional capacity is not reported by the plan API.",

@@ -94,6 +94,8 @@ it("preserves recorded prices and order in the compact history and rejects inval
   const current = overviewSnapshot(original);
   const roundTrip = mergeHistory(current, JSON.parse(JSON.stringify(file)));
   expect(file.listings).toHaveLength(1);
+  expect(file.times).toEqual(["2026-11-05T17:00:00Z"]);
+  expect(file.points[0][1]).toBe(0);
   expect(marketSeries(roundTrip, "historical", 0)).toEqual(
     marketSeries(original, "historical", 0)
   );
