@@ -14,11 +14,15 @@ const pages = {
   ovhcloud: "https://us.ovhcloud.com/public-cloud/prices/",
   canopy: "https://www.canopywave.com/pricing",
   latitude: "https://www.latitude.sh/pricing",
-  denvr: "https://www.denvrdata.com/pricing",
+  denvr: "https://www.denvr.com/pricing",
   oblivus: "https://oblivus.com/pricing",
   gcp: "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
 } as const satisfies Partial<Record<AddedProviderId, string>>;
 type CardId = keyof typeof pages;
+const pageByteLimits: Partial<Record<CardId, number>> = {
+  denvr: 4_000_000,
+  gcp: 8_000_000,
+};
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim();
 function usd(text: string, pattern = /^\$(\d+(?:\.\d+)?)$/): number {
@@ -404,13 +408,6 @@ export function providerRateCardSources(): Source[] {
     name: addedProviders[id].name,
     configured: true,
     connected: true,
-    fetch: at =>
-      fetchPricingPage(
-        id,
-        pages[id],
-        at,
-        parse,
-        id === "gcp" ? 8_000_000 : undefined
-      ),
+    fetch: at => fetchPricingPage(id, pages[id], at, parse, pageByteLimits[id]),
   }));
 }

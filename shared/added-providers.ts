@@ -68,7 +68,7 @@ export const addedProviders = {
   },
   denvr: {
     name: "Denvr Dataworks",
-    website: "https://www.denvrdata.com",
+    website: "https://www.denvr.com",
     category: "stable",
     notes:
       "Published on-demand GPU and accelerator configurations. Reserved-only configurations are excluded.",
