@@ -1,4 +1,5 @@
 import { isCurrent, type Snapshot, type GpuOffer } from "@shared/catalog";
+import { addedProviders } from "@shared/added-providers";
 
 /*
   GPU Provider Price Tracker — Data Layer
@@ -62,6 +63,10 @@ export const GPU_MODELS: GpuModel[] = [];
 // ─── Providers ───────────────────────────────────────────────────────────────
 
 export const PROVIDERS: Provider[] = [
+  ...Object.entries(addedProviders).map(([id, provider]) => ({
+    id,
+    ...provider,
+  })),
   ...(
     [
       ["hyperstack", "Hyperstack", "https://www.hyperstack.cloud"],

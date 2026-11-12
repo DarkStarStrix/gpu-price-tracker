@@ -8,6 +8,8 @@ import type { SourceResult } from "../shared/catalog";
 import { additionalPricingSources } from "./additional-pricing";
 import { expandedSources } from "./expanded-sources";
 import { publicPricingSources } from "./pricing-pages";
+import { providerFeedSources } from "./provider-feeds";
+import { providerRateCardSources } from "./provider-rate-cards";
 
 const nullableNumber = z.number().finite().nonnegative().nullable();
 const capacitySchema = z
@@ -116,5 +118,7 @@ export function sources(): Source[] {
     ...publicPricingSources(),
     ...expandedSources(),
     ...additionalPricingSources(),
+    ...providerFeedSources(),
+    ...providerRateCardSources(),
   ];
 }

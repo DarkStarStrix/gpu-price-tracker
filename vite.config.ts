@@ -3,8 +3,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { readFileSync } from "node:fs";
-import { encodeHistory, overviewSnapshot } from "./shared/browser-snapshot";
-import { snapshotSchema } from "./shared/catalog";
+import {
+  encodeHistory,
+  overviewSnapshot,
+  readSnapshot,
+} from "./shared/browser-snapshot";
 
 const githubPages = process.env.GITHUB_PAGES === "true";
 const base = githubPages ? "/gpu-price-tracker/" : "/";
@@ -22,9 +25,7 @@ export default defineConfig({
           "./client/public/data/latest.json",
           import.meta.url
         );
-        const snapshot = snapshotSchema.parse(
-          JSON.parse(readFileSync(file, "utf8"))
-        );
+        const snapshot = readSnapshot(JSON.parse(readFileSync(file, "utf8")));
         revision = snapshot.generatedAt;
         this.emitFile({
           type: "asset",

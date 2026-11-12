@@ -10,6 +10,7 @@ import {
   historySchema,
 } from "../shared/catalog";
 import { measurePool } from "../shared/movement";
+import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
 import { sources, type Source } from "./providers";
 
 export async function collect(
@@ -150,14 +151,14 @@ export async function main() {
   const file = resolve("client/public/data/latest.json");
   let previous: Snapshot | null = null;
   try {
-    previous = snapshotSchema.parse(JSON.parse(await readFile(file, "utf8")));
+    previous = readSnapshot(JSON.parse(await readFile(file, "utf8")));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
   const snapshot = await collect(previous, sources());
   await mkdir(dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, JSON.stringify(snapshot, null, 2) + "\n");
+  await writeFile(temporary, writeSnapshot(snapshot));
   await rename(temporary, file);
   for (const source of snapshot.sources)
     console.log(`${source.name}: ${source.status} — ${source.message}`);

@@ -1,0 +1,384 @@
+import { describe, expect, it } from "vitest";
+import {
+  parseAzure,
+  parseGpuAi,
+  parseLinode,
+  parseLium,
+  parseOpenRelay,
+  parseOracle,
+} from "./provider-feeds";
+import {
+  parseCanopy,
+  parseGoogleCloud,
+  parseOvh,
+  parseThunder,
+} from "./provider-rate-cards";
+import { collect } from "./collect";
+import { estimateJobCost } from "../shared/job-cost";
+import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
+
+const at = "2026-11-12T03:00:00Z";
+const node = {
+  id: "6c5f66c8-d6ba-4f87-8466-b728520e9095",
+  gpu_model: "H200",
+  gpu_count: 8,
+  min_rentable_gpu_count: 2,
+  available_gpu_count: 2,
+  available_now: true,
+  price_per_gpu_hour: 4.08,
+  price_per_node_hour: 32.64,
+  gpu_memory_gb: 140,
+  cpu_count: 127,
+  ram_gb: 1575,
+  tier: "spot",
+  country_code: "FI",
+  city: "Helsinki",
+};
+const lium = { generated_at: at, count: 1, nodes: [node] };
+const boardRow = {
+  gpu_type: "h100_sxm",
+  gpu_count: 8,
+  offering_id: "12345678",
+  region: "us-east",
+  cpu_cores: 128,
+  ram_gb: 1000,
+  tier: "on_demand",
+  capacity_class: "community",
+  price_per_hour: 22.3,
+  available: 1,
+};
+const gpuTypes = {
+  data: [{ gpu_type: "h100_sxm", vram_gb: 80 }],
+  next_cursor: null,
+};
+
+describe("GPU catalog APIs", () => {
+  it("preserves full-node prices and stock distinctions on Lium", () => {
+    const offer = parseLium(lium, at).offers[0];
+    expect(offer).toMatchObject({
+      gpuCount: 8,
+      pricePerGpuHr: 4.08,
+      totalNodePriceHr: 32.64,
+      availability: "limited",
+      billingModel: "spot",
+      region: "Helsinki, FI",
+    });
+    expect(estimateJobCost(offer, 1, 2)).toEqual({
+      total: 16.32,
+      nodes: 1,
+      billedGpus: 2,
+    });
+    expect(estimateJobCost(offer, 3, 2)).toEqual({
+      total: 24.48,
+      nodes: 1,
+      billedGpus: 3,
+    });
+    expect(estimateJobCost(offer, 9, 1)).toMatchObject({
+      nodes: 2,
+      billedGpus: 10,
+    });
+    expect(
+      parseLium(
+        {
+          ...lium,
+          nodes: [{ ...node, available_gpu_count: 0, available_now: false }],
+        },
+        at
+      ).offers[0].availability
+    ).toBe("unavailable");
+    expect(() => parseLium({ ...lium, count: 2 }, at)).toThrow("incomplete");
+    expect(() =>
+      parseLium({ ...lium, generated_at: "2026-11-12T02:00:00Z" }, at)
+    ).toThrow("stale");
+    expect(() =>
+      parseLium(
+        {
+          ...lium,
+          nodes: [{ ...node, price_per_node_hour: 4.08 }],
+        },
+        at
+      )
+    ).toThrow("inconsistent");
+  });
+
+  it("requires all GPU.ai pages and divides the whole offer price once", () => {
+    expect(
+      parseGpuAi([{ data: [boardRow], next_cursor: null }], gpuTypes, at)
+        .offers[0]
+    ).toMatchObject({
+      gpuModelId: "h100-sxm",
+      pricePerGpuHr: 22.3 / 8,
+      totalNodePriceHr: 22.3,
+      vramPerGpuGb: 80,
+      availability: "available",
+      cloudType: "community",
+    });
+    expect(() =>
+      parseGpuAi([{ data: [boardRow], next_cursor: "next" }], gpuTypes, at)
+    ).toThrow("Incomplete");
+  });
+
+  it("labels API rate cards as price-only observations", () => {
+    const linode = parseLinode(
+      {
+        pages: 1,
+        results: 1,
+        data: [
+          {
+            id: "g6-rtx6000-192",
+            label: "Dedicated 128GB + RTX6000 GPU x4",
+            gpus: 4,
+            vcpus: 24,
+            memory: 131072,
+            price: { hourly: 6 },
+          },
+        ],
+      },
+      at
+    ).offers[0];
+    expect(linode).toMatchObject({
+      gpuCount: 4,
+      pricePerGpuHr: 1.5,
+      totalNodePriceHr: 6,
+      availability: "unknown",
+      vramPerGpuGb: 24,
+      configurationKnown: true,
+    });
+    const tiers = parseOpenRelay(
+      {
+        generatedAt: at,
+        gpu: [
+          {
+            id: node.id,
+            name: "H200",
+            manufacturer: "NVIDIA",
+            vramGb: 141,
+            communityCents: 240,
+            verifiedCents: 300,
+          },
+        ],
+      },
+      at
+    ).offers;
+    expect(
+      tiers.map(o => [
+        o.cloudType,
+        o.pricePerGpuHr,
+        o.availability,
+        o.configurationKnown,
+      ])
+    ).toEqual([
+      ["community", 2.4, "unknown", false],
+      ["verified", 3, "unknown", false],
+    ]);
+  });
+
+  it("excludes non-compute Oracle license meters", () => {
+    const row = {
+      partNumber: "B98415",
+      displayName: "Oracle Cloud Infrastructure - Compute - GPU - H100",
+      serviceCategory: "Compute - GPU",
+      metricName: "GPU Per Hour",
+      currencyCodeLocalizations: [
+        {
+          currencyCode: "USD",
+          prices: [{ model: "PAY_AS_YOU_GO", value: 10 }],
+        },
+      ],
+    };
+    const items = [
+      row,
+      {
+        ...row,
+        partNumber: "B1",
+        displayName: "OCI - NVIDIA AI Enterprise - H100",
+      },
+    ];
+    expect(parseOracle({ items }, at).offers).toMatchObject([
+      {
+        offerId: "oracle:B98415",
+        pricePerGpuHr: 10,
+        configurationKnown: false,
+      },
+    ]);
+  });
+
+  it("selects Azure Linux spot meters and retains the whole VM cost", () => {
+    const row = {
+      currencyCode: "USD",
+      unitOfMeasure: "1 Hour",
+      retailPrice: 18.4,
+      armRegionName: "eastus",
+      armSkuName: "Standard_ND96isr_H100_v5",
+      productName: "Virtual Machines NDsr H100 v5 Series",
+      meterName: "ND96isrH100v5 Spot",
+      effectiveStartDate: "2026-11-01T00:00:00Z",
+      skuId: "SKU",
+      meterId: "METER",
+      type: "Consumption",
+    };
+    expect(
+      parseAzure(
+        {
+          NextPageLink: null,
+          Items: [
+            row,
+            { ...row, productName: row.productName + " Windows" },
+            { ...row, meterName: "ND96isrH100v5 Low Priority" },
+          ],
+        },
+        at
+      )
+    ).toMatchObject([
+      {
+        gpuCount: 8,
+        billingModel: "spot",
+        pricePerGpuHr: 18.4 / 8,
+        totalNodePriceHr: 18.4,
+      },
+    ]);
+  });
+});
+
+function table(headers: string[], rows: string[][]): string {
+  return `<table><thead><tr>${headers.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${rows
+    .map(row => `<tr>${row.map(c => `<td>${c}</td>`).join("")}</tr>`)
+    .join("")}</tbody></table>`;
+}
+
+it("keeps per-GPU and whole-instance rate cards distinct", () => {
+  const canopy = table(
+    [
+      "Instance Type",
+      "vCPUs",
+      "RAM",
+      "NVMe Storage",
+      "Public IP",
+      "Price/Hour/GPU",
+    ],
+    [
+      ["8x NVIDIA SXM5 H100", "160", "1.5 TB", "6 TB", "1", "$3.25"],
+      ["8x NVIDIA SXM5 B200", "240", "1.5 TB", "8 TB", "1", "Get Quote"],
+    ]
+  );
+  expect(parseCanopy(canopy, at)).toMatchObject({
+    offers: [
+      {
+        totalNodePriceHr: 26,
+        pricePerGpuHr: 3.25,
+        availability: "unknown",
+        priceBasis: "per_gpu_hour",
+      },
+    ],
+    exclusions: [{ reason: "quote_required" }],
+  });
+  const ovh = table(
+    [
+      "Name",
+      "Memory",
+      "vCore",
+      "GPU",
+      "Storage",
+      "Public network",
+      "Private network",
+      "Price(excl. taxes/hour)",
+      "Price(excl. taxes/month)",
+    ],
+    [
+      [
+        "l40s-180",
+        "180 GB",
+        "30",
+        "2x L40S (48 GB HBM2)",
+        "400 GB NVMe",
+        "16 Gbit/s",
+        "16 Gbit/s max.",
+        "$3.6",
+        "$2,592",
+      ],
+    ]
+  );
+  expect(parseOvh(ovh, at).offers[0]).toMatchObject({
+    totalNodePriceHr: 3.6,
+    pricePerGpuHr: 1.8,
+  });
+  const thunder = table(
+    ["GPU", "VRAM", "vCPUs", "RAM", "Disk", "Price", "Action"],
+    [
+      [
+        "H100 SXM",
+        "80 GB",
+        "4 included · 16 max",
+        "32–128 GB",
+        "100–500 GB",
+        "€3.20/hr",
+        "Launch",
+      ],
+    ]
+  );
+  expect(() => parseThunder(thunder, at)).toThrow("USD hourly");
+});
+
+it("keeps Google Cloud fractional GPUs and placeholder rates out of full-GPU prices", () => {
+  const html = table(
+    [
+      "Machine type",
+      "GPU",
+      "Components",
+      "Price (USD)*",
+      "Current Spot pricing (USD)",
+    ],
+    [
+      [
+        "g4-standard-6",
+        "NVIDIA RTX PRO 6000",
+        "GPUs: 1/8 vCPUs: 6",
+        "$0.64 / 1 hour",
+        "$0.24 / 1 hour",
+      ],
+      [
+        "g2-standard-24",
+        "NVIDIA L4",
+        "GPUs: 2 vCPUs: 24",
+        "$2 / 1 hour",
+        "g2-standard-24-spot",
+      ],
+    ]
+  );
+  expect(parseGoogleCloud(html, at).offers).toMatchObject([
+    {
+      gpuModelId: "l4",
+      gpuCount: 2,
+      billingModel: "on-demand",
+      totalNodePriceHr: 2,
+      pricePerGpuHr: 1,
+    },
+  ]);
+});
+
+it("retains all observations and evidence when packing the durable snapshot", async () => {
+  const source = {
+    id: "lium",
+    name: "Lium",
+    configured: true,
+    connected: true,
+    fetch: async () => parseLium(lium, at),
+  };
+  const snapshot = await collect(null, [source], at);
+  snapshot.history.push({
+    ...snapshot.history[0],
+    observedAt: "2026-11-12T02:45:00Z",
+    dataSource: "pricing_page",
+    sourceUrl: "https://example.com/old-price",
+    sourceSha256: "a".repeat(64),
+    historyOrigin: undefined,
+  });
+  const old = JSON.parse(JSON.stringify(snapshot));
+  const packed = JSON.parse(writeSnapshot(snapshot));
+  expect(readSnapshot(old)).toEqual(snapshot);
+  expect(readSnapshot(packed)).toEqual(snapshot);
+  packed.packedHistory.points[0][1] = 9999;
+  expect(() => readSnapshot(packed)).toThrow(
+    "Invalid published price history point"
+  );
+});

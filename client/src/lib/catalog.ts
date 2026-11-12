@@ -1,5 +1,5 @@
 import { snapshotSchema, type Snapshot, isCurrent } from "@shared/catalog";
-import { mergeHistory } from "@shared/browser-snapshot";
+import { mergeHistory, readSnapshot } from "@shared/browser-snapshot";
 import { configureCatalog } from "./data";
 
 export let catalog: Snapshot;
@@ -47,7 +47,10 @@ export function loadCatalog(): Promise<void> {
         }
       );
       if (!response.ok) throw new Error("Price snapshot could not be loaded");
-      const checked = snapshotSchema.parse(await response.json());
+      const payload: unknown = await response.json();
+      const checked = import.meta.env.PROD
+        ? snapshotSchema.parse(payload)
+        : readSnapshot(payload);
       const previousTime = catalog ? Date.parse(catalog.generatedAt) : null;
       const checkedTime = Date.parse(checked.generatedAt);
       if (previousTime !== null && checkedTime < previousTime)

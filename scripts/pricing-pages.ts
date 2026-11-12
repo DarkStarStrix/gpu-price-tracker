@@ -261,9 +261,10 @@ export async function fetchPricingPage(
   id: string,
   url: string,
   at: string,
-  parse: (html: string, at: string) => SourceResult
+  parse: (html: string, at: string) => SourceResult,
+  maxBytes?: number
 ): Promise<SourceResult> {
-  const html = await fetchPublicText(url, "text/html");
+  const html = await fetchPublicText(url, "text/html", {}, maxBytes);
   // Only public HTML goes into short-lived source artifacts; never authenticated API bodies.
   await mkdir("work/provider-evidence", { recursive: true });
   await writeFile(`work/provider-evidence/${id}.html`, html);

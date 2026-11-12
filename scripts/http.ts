@@ -2,7 +2,8 @@
 export async function fetchPublicText(
   url: string,
   accept: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  maxBytes = 2_000_000
 ): Promise<string> {
   const headers = new Headers(options.headers);
   headers.set("Accept", accept);
@@ -20,7 +21,7 @@ export async function fetchPublicText(
     throw new Error("Provider HTTP failure (status or content type)");
   }
   if (!response.body) throw new Error("Provider response has no body");
-  if (Number(response.headers.get("content-length")) > 2_000_000) {
+  if (Number(response.headers.get("content-length")) > maxBytes) {
     await response.body.cancel();
     throw new Error("Provider response exceeds limit");
   }
@@ -32,7 +33,7 @@ export async function fetchPublicText(
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 2_000_000) {
+      if (size > maxBytes) {
         await reader.cancel();
         throw new Error("Provider response exceeds limit");
       }

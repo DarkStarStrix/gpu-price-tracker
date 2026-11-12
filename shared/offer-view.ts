@@ -4,6 +4,7 @@ export const billingLabel = (o: GpuOffer) =>
 export const cloudTiers: [string, string][] = [
   ["secure", "Secure Cloud"],
   ["community", "Community Cloud"],
+  ["verified", "Verified Cloud"],
   ["vm", "VM"],
   ["bare-metal", "Bare metal"],
 ];

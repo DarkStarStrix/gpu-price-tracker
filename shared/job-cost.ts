@@ -3,7 +3,11 @@ import type { GpuOffer } from "./catalog";
 export function estimateJobCost(
   offer: Pick<
     GpuOffer,
-    "configurationKnown" | "gpuCount" | "pricePerGpuHr" | "totalNodePriceHr"
+    | "configurationKnown"
+    | "gpuCount"
+    | "minRentalGpus"
+    | "pricePerGpuHr"
+    | "totalNodePriceHr"
   >,
   gpus: number,
   hours: number
@@ -22,8 +26,16 @@ export function estimateJobCost(
       : null;
   }
   const nodes = Math.ceil(gpus / offer.gpuCount);
-  const total = nodes * hours * offer.totalNodePriceHr;
-  return Number.isFinite(total)
-    ? { total, nodes, billedGpus: nodes * offer.gpuCount }
-    : null;
+  const fullNodes = nodes - 1;
+  const finalNode = Math.max(
+    gpus - fullNodes * offer.gpuCount,
+    offer.minRentalGpus ?? offer.gpuCount
+  );
+  const billedGpus = fullNodes * offer.gpuCount + finalNode;
+  const finalNodeRate =
+    finalNode === offer.gpuCount
+      ? offer.totalNodePriceHr
+      : finalNode * offer.pricePerGpuHr;
+  const total = hours * (fullNodes * offer.totalNodePriceHr + finalNodeRate);
+  return Number.isFinite(total) ? { total, nodes, billedGpus } : null;
 }

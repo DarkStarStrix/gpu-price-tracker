@@ -14,6 +14,7 @@ export const offerSchema = z
     gpuModelId: nonempty,
     gpuModelName: nonempty,
     gpuCount: z.int().check(z.positive()),
+    minRentalGpus: z.optional(z.int().check(z.positive())),
     configurationKnown: z.optional(z.boolean()),
     billingModel: z.optional(z.enum(["on-demand", "spot"])),
     vramPerGpuGb: z.nullable(positive),
@@ -41,6 +42,14 @@ export const offerSchema = z
   )
   .check(
     z.superRefine((offer, ctx) => {
+      if (
+        offer.minRentalGpus !== undefined &&
+        offer.minRentalGpus > offer.gpuCount
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimum rental exceeds the node's GPU count",
+        });
       if (offer.dataSource === "pricing_page") {
         if (offer.availability !== "unknown")
           ctx.addIssue({

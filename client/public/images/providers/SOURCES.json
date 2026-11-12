@@ -74,5 +74,70 @@
     "id": "massedcompute",
     "source": "https://massedcompute.com/wp-content/uploads/2026/05/m-mark-red-100.png",
     "file": "massedcompute.png"
+  },
+  {
+    "id": "lium",
+    "source": "https://lium.io/favicon-48x48.png",
+    "file": "lium.png"
+  },
+  {
+    "id": "gpu-ai",
+    "source": "https://gpu.ai/favicon.ico",
+    "file": "gpu-ai.png"
+  },
+  {
+    "id": "openrelay",
+    "source": "https://openrelay.inc/favicon-48.png?v=8",
+    "file": "openrelay.png"
+  },
+  {
+    "id": "linode",
+    "source": "https://assets.linode.com/icons/apple-touch-icon-60x60.png",
+    "file": "linode.png"
+  },
+  {
+    "id": "oracle",
+    "source": "https://www.oracle.com/asset/web/favicons/favicon-128.png",
+    "file": "oracle.png"
+  },
+  {
+    "id": "azure",
+    "source": "https://azure.microsoft.com/favicon.ico?v2",
+    "file": "azure.png"
+  },
+  {
+    "id": "ovhcloud",
+    "source": "https://www.ovhcloud.com/favicon.ico",
+    "file": "ovhcloud.png"
+  },
+  {
+    "id": "canopy",
+    "source": "https://www.canopywave.com/Icon-adaptation/apple-touch-icon-76x76.png?v=1",
+    "file": "canopy.png"
+  },
+  {
+    "id": "latitude",
+    "source": "https://www.latitude.sh/apple-touch-icon.png",
+    "file": "latitude.png"
+  },
+  {
+    "id": "denvr",
+    "source": "https://static.wixstatic.com/media/d6d289_4dc6e057b84c4f3bab2814a657b7ab3c%7Emv2.png/v1/fill/w_32%2Ch_32%2Clg_1%2Cusm_0.66_1.00_0.01/d6d289_4dc6e057b84c4f3bab2814a657b7ab3c%7Emv2.png",
+    "file": "denvr.png"
+  },
+  {
+    "id": "gcp",
+    "source": "https://www.gstatic.com/cgc/super_cloud_gradient.png",
+    "file": "gcp.png"
+  },
+  {
+    "id": "thunder",
+    "source": "https://www.thundercompute.com/apple-icon.png",
+    "file": "thunder.png"
+  },
+  {
+    "id": "oblivus",
+    "source": "https://oblivus.com/assets/img/meta/favicon.webp",
+    "file": "oblivus.png"
   }
 ]
