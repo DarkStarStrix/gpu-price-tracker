@@ -31,7 +31,7 @@ import {
   loadHistory,
 } from "@/lib/catalog";
 import { displayQuote } from "@shared/market";
-import { formatPrice } from "@/lib/data";
+import { formatPrice, getProvider, providerLogo } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
 import { readViewLink } from "@/lib/view-link";
 import { computeKinds, type ComputeKind } from "@shared/compute";
@@ -82,7 +82,20 @@ export default function Home() {
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
   const snapshotTime = new Date(generatedAt);
   const snapshotHealthy = !snapshotLoadError && freshOffers.length > 0;
-  const providerCount = new Set(offers.map(o => o.providerId)).size;
+  const computeProviders = [
+    ...new Map(
+      (catalog.compute ?? [])
+        .filter(feed => feed.rates.length > 0)
+        .map(feed => [feed.providerId, feed])
+    ).values(),
+  ].sort((a, b) => a.providerName.localeCompare(b.providerName));
+  const providerCount = new Set([
+    ...offers.map(offer => offer.providerId),
+    ...computeProviders.map(feed => feed.providerId),
+  ]).size;
+  const offerCount =
+    offers.length +
+    computeProviders.reduce((sum, feed) => sum + feed.rates.length, 0);
   const floor = (id: string) => {
     const quote = displayQuote(catalog, id);
     return quote
@@ -313,13 +326,13 @@ export default function Home() {
           <div className="container grid items-center gap-6 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] md:py-18">
             <div className="max-w-xl">
               {/* Eyebrow */}
-              <div className="flex items-center gap-2 mb-5">
+              <div className="mb-5 flex flex-wrap items-center gap-2">
                 <span className="mono-label text-teal">
                   Market Intelligence
                 </span>
                 <span className="w-8 h-px bg-[oklch(0.62_0.19_218_/_0.4)]" />
                 <span className="mono-label text-muted-foreground">
-                  {providerCount} Providers · {offers.length} Offers
+                  {providerCount} Providers · {offerCount} Offers
                 </span>
               </div>
 
@@ -331,10 +344,10 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md">
-                Compare GPU, CPU, and TPU pricing from official provider
-                sources. Explore hourly rates, cloud tiers, and reported
-                availability — with a source and observation time for every
-                offer.
+                Compare GPU, CPU, TPU, and sandbox pricing from official
+                provider sources. Explore hourly rates, cloud tiers, and
+                reported availability — with a source and observation time for
+                every offer.
               </p>
 
               <LiveH100 />
@@ -375,6 +388,57 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+
+              {computeProviders.length > 0 && (
+                <div className="mt-6">
+                  <p className="mono-label text-muted-foreground">
+                    CPU, TPU &amp; sandbox providers
+                  </p>
+                  <ul
+                    aria-label="CPU, TPU and sandbox providers"
+                    className="mt-2 flex flex-wrap gap-1.5"
+                  >
+                    {computeProviders.map(feed => {
+                      const profile = getProvider(feed.providerId);
+                      const url = feed.providerLink ?? profile?.website;
+                      const label = (
+                        <>
+                          {profile && (
+                            <img
+                              src={providerLogo(feed.providerId)}
+                              alt=""
+                              width={16}
+                              height={16}
+                              loading="lazy"
+                              decoding="async"
+                              className="size-4 rounded-sm bg-white object-contain"
+                            />
+                          )}
+                          {feed.providerName}
+                        </>
+                      );
+                      const badge =
+                        "inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground";
+                      return (
+                        <li key={feed.providerId}>
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${badge} hover:border-primary`}
+                            >
+                              {label}
+                            </a>
+                          ) : (
+                            <span className={badge}>{label}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
             <div className="observatory-art hidden md:block" aria-hidden="true">
               <img
