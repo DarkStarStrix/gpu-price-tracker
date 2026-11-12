@@ -54,6 +54,9 @@ pnpm preview
 | Denvr Dataworks | Public GPU cloud price table             | On-demand rates for whole accelerators. Reserved-only and fractional MIG configurations are excluded.                   |
 | Oblivus         | Public GPU configurations and pricing    | On-demand per-GPU prices with configured node sizes.                                                                    |
 | Google Cloud    | Accelerator-optimized VM price table     | USD on-demand and Spot reference rates for full-GPU instances. Commitments and fractional GPUs are excluded.            |
+| Spheron AI      | Public paginated marketplace API        | On-demand and Spot node rates with provider-reported stock and regions.                                                 |
+| VoltageGPU      | Public price and stock snapshot         | Standard price floors have unspecified machine sizes. Confidential VMs and dedicated nodes retain their full counts.    |
+| Sixtytwo        | Public capacity listings                | Exact USD per-GPU-hour lease quotes appear on the profile with quantity, term and published ready date.                |
 
 The disconnected Prime Intellect, Lambda, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
 

@@ -1,5 +1,20 @@
 [
   {
+    "id": "spheron",
+    "source": "https://www.spheron.ai/favicon.ico",
+    "file": "spheron.png"
+  },
+  {
+    "id": "sixtytwo",
+    "source": "https://sixtytwo.ai/rent-static/logo-62.svg",
+    "file": "sixtytwo.svg"
+  },
+  {
+    "id": "voltagegpu",
+    "source": "https://voltagegpu.com/favicon-48x48.png",
+    "file": "voltagegpu.png"
+  },
+  {
     "id": "hyperstack",
     "source": "https://www.hyperstack.cloud/hubfs/hyperstack_2025/hyperstack_Fav_Icon.webp",
     "file": "hyperstack.webp"

@@ -28,6 +28,11 @@ const INACTIVE_STATUS = {
   error: "Refresh failed",
   not_connected: "Not connected",
 };
+const leasePrice = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 4,
+});
 
 export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
   const now = Date.now();
@@ -46,6 +51,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {summaries.map((summary, idx) => {
           const { source, profile, pricingUrl } = summary;
+          const leaseRates = source.leaseRates;
           const accentGradient =
             PROVIDER_ACCENT[source.id] ?? PROVIDER_ACCENT.paperspace;
           const connected =
@@ -56,7 +62,10 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
           let status = "Last successful check is stale";
           if (source.status !== "ok") status = INACTIVE_STATUS[source.status];
           else if (connected)
-            status = summary.offerCount ? "Connected" : "No offers listed";
+            status =
+              summary.offerCount || leaseRates?.length
+                ? "Connected"
+                : "No offers listed";
           const website = profile?.website ?? pricingUrl;
 
           return (
@@ -92,7 +101,9 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                     <div className="flex items-center gap-2 mt-0.5">
                       {profile && <CategoryBadge category={profile.category} />}
                       <span className="font-data text-[10px] text-muted-foreground">
-                        {summary.offerCount} offers
+                        {leaseRates
+                          ? `${leaseRates.length} lease quotes`
+                          : `${summary.offerCount} offers`}
                       </span>
                     </div>
                   </div>
@@ -194,62 +205,118 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                       Regions
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {!summary.regionCoverage.length && (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                    {summary.regionCoverage.map(r => (
-                      <span
-                        key={r}
-                        className="font-data text-[9px] px-1.5 py-0.5 bg-[oklch(0.94_0.006_85)] rounded text-foreground"
+                  {summary.regionCoverage.length > 4 ? (
+                    <details className="rounded-md border border-border/60 bg-card text-xs">
+                      <summary className="cursor-pointer px-2 py-1.5">
+                        {summary.regionCoverage.length} regions
+                      </summary>
+                      <ul
+                        aria-label={`${source.name} regions`}
+                        tabIndex={0}
+                        className="max-h-40 overflow-y-auto overscroll-contain space-y-1 border-t border-border/60 px-2 py-1.5 text-muted-foreground"
                       >
-                        {r}
-                      </span>
-                    ))}
-                  </div>
+                        {[...summary.regionCoverage]
+                          .sort((a, b) => a.localeCompare(b))
+                          .map(region => (
+                            <li key={region}>{region}</li>
+                          ))}
+                      </ul>
+                    </details>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {!summary.regionCoverage.length && (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                      {summary.regionCoverage.map(region => (
+                        <span
+                          key={region}
+                          className="font-data text-[9px] px-1.5 py-0.5 bg-[oklch(0.94_0.006_85)] rounded text-foreground"
+                        >
+                          {region}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Lowest prices */}
-              <div className="px-5 pb-4">
-                <div className="flex items-center gap-1 mb-2">
-                  <BarChart2 className="w-3 h-3 text-muted-foreground" />
-                  <span className="mono-label text-muted-foreground">
-                    {summary.retained
-                      ? "Last observed prices"
-                      : "Lowest Prices"}{" "}
-                    · USD / GPU-hour
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {!Object.keys(summary.lowestPrices).length && (
-                    <p className="text-xs text-muted-foreground">
-                      No current verified prices
-                    </p>
-                  )}
-                  {Object.entries(summary.lowestPrices)
-                    .sort(([, a], [, b]) => a - b)
-                    .slice(0, 4)
-                    .map(([gpu, price]) => (
-                      <div
-                        key={gpu}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-xs text-foreground/80">
-                          {gpu}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <span className="font-data text-xs font-semibold text-foreground w-14 text-right">
-                            {formatPrice(price)}
-                            <span className="text-muted-foreground font-normal">
-                              /hr
+              {leaseRates ? (
+                <div className="px-5 pb-4">
+                  <details className="rounded-md border border-border/60 bg-card text-xs">
+                    <summary className="cursor-pointer px-2 py-1.5">
+                      {connected
+                        ? "View lease quotes"
+                        : "View last observed lease quotes"}{" "}
+                      · USD / GPU-hour
+                    </summary>
+                    <ul
+                      tabIndex={0}
+                      aria-label="Published lease quotes"
+                      className="max-h-64 overflow-y-auto overscroll-contain divide-y divide-border/60 border-t border-border/60 px-2"
+                    >
+                      {leaseRates.map((rate, index) => (
+                        <li key={index} className="space-y-0.5 py-2">
+                          <div className="flex justify-between gap-2 font-medium">
+                            <span>{rate.model}</span>
+                            <span className="font-data shrink-0">
+                              {leasePrice.format(rate.pricePerGpuHr)}
                             </span>
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                          </div>
+                          <p className="text-muted-foreground">
+                            {rate.quantity} · {rate.region}
+                          </p>
+                          <p className="text-muted-foreground">
+                            {rate.term} ·{" "}
+                            {rate.ready === "Live"
+                              ? "Listed as live"
+                              : `Ready ${rate.ready}`}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 </div>
-              </div>
+              ) : (
+                <div className="px-5 pb-4">
+                  <div className="flex items-center gap-1 mb-2">
+                    <BarChart2 className="w-3 h-3 text-muted-foreground" />
+                    <span className="mono-label text-muted-foreground">
+                      {summary.retained
+                        ? "Last observed prices"
+                        : "Lowest Prices"}{" "}
+                      · USD / GPU-hour
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {!Object.keys(summary.lowestPrices).length && (
+                      <p className="text-xs text-muted-foreground">
+                        No current verified prices
+                      </p>
+                    )}
+                    {Object.entries(summary.lowestPrices)
+                      .sort(([, a], [, b]) => a - b)
+                      .slice(0, 4)
+                      .map(([gpu, price]) => (
+                        <div
+                          key={gpu}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-xs text-foreground/80">
+                            {gpu}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-data text-xs font-semibold text-foreground w-14 text-right">
+                              {formatPrice(price)}
+                              <span className="text-muted-foreground font-normal">
+                                /hr
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* Footer: notes + last polled */}
               <div className="mt-auto px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between gap-2">

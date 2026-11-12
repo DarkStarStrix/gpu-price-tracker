@@ -6,6 +6,7 @@ export const cloudTiers: [string, string][] = [
   ["community", "Community Cloud"],
   ["verified", "Verified Cloud"],
   ["vm", "VM"],
+  ["confidential", "Confidential VM"],
   ["bare-metal", "Bare metal"],
 ];
 export const cloudLabel = (o: GpuOffer) =>

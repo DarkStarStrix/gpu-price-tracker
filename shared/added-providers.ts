@@ -1,4 +1,25 @@
 export const addedProviders = {
+  spheron: {
+    name: "Spheron AI",
+    website: "https://www.spheron.ai",
+    category: "marketplace",
+    notes:
+      "Public GPU marketplace rates and reported availability. Prices cover the whole VM before normalization.",
+  },
+  sixtytwo: {
+    name: "Sixtytwo",
+    website: "https://sixtytwo.ai/capacity",
+    category: "marketplace",
+    notes:
+      "Published lease quotes with a stated term and a flat USD rate per GPU-hour. Confirm capacity and terms with Sixtytwo.",
+  },
+  voltagegpu: {
+    name: "VoltageGPU",
+    website: "https://voltagegpu.com",
+    category: "marketplace",
+    notes:
+      "Public snapshot with standard GPU price floors, confidential VM sizes, and dedicated bare metal. Standard machine sizes vary.",
+  },
   lium: {
     name: "Lium",
     website: "https://lium.io",

@@ -8,6 +8,7 @@ import {
   evidenceSchema,
   exclusionSchema,
   historySchema,
+  leaseRatesSchema,
 } from "../shared/catalog";
 import { measurePool } from "../shared/movement";
 import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
@@ -45,6 +46,7 @@ export async function collect(
       status: source.connected ? "not_configured" : "not_connected",
       evidence: old?.evidence,
       exclusions: old?.exclusions,
+      leaseRates: old?.leaseRates,
       message: source.connected
         ? "Collector credentials not configured"
         : "No verified collector connected",
@@ -59,6 +61,11 @@ export async function collect(
           : undefined;
         if (evidence && evidence.retrievedAt !== at)
           throw new Error("Source retrieval time mismatch");
+        const leaseRates = received.leaseRates
+          ? leaseRatesSchema.parse(received.leaseRates)
+          : undefined;
+        if (leaseRates && !evidence)
+          throw new Error("Lease source evidence is missing");
         const exclusions = (received.exclusions ?? []).map(row =>
           exclusionSchema.parse(row)
         );
@@ -100,16 +107,18 @@ export async function collect(
           throw new Error("Imported history contract mismatch");
         const baseline =
           old?.lastSuccessAt !== null && old?.lastSuccessAt !== undefined;
-        if (
-          baseline &&
-          !next.poolHistory!.some(p => p.providerId === source.id)
-        )
+        if (checked.length || offers.length || !leaseRates) {
+          if (
+            baseline &&
+            !next.poolHistory!.some(p => p.providerId === source.id)
+          )
+            next.poolHistory!.push(
+              measurePool(source.id, [], offers, old!.lastSuccessAt!, false)
+            );
           next.poolHistory!.push(
-            measurePool(source.id, [], offers, old!.lastSuccessAt!, false)
+            measurePool(source.id, offers, checked, at, baseline)
           );
-        next.poolHistory!.push(
-          measurePool(source.id, offers, checked, at, baseline)
-        );
+        }
         history.push(...imported);
         // Replace the whole provider catalog on success, including an authoritative empty response.
         offers = checked;
@@ -117,7 +126,16 @@ export async function collect(
         status.lastSuccessAt = at;
         status.evidence = evidence;
         status.exclusions = exclusions;
-        status.message = `${offers.length} offers observed${exclusions.length ? `; ${exclusions.length} rows excluded (see evidence)` : ""}`;
+        status.leaseRates = leaseRates;
+        status.message = [
+          ...(offers.length || !leaseRates
+            ? [`${offers.length} offers observed`]
+            : []),
+          ...(leaseRates ? [`${leaseRates.length} lease rates observed`] : []),
+          ...(exclusions.length
+            ? [`${exclusions.length} rows excluded (see evidence)`]
+            : []),
+        ].join("; ");
         history.push(
           ...offers.map(o => ({
             offerId: o.offerId,

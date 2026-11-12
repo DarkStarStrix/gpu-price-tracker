@@ -13,6 +13,9 @@ const linode = "https://api.linode.com/v4/linode/types?page_size=500";
 const oracle =
   "https://apexapps.oracle.com/pls/apex/cetools/api/v1/products/?currencyCode=USD";
 const azure = "https://prices.azure.com/api/retail/prices";
+const spheron =
+  "https://app.spheron.ai/api/gpu-offers?computeType=gpu&limit=100";
+const voltageGpu = "https://voltagegpu.com/api/pricing/snapshot";
 const text = z.string().min(1);
 const price = z.number().positive();
 const positiveCount = z.number().int().positive();
@@ -357,6 +360,206 @@ export function parseAzure(data: unknown, at: string): GpuOffer[] {
 async function json(url: string): Promise<unknown> {
   return JSON.parse(await fetchPublicText(url, "application/json"));
 }
+
+const spheronPage = z.object({
+  page: positiveCount,
+  limit: positiveCount,
+  total: nonnegativeCount,
+  totalPages: nonnegativeCount,
+  data: z.array(
+    z.object({
+      gpuType: text,
+      displayName: text,
+      offers: z.array(
+        z.object({
+          provider: text,
+          offerId: text,
+          instanceType: z.enum(["DEDICATED", "SPOT", "CLUSTER"]),
+          gpuCount: positiveCount,
+          price,
+          available: z.boolean(),
+          maintenance: z.boolean(),
+          clusters: z.array(text),
+          gpu_memory: z.number().nonnegative(),
+          vcpus: z.number().nonnegative(),
+          memory: z.number().nonnegative(),
+        })
+      ),
+    })
+  ),
+});
+
+export function parseSpheron(pages: unknown[], at: string): SourceResult {
+  const first = spheronPage.parse(pages[0]);
+  if (
+    first.totalPages !== pages.length ||
+    first.totalPages !== Math.ceil(first.total / first.limit)
+  )
+    throw new Error("Incomplete Spheron GPU catalog");
+  const models = new Set<string>();
+  const offers = pages.flatMap((payload, index) => {
+    const page = spheronPage.parse(payload);
+    if (
+      page.page !== index + 1 ||
+      page.total !== first.total ||
+      page.limit !== first.limit ||
+      page.totalPages !== first.totalPages ||
+      page.data.length !== Math.min(page.limit, page.total - index * page.limit)
+    )
+      throw new Error("Inconsistent Spheron pagination");
+    return page.data.flatMap(group => {
+      if (models.has(group.gpuType))
+        throw new Error("Repeated Spheron GPU model");
+      models.add(group.gpuType);
+      return group.offers
+        .filter(row => row.instanceType !== "CLUSTER")
+        .map(row => {
+          const billing = row.instanceType === "SPOT" ? "spot" : "on-demand";
+          return providerOffer("spheron", group.displayName, {
+            id: `${row.provider}:${row.offerId}:${billing}`,
+            at,
+            url: `${spheron}&page=${page.page}`,
+            link: "https://app.spheron.ai/",
+            count: row.gpuCount,
+            region: row.clusters.join(" · "),
+            vram: row.gpu_memory,
+            ram: row.memory,
+            vcpus: row.vcpus,
+            rate: row.price,
+            basis: instanceBasis,
+            billing,
+            availability:
+              row.available && !row.maintenance ? "available" : "unavailable",
+          });
+        });
+    });
+  });
+  return { offers };
+}
+
+async function spheronPricing(at: string): Promise<SourceResult> {
+  const first = spheronPage.parse(await json(`${spheron}&page=1`));
+  if (first.totalPages > 6) throw new Error("Spheron GPU page limit exceeded");
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) =>
+      json(`${spheron}&page=${index + 2}`)
+    )
+  );
+  return parseSpheron([first, ...rest], at);
+}
+
+const voltageSize = z.object({
+  resourceName: text,
+  gpuCount: positiveCount,
+  pricePerHour: price,
+  available: nonnegativeCount,
+});
+const voltageFeed = z.object({
+  meta: z.object({
+    updatedAt: timestamp,
+    stale: z.boolean(),
+    scope: z.literal("rentable"),
+  }),
+  gpus: z.array(
+    z.object({
+      model: text,
+      vram: z.string(),
+      pricePerHour: price,
+      spotOnly: z.boolean(),
+      spotFromPerHour: price.nullish(),
+      availableOnDemand: nonnegativeCount,
+      availableSpot: nonnegativeCount,
+    })
+  ),
+  confidentialVm: z.object({
+    tiers: z.array(voltageSize.extend({ model: text, vram: text })),
+  }),
+  dedicated: z.object({
+    tiers: z.array(
+      voltageSize.extend({
+        name: text,
+        vcpu: positiveCount,
+        regionLabel: text,
+      })
+    ),
+  }),
+});
+
+const voltageVram = (label: string) =>
+  Number(/^(\d+) GB$/.exec(label)?.[1]) || null;
+
+export function parseVoltageGpu(data: unknown, at: string): SourceResult {
+  const feed = voltageFeed.parse(data);
+  const age = Date.parse(at) - Date.parse(feed.meta.updatedAt);
+  if (feed.meta.stale || age < -120_000 || age > 1_200_000)
+    throw new Error("VoltageGPU snapshot is stale");
+  const offers: GpuOffer[] = [];
+  for (const row of feed.gpus) {
+    if (
+      row.spotOnly !== (row.availableOnDemand === 0) ||
+      (row.availableSpot > 0 && !row.spotOnly && !row.spotFromPerHour)
+    )
+      throw new Error("Inconsistent VoltageGPU standard stock or price");
+    for (const [billing, available, rate] of [
+      ["on-demand", row.availableOnDemand, row.pricePerHour],
+      [
+        "spot",
+        row.availableSpot,
+        row.spotOnly ? row.pricePerHour : row.spotFromPerHour,
+      ],
+    ] as const) {
+      if (!available || !rate) continue;
+      offers.push(
+        providerOffer("voltagegpu", row.model, {
+          id: `standard:${row.model}:${billing}`,
+          at,
+          url: voltageGpu,
+          link: "https://voltagegpu.com/standard-gpus",
+          rate,
+          vram: voltageVram(row.vram),
+          basis: gpuBasis,
+          billing,
+          availability: "available",
+        })
+      );
+    }
+  }
+  for (const row of feed.confidentialVm.tiers) {
+    offers.push(
+      providerOffer("voltagegpu", row.model, {
+        id: `confidential:${row.resourceName}`,
+        at,
+        url: voltageGpu,
+        link: "https://voltagegpu.com/confidential-gpus",
+        count: row.gpuCount,
+        vram: voltageVram(row.vram),
+        rate: row.pricePerHour,
+        basis: instanceBasis,
+        tier: "confidential",
+        availability: row.available ? "available" : "unavailable",
+      })
+    );
+  }
+  for (const row of feed.dedicated.tiers) {
+    offers.push(
+      providerOffer("voltagegpu", row.name.replace(/^\d+x /, ""), {
+        id: `dedicated:${row.resourceName}`,
+        at,
+        url: voltageGpu,
+        link: "https://voltagegpu.com/dedicated",
+        count: row.gpuCount,
+        vcpus: row.vcpu,
+        region: row.regionLabel,
+        rate: row.pricePerHour,
+        basis: instanceBasis,
+        tier: "bare-metal",
+        availability: row.available ? "available" : "unavailable",
+      })
+    );
+  }
+  return { offers };
+}
+
 async function gpuAiPricing(at: string): Promise<SourceResult> {
   const catalog = await json(gpuAiTypes);
   const pages = [];
@@ -377,6 +580,11 @@ async function gpuAiPricing(at: string): Promise<SourceResult> {
 
 export function providerFeedSources(): Source[] {
   return [
+    { id: "spheron", fetch: spheronPricing },
+    {
+      id: "voltagegpu",
+      fetch: async (at: string) => parseVoltageGpu(await json(voltageGpu), at),
+    },
     {
       id: "lium",
       fetch: async (at: string) => parseLium(await json(lium), at),

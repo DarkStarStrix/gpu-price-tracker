@@ -17,6 +17,7 @@ const pages = {
   denvr: "https://www.denvr.com/pricing",
   oblivus: "https://oblivus.com/pricing",
   gcp: "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+  sixtytwo: "https://sixtytwo.ai/capacity",
 } as const satisfies Partial<Record<AddedProviderId, string>>;
 type CardId = keyof typeof pages;
 const pageByteLimits: Partial<Record<CardId, number>> = {
@@ -102,6 +103,36 @@ export function parseThunder(html: string, at: string): SourceResult {
     });
   if (!offers.length) throw new Error("Empty Thunder GPU catalog");
   return { offers, evidence };
+}
+
+export function parseSixtytwo(html: string, at: string): SourceResult {
+  const { evidence } = card("sixtytwo", html, at);
+  if (!/Prices per GPU-hour unless noted/i.test(load(html)("main").text()))
+    throw new Error("Sixtytwo GPU rate units changed");
+
+  const leaseRates = [
+    ...pricingRows(html, h => h === "GPU|Quantity|Location|Term|Ready|Price"),
+    ...pricingRows(
+      html,
+      h => h === "GPU|Quantity|Region|Price|Go-live|Term"
+    ).map(([model, quantity, region, rate, ready, term]) => [
+      model,
+      quantity,
+      region,
+      term,
+      ready,
+      rate,
+    ]),
+  ].flatMap(([model, quantity, region, term, ready, rate]) => {
+    if (
+      !/^\$\d+(?:\.\d{1,4})?$/.test(rate) ||
+      !/\b(?:months?|years?)\b/i.test(term)
+    )
+      return [];
+    return [{ model, quantity, region, term, ready, pricePerGpuHr: usd(rate) }];
+  });
+  if (!leaseRates.length) throw new Error("No explicit Sixtytwo lease rates");
+  return { offers: [], leaseRates, evidence };
 }
 
 export function parseOvh(html: string, at: string): SourceResult {
@@ -402,6 +433,7 @@ export function providerRateCardSources(): Source[] {
       ["denvr", parseDenvr],
       ["oblivus", parseOblivus],
       ["gcp", parseGoogleCloud],
+      ["sixtytwo", parseSixtytwo],
     ] as const
   ).map(([id, parse]) => ({
     id,

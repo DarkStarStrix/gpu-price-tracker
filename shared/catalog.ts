@@ -88,10 +88,24 @@ export const exclusionSchema = z.object({
 });
 export type SourceEvidence = z.infer<typeof evidenceSchema>;
 export type Exclusion = z.infer<typeof exclusionSchema>;
+const leaseText = z.string().check(z.minLength(1), z.maxLength(256));
+export const leaseRatesSchema = z
+  .array(
+    z.object({
+      model: leaseText,
+      quantity: leaseText,
+      region: leaseText,
+      term: leaseText,
+      ready: leaseText,
+      pricePerGpuHr: positive,
+    })
+  )
+  .check(z.maxLength(200));
 export interface SourceResult {
   offers: GpuOffer[];
   evidence?: SourceEvidence;
   exclusions?: Exclusion[];
+  leaseRates?: z.infer<typeof leaseRatesSchema>;
   history?: z.infer<typeof historySchema>[];
 }
 export const historySchema = z.object({
@@ -143,6 +157,7 @@ export const snapshotSchema = z
         message: z.string(),
         evidence: z.optional(evidenceSchema),
         exclusions: z.optional(z.array(exclusionSchema)),
+        leaseRates: z.optional(leaseRatesSchema),
       })
     ),
     offers: z.array(offerSchema),
@@ -155,6 +170,18 @@ export const snapshotSchema = z
         ctx.addIssue({ code: "custom", message: "Duplicate offer IDs" });
       if (new Set(s.sources.map(o => o.id)).size !== s.sources.length)
         ctx.addIssue({ code: "custom", message: "Duplicate source IDs" });
+      if (
+        s.sources.some(
+          source =>
+            source.leaseRates &&
+            (!source.evidence ||
+              source.evidence.retrievedAt !== source.lastSuccessAt)
+        )
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "Lease rates do not match source evidence",
+        });
       if (
         s.history.some(
           h => Date.parse(h.observedAt) > Date.parse(s.generatedAt)

@@ -168,6 +168,7 @@ export function providerLogo(id: string): string {
   const extensions: Record<string, string> = {
     hyperstack: "webp",
     vultr: "ico",
+    sixtytwo: "svg",
     paperspace: "webp",
     hotaisle: "svg",
     runcrate: "webp",
@@ -271,7 +272,12 @@ export function buildProviderSummaries(
     const providerOffers = snapshot.offers.filter(
       o => o.providerId === source.id
     );
-    const gpuInventory = [...new Set(providerOffers.map(o => o.gpuModelName))];
+    const gpuInventory = [
+      ...new Set([
+        ...providerOffers.map(o => o.gpuModelName),
+        ...(source.leaseRates?.map(rate => rate.model) ?? []),
+      ]),
+    ];
     const lowestPrices: Record<string, number> = {};
     for (const offer of providerOffers) {
       const gpuName = offer.gpuModelName;
@@ -283,7 +289,10 @@ export function buildProviderSummaries(
       }
     }
     const regionCoverage = Array.from(
-      new Set(providerOffers.map(o => o.region).filter(Boolean))
+      new Set([
+        ...providerOffers.map(o => o.region).filter(Boolean),
+        ...(source.leaseRates?.map(rate => rate.region) ?? []),
+      ])
     );
 
     return {

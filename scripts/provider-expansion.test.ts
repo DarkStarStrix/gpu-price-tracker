@@ -6,11 +6,14 @@ import {
   parseLium,
   parseOpenRelay,
   parseOracle,
+  parseSpheron,
+  parseVoltageGpu,
 } from "./provider-feeds";
 import {
   parseCanopy,
   parseGoogleCloud,
   parseOvh,
+  parseSixtytwo,
   parseThunder,
 } from "./provider-rate-cards";
 import { collect } from "./collect";
@@ -18,6 +21,140 @@ import { estimateJobCost } from "../shared/job-cost";
 import { readSnapshot, writeSnapshot } from "../shared/browser-snapshot";
 
 const at = "2026-11-12T03:00:00Z";
+
+it("normalizes Spheron whole-node rates once and rejects incomplete pages", () => {
+  const row = {
+    provider: "spheron-es",
+    offerId: "us-west-h100",
+    instanceType: "SPOT",
+    gpuCount: 8,
+    price: 24,
+    available: true,
+    maintenance: true,
+    clusters: ["US West"],
+    gpu_memory: 80,
+    vcpus: 192,
+    memory: 1500,
+  };
+  const page = {
+    total: 1,
+    limit: 100,
+    page: 1,
+    totalPages: 1,
+    data: [
+      {
+        gpuType: "H100_SXM5",
+        displayName: "H100 SXM5",
+        offers: [row, { ...row, instanceType: "CLUSTER" }],
+      },
+    ],
+  };
+  expect(parseSpheron([page], at).offers).toMatchObject([
+    {
+      gpuModelId: "h100-sxm",
+      gpuCount: 8,
+      totalNodePriceHr: 24,
+      pricePerGpuHr: 3,
+      availability: "unavailable",
+      billingModel: "spot",
+      region: "US West",
+    },
+  ]);
+  expect(() =>
+    parseSpheron([{ ...page, total: 101, totalPages: 2 }], at)
+  ).toThrow("Incomplete");
+});
+
+it("keeps VoltageGPU price floors distinct from configured VMs and rejects stale feeds", () => {
+  const feed = {
+    meta: { updatedAt: at, stale: false, scope: "rentable" },
+    gpus: [
+      {
+        model: "RTX 4090",
+        vram: "24 GB",
+        pricePerHour: 0.5,
+        spotOnly: true,
+        availableOnDemand: 0,
+        availableSpot: 8,
+      },
+    ],
+    confidentialVm: {
+      tiers: [
+        {
+          resourceName: "h200-xlarge",
+          model: "H200",
+          vram: "141 GB",
+          gpuCount: 8,
+          pricePerHour: 64,
+          available: 0,
+        },
+      ],
+    },
+    dedicated: { tiers: [] },
+  };
+  expect(parseVoltageGpu(feed, at).offers).toMatchObject([
+    {
+      billingModel: "spot",
+      pricePerGpuHr: 0.5,
+      configurationKnown: false,
+      availability: "available",
+    },
+    {
+      billingModel: "on-demand",
+      pricePerGpuHr: 8,
+      configurationKnown: true,
+      cloudType: "confidential",
+      availability: "unavailable",
+    },
+  ]);
+  expect(() => parseVoltageGpu(feed, "2026-11-12T03:21:00Z")).toThrow("stale");
+});
+
+it("publishes Sixtytwo term pricing only in the source profile and retains it after a failed check", async () => {
+  const html = `<main><p>Prices per GPU-hour unless noted.</p>
+    <table><thead><tr><th>GPU</th><th>Quantity</th><th>Location</th><th>Term</th><th>Ready</th><th>Price</th></tr></thead>
+    <tbody><tr><td>H100 SXM</td><td>32</td><td>US</td><td>12 months, prepaid</td><td>3 to 4 weeks</td><td>$2.79</td></tr>
+    <tr><td>H100 SXM</td><td>8 per node</td><td>India</td><td>12 months</td><td>2 weeks</td><td>$16,183 per node per month</td></tr></tbody></table>
+    <table><thead><tr><th>GPU</th><th>Quantity</th><th>Region</th><th>Price</th><th>Go-live</th><th>Term</th></tr></thead>
+    <tbody><tr><td>B300 SXM</td><td>16</td><td>US Northwest</td><td>$5.04</td><td>Live</td><td>24 months</td></tr></tbody></table></main>`;
+  const adapter = {
+    id: "sixtytwo",
+    name: "Sixtytwo",
+    configured: true,
+    connected: true,
+    fetch: async () => parseSixtytwo(html, at),
+  };
+  const first = await collect(null, [adapter], at);
+  const durable = readSnapshot(JSON.parse(writeSnapshot(first)));
+  expect(durable.offers).toEqual([]);
+  expect(durable.history).toEqual([]);
+  expect(durable.poolHistory).toEqual([]);
+  expect(durable.sources[0].leaseRates).toMatchObject([
+    { pricePerGpuHr: 2.79, term: "12 months, prepaid", ready: "3 to 4 weeks" },
+    { pricePerGpuHr: 5.04, term: "24 months", ready: "Live" },
+  ]);
+  expect(() =>
+    parseSixtytwo(html.replace("GPU-hour", "node-month"), at)
+  ).toThrow("units");
+  const failed = await collect(
+    durable,
+    [
+      {
+        ...adapter,
+        fetch: async () => {
+          throw new Error("offline");
+        },
+      },
+    ],
+    "2026-11-12T03:15:00Z"
+  );
+  expect(failed.sources[0]).toMatchObject({
+    status: "error",
+    lastSuccessAt: at,
+    leaseRates: durable.sources[0].leaseRates,
+  });
+});
+
 const node = {
   id: "6c5f66c8-d6ba-4f87-8466-b728520e9095",
   gpu_model: "H200",
