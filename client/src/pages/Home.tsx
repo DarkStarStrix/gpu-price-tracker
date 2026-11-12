@@ -41,6 +41,7 @@ const TABS: { id: Tab; label: string; desc: string }[] = [
 
 export default function Home() {
   const [historyOfferId, setHistoryOfferId] = useState("");
+  const [initialGpu, setInitialGpu] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [scrolled, setScrolled] = useState(false);
   const offers = catalog.offers;
@@ -52,6 +53,13 @@ export default function Home() {
       ? `${formatPrice(quote.offer.pricePerGpuHr)}/hr${quote.retained ? " · last observed" : ""}`
       : "—";
   };
+
+  function navigate(tab: Tab, gpu = "") {
+    if (tab === activeTab) return;
+    if (tab === "offers") setInitialGpu(gpu);
+    setActiveTab(tab);
+    window.scrollTo(0, 0);
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -91,7 +99,8 @@ export default function Home() {
             {TABS.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => navigate(tab.id)}
+                aria-current={activeTab === tab.id ? "page" : undefined}
                 className={`relative px-4 py-2 text-sm rounded-md transition-all duration-200 ${
                   activeTab === tab.id
                     ? "text-foreground font-medium tab-active-indicator"
@@ -148,7 +157,8 @@ export default function Home() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => navigate(tab.id)}
+            aria-current={activeTab === tab.id ? "page" : undefined}
             className={`px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-all duration-200 ${
               activeTab === tab.id
                 ? "bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] font-medium"
@@ -180,7 +190,6 @@ export default function Home() {
               " Showing last observed prices where fresh data is unavailable."}
           </p>
           <p className="mt-1">
-            Collection runs automatically on GitHub.{" "}
             <a
               href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"
               target="_blank"
@@ -189,7 +198,7 @@ export default function Home() {
             >
               Run collector on GitHub
             </a>{" "}
-            with repository write access. Use the provider link to check stock.
+            · Requires repository write access
           </p>
         </div>
       </div>
@@ -258,14 +267,14 @@ export default function Home() {
               {/* CTA row */}
               <div className="mt-7 flex items-center gap-3 animate-fade-up delay-180">
                 <button
-                  onClick={() => setActiveTab("offers")}
+                  onClick={() => navigate("offers")}
                   className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200 shadow-[0_2px_8px_oklch(0.22_0.045_255_/_0.25)]"
                 >
                   Browse All Offers
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
                 </button>
                 <button
-                  onClick={() => setActiveTab("trends")}
+                  onClick={() => navigate("trends")}
                   className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
                 >
                   Price Trends
@@ -295,7 +304,9 @@ export default function Home() {
       )}
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
-      <main className="container py-10">
+      <main
+        className={`container ${activeTab === "offers" ? "py-5" : "py-10"}`}
+      >
         {activeTab === "overview" && (
           <div className="animate-fade-up">
             <MarketPulse />
@@ -307,7 +318,7 @@ export default function Home() {
               </h2>
               <div className="flex-1 section-rule" />
             </div>
-            <QuickComparison />
+            <QuickComparison onBrowseOffers={gpu => navigate("offers", gpu)} />
 
             {/* Interstitial — blueprint + methodology */}
             <div className="my-12 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 items-center py-8 border-y border-border/60">
@@ -361,14 +372,13 @@ export default function Home() {
         )}
 
         {activeTab === "offers" && (
-          <div className="animate-fade-up">
-            <OffersTable
-              onViewHistory={id => {
-                setHistoryOfferId(id);
-                setActiveTab("trends");
-              }}
-            />
-          </div>
+          <OffersTable
+            initialGpu={initialGpu}
+            onViewHistory={id => {
+              setHistoryOfferId(id);
+              navigate("trends");
+            }}
+          />
         )}
 
         {activeTab === "providers" && (

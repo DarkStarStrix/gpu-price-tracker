@@ -13,6 +13,7 @@ import {
 
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import {
+  ArrowRight,
   ExternalLink,
   ChevronDown,
   ChevronUp,
@@ -28,7 +29,11 @@ const POPULAR_GPUS = [
   "l40s",
 ];
 
-export function QuickComparison() {
+export function QuickComparison({
+  onBrowseOffers,
+}: {
+  onBrowseOffers?: (gpu: string) => void;
+}) {
   const comparisons = buildComparisons(POPULAR_GPUS);
   const [expandedGpu, setExpandedGpu] = useState<string | null>(null);
 
@@ -41,6 +46,9 @@ export function QuickComparison() {
             row={row}
             index={idx}
             isExpanded={expandedGpu === row.gpuModelId}
+            onBrowseOffers={
+              onBrowseOffers ? () => onBrowseOffers(row.gpuModelId) : undefined
+            }
             onToggle={() =>
               setExpandedGpu(
                 expandedGpu === row.gpuModelId ? null : row.gpuModelId
@@ -58,11 +66,13 @@ function ComparisonCard({
   index,
   isExpanded,
   onToggle,
+  onBrowseOffers,
 }: {
   row: ComparisonRow;
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
+  onBrowseOffers?: () => void;
 }) {
   return (
     <div
@@ -181,7 +191,17 @@ function ComparisonCard({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex items-center justify-between">
+      <div className="px-5 py-3 bg-[oklch(0.96_0.005_85)] border-t border-border/40 flex flex-wrap gap-2 items-center justify-between">
+        {onBrowseOffers && (
+          <button
+            type="button"
+            onClick={onBrowseOffers}
+            aria-label={`View ${row.gpuModelName} offers`}
+            className="inline-flex items-center gap-1 text-sm font-medium text-[#075b75] hover:underline"
+          >
+            View offers <ArrowRight size={14} />
+          </button>
+        )}
         {row.providers.length > 3 && (
           <button
             onClick={onToggle}

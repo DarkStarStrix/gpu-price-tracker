@@ -1,9 +1,10 @@
-import { ProviderIdentity } from "./ProviderIdentity";
+import { providerLogo } from "@/lib/data";
 import { X, ExternalLink } from "lucide-react";
 import type { GpuOffer } from "@shared/catalog";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { Modal } from "./Modal";
+import { OfferRadar } from "./OfferRadar";
 export function ComparisonDrawer({
   offers,
   onClose,
@@ -46,9 +47,6 @@ export function ComparisonDrawer({
     <Modal titleId="comparison-title" onClose={onClose} wide>
       <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex justify-between items-center z-10">
         <div>
-          <p className="text-[10px] font-data text-muted-foreground uppercase tracking-widest">
-            Recorded offer comparison
-          </p>
           <h2 id="comparison-title" className="text-xl font-semibold">
             Compare {offers.length} listings
           </h2>
@@ -64,20 +62,45 @@ export function ComparisonDrawer({
       <div className="p-5">
         {mixed && (
           <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded text-xs">
-            Different GPU models or billing types are selected. Their prices are
-            not like-for-like.
+            This selection mixes GPU models or billing types. Check both when
+            comparing rates.
           </p>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
+        <OfferRadar offers={offers} />
+        <div
+          className="comparison-metrics mt-5 overflow-x-auto"
+          tabIndex={0}
+          role="region"
+          aria-label="Exact offer details"
+        >
+          <table className="w-full text-sm border-collapse">
+            <caption className="text-left text-base font-semibold mb-2">
+              Exact offer details
+            </caption>
             <thead>
               <tr>
-                <th className="text-left p-3 text-muted-foreground">
-                  Evidence
+                <th scope="col" className="text-left p-3 text-muted-foreground">
+                  Metric
                 </th>
-                {offers.map(o => (
-                  <th key={o.offerId} className="p-3 text-left min-w-44">
-                    <ProviderIdentity offer={o} />
+                {offers.map((o, index) => (
+                  <th
+                    key={o.offerId}
+                    scope="col"
+                    className="p-3 text-left min-w-44"
+                  >
+                    <span className="mb-2 inline-flex rounded bg-muted px-2 py-0.5 font-data text-xs">
+                      {index + 1}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={providerLogo(o.providerId)}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="object-contain"
+                      />
+                      <span>{o.providerName}</span>
+                    </div>
                     <p className="font-normal mt-1">{o.gpuModelName}</p>
                   </th>
                 ))}
@@ -86,7 +109,10 @@ export function ComparisonDrawer({
             <tbody>
               {rows.map(([label, get]) => (
                 <tr key={label} className="border-t border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">
+                  <th
+                    scope="row"
+                    className="text-left p-3 font-medium text-muted-foreground"
+                  >
                     {label}
                   </th>
                   {offers.map(o => (
@@ -97,7 +123,10 @@ export function ComparisonDrawer({
                 </tr>
               ))}
               <tr className="border-t border-border">
-                <th className="p-3 text-left font-medium text-muted-foreground">
+                <th
+                  scope="row"
+                  className="p-3 text-left font-medium text-muted-foreground"
+                >
                   Stock evidence
                 </th>
                 {offers.map(o => (
@@ -110,7 +139,10 @@ export function ComparisonDrawer({
                 ))}
               </tr>
               <tr className="border-t border-border">
-                <th className="p-3 text-left font-medium text-muted-foreground">
+                <th
+                  scope="row"
+                  className="p-3 text-left font-medium text-muted-foreground"
+                >
                   Source
                 </th>
                 {offers.map(o => (
@@ -130,7 +162,10 @@ export function ComparisonDrawer({
                 ))}
               </tr>
               <tr className="border-t border-border">
-                <th className="p-3 text-left font-medium text-muted-foreground">
+                <th
+                  scope="row"
+                  className="p-3 text-left font-medium text-muted-foreground"
+                >
                   Open listing
                 </th>
                 {offers.map(o => (
@@ -149,11 +184,6 @@ export function ComparisonDrawer({
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-muted-foreground mt-4">
-          Missing specifications stay “Not reported”. A published price does not
-          establish rentable stock. No composite availability or performance
-          score is inferred.
-        </p>
       </div>
     </Modal>
   );

@@ -1,76 +1,95 @@
-import { ProviderIdentity } from "./ProviderIdentity";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  GitCompare,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+import { isCurrent, type GpuOffer } from "@shared/catalog";
 import { toCSV } from "@shared/csv";
-/*
-  OffersTable — Live GPU offers table loaded from the published snapshot.
-  Features: sorting, filtering, comparison selection (2-3 GPUs), price alert coral glow.
-*/
-
-import { useState, useMemo } from "react";
-import { catalog } from "@/lib/catalog";
-import { cloudTiers, reconcileSelection } from "@shared/offer-view";
-import { isCurrent } from "@shared/catalog";
-
-import { formatPrice } from "@/lib/data";
 import { priceHistorySummary } from "@shared/market";
+import {
+  billingLabel,
+  cloudTiers,
+  reconcileSelection,
+} from "@shared/offer-view";
+import { catalog } from "@/lib/catalog";
+import { formatPrice, providerLogo } from "@/lib/data";
+import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ComparisonDrawer } from "./ComparisonDrawer";
 import { PriceAlertModal } from "./PriceAlertModal";
-
-import { usePriceAlerts } from "../hooks/usePriceAlerts";
-import type { GpuOffer } from "@shared/catalog";
-
-import {
-  ExternalLink,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  X,
-  Search,
-  SlidersHorizontal,
-  GitCompare,
-  Bell,
-  Download,
-} from "lucide-react";
+import "./offers.css";
 
 type SortKey = "price" | "gpu" | "provider" | "vram" | "availability";
 type SortDir = "asc" | "desc";
+const pageSize = 25;
+const emptyFilters = {
+  billing: "",
+  cloud: "",
+  gpuModel: "",
+  provider: "",
+  availability: "",
+  region: "",
+  search: "",
+  maxPrice: "",
+};
+type Filters = typeof emptyFilters;
+type FilterOption = readonly [value: string, label: string];
+const stockOrder = { available: 0, limited: 1, unavailable: 2, unknown: 3 };
 
-interface Filters {
-  billing: string;
-  cloud: string;
-  gpuModel: string;
-  provider: string;
-  availability: string;
-  search: string;
-  maxPrice: number | null;
+function sortOffers(
+  a: GpuOffer,
+  b: GpuOffer,
+  key: Exclude<SortKey, "availability">
+) {
+  switch (key) {
+    case "price":
+      return a.pricePerGpuHr - b.pricePerGpuHr;
+    case "gpu":
+      return a.gpuModelName.localeCompare(b.gpuModelName);
+    case "provider":
+      return a.providerName.localeCompare(b.providerName);
+    case "vram":
+      return (a.vramPerGpuGb ?? -1) - (b.vramPerGpuGb ?? -1);
+  }
 }
 
 export function OffersTable({
+  initialGpu = "",
   onViewHistory,
 }: {
+  initialGpu?: string;
   onViewHistory?: (id: string) => void;
 }) {
-  const offers = catalog.offers;
-
+  const { offers } = catalog;
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filters, setFilters] = useState<Filters>({
-    billing: "",
-    cloud: "",
-    gpuModel: "",
-    provider: "",
-    availability: "",
-    search: "",
-    maxPrice: null,
+    ...emptyFilters,
+    gpuModel: initialGpu,
   });
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const tableStart = useRef<HTMLHeadingElement>(null);
 
-  // Comparison state
   const [storedSelectedIds, setSelectedIds] = useState<string[]>([]);
-  const selectedIds = reconcileSelection(storedSelectedIds, offers);
   const [showComparison, setShowComparison] = useState(false);
+  const selectedIds = reconcileSelection(storedSelectedIds, offers);
+  useEffect(() => {
+    if (selectedIds.length !== storedSelectedIds.length)
+      setSelectedIds(ids => reconcileSelection(ids, offers));
+    if (selectedIds.length < 2) setShowComparison(false);
+  }, [offers, selectedIds.length, storedSelectedIds.length]);
 
-  // Price alert state
   const {
     alerts,
     setAlert,
@@ -81,115 +100,115 @@ export function OffersTable({
   } = usePriceAlerts();
   const [alertTarget, setAlertTarget] = useState<GpuOffer | null>(null);
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
-  const toggleSelect = (offerId: string) => {
-    setSelectedIds(prev => {
-      const current = reconcileSelection(prev, offers);
+  function updateFilter(key: keyof Filters, value: string) {
+    setFilters(previous => ({ ...previous, [key]: value }));
+    setPage(1);
+  }
+  function clearFilters() {
+    setFilters(emptyFilters);
+    setPage(1);
+  }
+  function handleSort(key: SortKey) {
+    setSortDir(key === sortKey && sortDir === "asc" ? "desc" : "asc");
+    setSortKey(key);
+    setPage(1);
+  }
+  function toggleSelect(offerId: string) {
+    setSelectedIds(previous => {
+      const current = reconcileSelection(previous, offers);
       if (current.includes(offerId))
         return current.filter(id => id !== offerId);
-      if (current.length >= 3) return current; // max 3
-      return [...current, offerId];
+      return current.length >= 3 ? current : [...current, offerId];
     });
-  };
+  }
+  function goToPage(next: number) {
+    setPage(next);
+    tableStart.current?.focus({ preventScroll: true });
+    tableStart.current?.scrollIntoView({ block: "start" });
+  }
 
-  const filteredOffers = useMemo(() => {
-    let result = [...offers] as GpuOffer[];
-    if (filters.billing)
-      result = result.filter(
-        o => (o.billingModel ?? "on-demand") === filters.billing
-      );
-    if (filters.cloud)
-      result = result.filter(o => o.cloudType === filters.cloud);
-    if (filters.gpuModel)
-      result = result.filter(o => o.gpuModelId === filters.gpuModel);
-    if (filters.provider)
-      result = result.filter(o => o.providerId === filters.provider);
-    if (filters.availability)
-      result = result.filter(
-        o =>
-          (!isCurrent(catalog, o) ? "unknown" : o.availability) ===
-          filters.availability
-      );
-    if (filters.maxPrice !== null)
-      result = result.filter(o => o.pricePerGpuHr <= filters.maxPrice!);
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(
-        o =>
-          o.gpuModelName.toLowerCase().includes(q) ||
-          o.providerName.toLowerCase().includes(q) ||
-          o.region.toLowerCase().includes(q)
-      );
-    }
-    result.sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case "price":
-          cmp = a.pricePerGpuHr - b.pricePerGpuHr;
-          break;
-        case "gpu":
-          cmp = a.gpuModelName.localeCompare(b.gpuModelName);
-          break;
-        case "provider":
-          cmp = a.providerName.localeCompare(b.providerName);
-          break;
-        case "vram":
-          cmp = (a.vramPerGpuGb ?? -1) - (b.vramPerGpuGb ?? -1);
-          break;
-        case "availability": {
-          const order: Record<string, number> = {
-            available: 0,
-            limited: 1,
-            unavailable: 2,
-          };
-          cmp = (order[a.availability] ?? 3) - (order[b.availability] ?? 3);
-          break;
-        }
-      }
-      return sortDir === "asc" ? cmp : -cmp;
+  const view = useMemo(() => {
+    const now = Date.now();
+    return offers.map(offer => {
+      const retained = !isCurrent(catalog, offer, now);
+      return {
+        offer,
+        retained,
+        availability: retained ? ("unknown" as const) : offer.availability,
+      };
     });
-    return result;
-  }, [offers, filters, sortKey, sortDir]);
+  }, [offers]);
+  const filtered = useMemo(() => {
+    const query = filters.search.trim().toLowerCase();
+    const maximum =
+      filters.maxPrice === "" ? Infinity : Number(filters.maxPrice);
+    return view
+      .filter(
+        ({ offer, availability }) =>
+          (!filters.billing ||
+            (offer.billingModel ?? "on-demand") === filters.billing) &&
+          (!filters.cloud || offer.cloudType === filters.cloud) &&
+          (!filters.gpuModel || offer.gpuModelId === filters.gpuModel) &&
+          (!filters.provider || offer.providerId === filters.provider) &&
+          (!filters.availability || availability === filters.availability) &&
+          (!filters.region || offer.region === filters.region) &&
+          offer.pricePerGpuHr <= maximum &&
+          (!query ||
+            [offer.gpuModelName, offer.providerName, offer.region].some(value =>
+              value.toLowerCase().includes(query)
+            ))
+      )
+      .sort((a, b) => {
+        const order =
+          sortKey === "availability"
+            ? stockOrder[a.availability] - stockOrder[b.availability]
+            : sortOffers(a.offer, b.offer, sortKey);
+        return sortDir === "asc" ? order : -order;
+      });
+  }, [filters, sortDir, sortKey, view]);
 
-  const activeFilterCount = [
-    filters.billing,
+  const liveGpuModels = useMemo(
+    () =>
+      [
+        ...new Map(offers.map(o => [o.gpuModelId, o.gpuModelName])).entries(),
+      ].sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true })),
+    [offers]
+  );
+  const liveProviders = useMemo(
+    () =>
+      [
+        ...new Map(offers.map(o => [o.providerId, o.providerName])).entries(),
+      ].sort((a, b) => a[1].localeCompare(b[1])),
+    [offers]
+  );
+  const regions = useMemo(
+    () =>
+      [...new Set(offers.map(o => o.region))].sort().map(r => [r, r] as const),
+    [offers]
+  );
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = (currentPage - 1) * pageSize;
+  const visible = filtered.slice(firstIndex, firstIndex + pageSize);
+  const reported = filtered.filter(
+    item => item.availability !== "unknown"
+  ).length;
+  const shownProviders = new Set(filtered.map(({ offer }) => offer.providerId))
+    .size;
+  const selectedOffers = selectedIds.flatMap(id => {
+    const row = view.find(({ offer }) => offer.offerId === id);
+    return row ? [{ ...row.offer, availability: row.availability }] : [];
+  });
+  const extraFilters = [
     filters.cloud,
-    filters.gpuModel,
-    filters.provider,
     filters.availability,
-    filters.search,
-    filters.maxPrice !== null ? "x" : "",
+    filters.region,
+    filters.maxPrice,
   ].filter(Boolean).length;
-
-  const clearFilters = () =>
-    setFilters({
-      billing: "",
-      cloud: "",
-      gpuModel: "",
-      provider: "",
-      availability: "",
-      search: "",
-      maxPrice: null,
-    });
-
-  const selectedOffers = offers
-    .filter(o => selectedIds.includes(o.offerId))
-    .map(o => ({
-      ...o,
-      availability: !isCurrent(catalog, o)
-        ? ("unknown" as const)
-        : o.availability,
-    }));
+  const hasFilters = Object.values(filters).some(Boolean);
   const alertCount = Object.keys(alerts).length;
 
-  // CSV export of current filtered view
   function exportCSV() {
     const headers = [
       "GPU",
@@ -204,8 +223,9 @@ export function OffersTable({
       "Data Source",
       "Observed at",
       "Source URL",
+      "Billing",
     ];
-    const rows = filteredOffers.map(o => [
+    const rows = filtered.map(({ offer: o, retained }) => [
       o.gpuModelName,
       o.vramPerGpuGb ?? "",
       o.providerName,
@@ -215,15 +235,16 @@ export function OffersTable({
         : `${o.gpuCount}x GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"}GB RAM`,
       o.pricePerGpuHr.toFixed(4),
       o.configurationKnown === false ? "" : o.totalNodePriceHr.toFixed(4),
-      !isCurrent(catalog, o) ? "unknown (retained)" : o.availability,
-      o.cloudType ?? "",
+      retained ? "unknown (retained)" : o.availability,
+      o.cloudType,
       o.dataSource,
       o.observedAt,
       o.sourceUrl,
+      o.billingModel ?? "on-demand",
     ]);
-    const csv = toCSV([headers, ...rows]);
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(
+      new Blob([toCSV([headers, ...rows])], { type: "text/csv" })
+    );
     const a = document.createElement("a");
     a.href = url;
     a.download = `gpu-prices-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -231,339 +252,205 @@ export function OffersTable({
     URL.revokeObjectURL(url);
   }
 
-  // Unique GPU models and providers from live data
-  const liveGpuModels = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          offers.map(o => [
-            o.gpuModelId,
-            { id: o.gpuModelId, name: o.gpuModelName },
-          ])
-        ).values()
-      ),
-    [offers]
+  const filter = (
+    key: keyof Filters,
+    label: string,
+    all: string,
+    options: FilterOption[]
+  ) => (
+    <FilterSelect
+      key={key}
+      label={label}
+      value={filters[key]}
+      all={all}
+      options={options}
+      onChange={value => updateFilter(key, value)}
+    />
   );
-  const liveProviders = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          offers.map(o => [
-            o.providerId,
-            { id: o.providerId, name: o.providerName },
-          ])
-        ).values()
-      ),
-    [offers]
+  const sort = (label: string, key: SortKey, className?: string) => (
+    <SortHeader
+      label={label}
+      sortKey={key}
+      currentKey={sortKey}
+      dir={sortDir}
+      onSort={handleSort}
+      className={className}
+    />
   );
 
   return (
-    <section className="mb-10 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+    <section className="offer-market" aria-labelledby="offers-title">
+      <div className="offer-market__intro">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            All Offers
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            <span className="font-data font-medium text-foreground">
-              {filteredOffers.length}
-            </span>
-            <span className="text-muted-foreground"> of </span>
-            <span className="font-data">{offers.length}</span>
-            <span className="text-muted-foreground"> offers</span>
-          </p>
+          <h1 id="offers-title">GPU offers</h1>
+          <p>Compare hourly rates, GPU configurations, and reported stock.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {storageError && (
-            <span role="alert" className="text-xs text-destructive">
-              Browser storage unavailable; alerts were not changed.
+        <button
+          type="button"
+          className="offer-button"
+          onClick={exportCSV}
+          disabled={!filtered.length}
+        >
+          <Download size={16} /> Export CSV
+        </button>
+      </div>
+
+      <div className="offer-market__filters">
+        <div className="offer-market__primary-filters">
+          <label className="offer-field offer-field--search">
+            Search offers
+            <span>
+              <Search size={16} aria-hidden="true" />
+              <input
+                type="search"
+                placeholder="GPU, provider, region"
+                value={filters.search}
+                onChange={e => updateFilter("search", e.target.value)}
+              />
             </span>
-          )}
-          {/* Alert count badge */}
-          {alertCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[oklch(0.65_0.18_25_/_0.3)] rounded-lg bg-[oklch(0.65_0.18_25_/_0.06)] text-[oklch(0.50_0.14_25)]">
-              <Bell className="w-3 h-3" />
-              {alertCount} alert{alertCount > 1 ? "s" : ""} set
-            </div>
-          )}
-
-          {/* Compare button */}
-          {
-            <button
-              disabled={selectedIds.length < 2}
-              title="Select 2–3 offers using their checkboxes"
-              onClick={() => setShowComparison(true)}
-              className="disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[oklch(0.22_0.045_255)] text-[oklch(0.95_0.004_85)] rounded-lg hover:bg-[oklch(0.28_0.045_255)] transition-all duration-200"
-            >
-              <GitCompare className="w-3.5 h-3.5" />
-              Compare {selectedIds.length}
-            </button>
-          }
-          {selectedIds.length > 0 && (
-            <button
-              onClick={() => setSelectedIds([])}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="GPU, provider, region…"
-              value={filters.search}
-              onChange={e =>
-                setFilters(f => ({ ...f, search: e.target.value }))
-              }
-              className="pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg w-48 focus:outline-none focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.4)] focus:border-[oklch(0.62_0.19_218_/_0.4)] transition-all duration-200 placeholder:text-muted-foreground/50"
-            />
+          </label>
+          {filter("gpuModel", "GPU model", "All GPUs", liveGpuModels)}
+          {filter("provider", "Provider", "All providers", liveProviders)}
+          {filter("billing", "Billing", "All billing", [
+            ["on-demand", "On-demand"],
+            ["spot", "Spot · interruptible"],
+          ])}
+          <button
+            type="button"
+            className="offer-button"
+            aria-expanded={showFilters}
+            aria-controls="offer-advanced-filters"
+            onClick={() => setShowFilters(value => !value)}
+          >
+            <SlidersHorizontal size={16} /> More filters
+            {extraFilters > 0 ? ` (${extraFilters})` : ""}
+          </button>
+        </div>
+        <div id="offer-advanced-filters" hidden={!showFilters}>
+          <div className="offer-market__extra-filters">
+            {filter("availability", "Stock", "Any stock status", [
+              ["available", "Available"],
+              ["limited", "Limited"],
+              ["unavailable", "Unavailable"],
+              ["unknown", "Needs stock check"],
+            ])}
+            {filter("region", "Region", "All regions", regions)}
+            {filter("cloud", "Cloud tier", "All cloud tiers", cloudTiers)}
+            <label className="offer-field">
+              Max USD / GPU-hour
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Any price"
+                value={filters.maxPrice}
+                onChange={e => updateFilter("maxPrice", e.target.value)}
+              />
+            </label>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
-              showFilters || activeFilterCount > 0
-                ? "bg-teal-subtle border-[oklch(0.62_0.19_218_/_0.3)] text-[oklch(0.42_0.16_218)]"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)]"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-0.5 w-4 h-4 flex items-center justify-center text-[10px] font-data bg-[oklch(0.62_0.19_218)] text-white rounded-full">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* CSV Export — inline locked button, same height as Filters */}
-
-          <button
-            onClick={exportCSV}
-            title="Export current filtered view as CSV"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border bg-card text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
-          </button>
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-3">
-        Stock reported for{" "}
-        {
-          offers.filter(
-            o => isCurrent(catalog, o) && o.availability !== "unknown"
-          ).length
-        }{" "}
-        of {offers.length} listings. The other listings still have recorded
-        prices; use Check stock to verify capacity with the provider.
-      </p>
-      {/* Selection hint */}
-      {selectedIds.length === 0 && offers.length > 0 && (
-        <p className="mono-label text-muted-foreground mb-3">
-          Select 2–3 rows to compare · click the bell icon to set price alerts
-        </p>
-      )}
-
-      <p className="text-xs text-muted-foreground mb-3">
-        Availability: green = available · amber = limited · red = unavailable ·
-        stock checks = no current provider report. Limited means low reported
-        stock, not sold out. Every listing keeps an Open provider link so you
-        can check current capacity. Billing and cloud tier are separate
-        attributes.
-      </p>
-      {/* Filter bar */}
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-2.5 mb-5 p-4 bg-card border border-border rounded-xl animate-scale-in">
-          <select
-            value={filters.gpuModel}
-            onChange={e =>
-              setFilters(f => ({ ...f, gpuModel: e.target.value }))
-            }
-            className="px-3 py-1.5 text-sm bg-background border border-border rounded-lg font-sans focus:outline-none focus:ring-1 focus:ring-ring"
+      <div className="offer-market__status">
+        <div>
+          <h2
+            ref={tableStart}
+            tabIndex={-1}
+            className="scroll-mt-20 text-base font-semibold"
           >
-            <option value="">All GPUs</option>
-            {liveGpuModels.map(g => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.provider}
-            onChange={e =>
-              setFilters(f => ({ ...f, provider: e.target.value }))
-            }
-            className="px-3 py-1.5 text-sm bg-background border border-border rounded-lg font-sans focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="">All Providers</option>
-            {liveProviders.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.availability}
-            onChange={e =>
-              setFilters(f => ({ ...f, availability: e.target.value }))
-            }
-            className="px-3 py-1.5 text-sm bg-background border border-border rounded-lg font-sans focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="">Any Availability</option>
-            <option value="available">Available</option>
-            <option value="limited">Limited</option>
-            <option value="unavailable">Unavailable</option>
-            <option value="unknown">Needs provider check</option>
-          </select>
-          <select
-            aria-label="Offer billing"
-            value={filters.billing}
-            onChange={e => setFilters(f => ({ ...f, billing: e.target.value }))}
-            className="p-2 text-sm bg-background border border-border rounded-lg"
-          >
-            <option value="">All billing</option>
-            <option value="on-demand">On-demand</option>
-            <option value="spot">Spot · interruptible</option>
-          </select>
-          <select
-            aria-label="Offer cloud tier"
-            value={filters.cloud}
-            onChange={e => setFilters(f => ({ ...f, cloud: e.target.value }))}
-            className="p-2 text-sm bg-background border border-border rounded-lg"
-          >
-            <option value="">All cloud tiers</option>
-            {cloudTiers.map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center gap-2">
-            <label className="mono-label text-muted-foreground">Max $/hr</label>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              placeholder="—"
-              value={filters.maxPrice ?? ""}
-              onChange={e =>
-                setFilters(f => ({
-                  ...f,
-                  maxPrice: e.target.value ? parseFloat(e.target.value) : null,
-                }))
-              }
-              className="w-20 px-2.5 py-1.5 text-sm font-data bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-          {activeFilterCount > 0 && (
+            {filtered.length.toLocaleString()}{" "}
+            {filtered.length === 1 ? "listing" : "listings"}
+          </h2>
+          <p role="status">
+            {shownProviders} {shownProviders === 1 ? "provider" : "providers"} ·
+            Stock reported for {reported}
+          </p>
+        </div>
+        <div className="offer-market__status-actions">
+          {visible.length > 0 && selectedIds.length === 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <GitCompare size={15} aria-hidden="true" /> Select 2–3 offers to
+              compare
+            </span>
+          )}
+          {alertCount > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <Bell size={14} /> {alertCount}{" "}
+              {alertCount === 1 ? "alert" : "alerts"}
+            </span>
+          )}
+          {hasFilters && (
             <button
+              type="button"
+              className="offer-text-button"
               onClick={clearFilters}
-              className="flex items-center gap-1 text-xs text-[oklch(0.62_0.19_218)] hover:text-[oklch(0.52_0.19_218)] ml-auto transition-colors"
             >
-              <X className="w-3 h-3" /> Clear all
+              Clear filters
             </button>
           )}
         </div>
+      </div>
+      {storageError && (
+        <p role="alert" className="mb-2 text-sm text-destructive">
+          Browser storage unavailable. Alert settings are unchanged.
+        </p>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto border border-border rounded-xl bg-card shadow-[var(--shadow-sm)]">
-        <table className="w-full text-sm">
+      <div
+        className="offer-market__table-wrap"
+        tabIndex={0}
+        role="region"
+        aria-label="GPU offer results"
+      >
+        <table className="offer-market__table" aria-label="GPU offers">
           <thead>
-            <tr className="border-b border-border bg-[oklch(0.96_0.005_85)]">
-              <th className="px-3 py-3 w-8" />
-              <SortHeader
-                label="GPU"
-                sortKey="gpu"
-                currentKey={sortKey}
-                dir={sortDir}
-                onSort={handleSort}
-              />
-              <SortHeader
-                label="VRAM"
-                sortKey="vram"
-                currentKey={sortKey}
-                dir={sortDir}
-                onSort={handleSort}
-                className="hidden sm:table-cell"
-              />
-              <SortHeader
-                label="Provider"
-                sortKey="provider"
-                currentKey={sortKey}
-                dir={sortDir}
-                onSort={handleSort}
-              />
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden 2xl:table-cell">
-                Config
+            <tr>
+              <th scope="col" className="offer-select">
+                <span className="sr-only">Select for comparison</span>
               </th>
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden 2xl:table-cell">
-                Region
-              </th>
-              <SortHeader
-                label="$/GPU/hr"
-                sortKey="price"
-                currentKey={sortKey}
-                dir={sortDir}
-                onSort={handleSort}
-                className="text-right"
-              />
-              <th className="px-4 py-3 text-center mono-label text-muted-foreground hidden lg:table-cell">
-                Recorded price history
-              </th>
-              <SortHeader
-                label="Stock / check"
-                sortKey="availability"
-                currentKey={sortKey}
-                dir={sortDir}
-                onSort={handleSort}
-              />
-              <th className="px-4 py-3 text-left mono-label text-muted-foreground hidden md:table-cell">
-                Observed
-              </th>
-              <th className="px-4 py-3 text-right mono-label sticky right-0 bg-card border-l border-border">
+              {sort("GPU", "gpu")}
+              {sort("USD / GPU-hour", "price", "offer-rate")}
+              {sort("Provider", "provider")}
+              {sort("VRAM", "vram")}
+              <th scope="col">7-day history</th>
+              {sort("Stock", "availability")}
+              <th scope="col" className="offer-actions">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody>
-            {filteredOffers.map((offer, idx) => (
+            {visible.map(({ offer, retained, availability }) => (
               <OfferRow
                 key={offer.offerId}
                 offer={offer}
-                isEven={idx % 2 === 0}
-                rank={idx}
+                retained={retained}
+                availability={availability}
                 isSelected={selectedIds.includes(offer.offerId)}
+                selectionFull={selectedIds.length === 3}
                 onToggleSelect={() => toggleSelect(offer.offerId)}
                 isAlertTriggered={
-                  isCurrent(catalog, offer) &&
+                  !retained &&
                   isAlertTriggered(offer.gpuModelId, offer.pricePerGpuHr)
                 }
                 onSetAlert={() => setAlertTarget(offer)}
                 hasAlert={!!getAlert(offer.gpuModelId)}
-                onViewHistory={() => onViewHistory?.(offer.offerId)}
+                onViewHistory={
+                  onViewHistory ? () => onViewHistory(offer.offerId) : undefined
+                }
               />
             ))}
-            {filteredOffers.length === 0 && (
+            {!visible.length && (
               <tr>
-                <td colSpan={11} className="px-4 py-16 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <Search className="w-8 h-8 text-border" />
-                    <p className="text-muted-foreground text-sm">
-                      No offers match your filters.
-                    </p>
-                    <button
-                      onClick={clearFilters}
-                      className="text-xs text-[oklch(0.62_0.19_218)] hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                  </div>
+                <td colSpan={8} className="offer-market__empty">
+                  <p>No offers match your filters.</p>
+                  <button
+                    type="button"
+                    className="offer-text-button"
+                    onClick={clearFilters}
+                  >
+                    Clear filters
+                  </button>
                 </td>
               </tr>
             )}
@@ -571,15 +458,85 @@ export function OffersTable({
         </table>
       </div>
 
-      {/* Comparison Drawer — available to everyone */}
+      {filtered.length > 0 && (
+        <nav className="offer-market__pages" aria-label="Offer result pages">
+          <span aria-live="polite">
+            {firstIndex + 1}–{firstIndex + visible.length} of {filtered.length}
+          </span>
+          <div>
+            <button
+              type="button"
+              className="offer-button"
+              disabled={currentPage === 1}
+              onClick={() => goToPage(currentPage - 1)}
+            >
+              <ChevronLeft size={16} /> Previous
+            </button>
+            <span className="font-data">
+              {currentPage} / {pageCount}
+            </span>
+            <button
+              type="button"
+              className="offer-button"
+              disabled={currentPage === pageCount}
+              onClick={() => goToPage(currentPage + 1)}
+            >
+              Next <ChevronRight size={16} />
+            </button>
+          </div>
+        </nav>
+      )}
+
+      {selectedOffers.length > 0 && (
+        <aside className="offer-market__selection" aria-label="Selected offers">
+          <div className="offer-market__selection-label">
+            <GitCompare size={18} />
+            <strong>{selectedOffers.length} of 3 selected</strong>
+          </div>
+          <div className="offer-market__selected-offers">
+            {selectedOffers.map(offer => (
+              <button
+                key={offer.offerId}
+                type="button"
+                className="offer-selected"
+                aria-label={`Remove ${offer.providerName} ${offer.gpuModelName} from comparison`}
+                onClick={() => toggleSelect(offer.offerId)}
+              >
+                <span>
+                  {offer.providerName} · {offer.gpuModelName}
+                </span>
+                <X size={14} />
+              </button>
+            ))}
+          </div>
+          <div className="offer-market__selection-actions">
+            <button
+              type="button"
+              className="offer-text-button"
+              onClick={() => setSelectedIds([])}
+            >
+              Clear selection
+            </button>
+            <button
+              type="button"
+              className="offer-button offer-button--primary"
+              disabled={selectedOffers.length < 2}
+              onClick={() => setShowComparison(true)}
+            >
+              {selectedOffers.length === 1
+                ? "Select one more"
+                : `Compare ${selectedOffers.length}`}
+            </button>
+          </div>
+        </aside>
+      )}
+
       {showComparison && selectedOffers.length >= 2 && (
         <ComparisonDrawer
           offers={selectedOffers}
           onClose={() => setShowComparison(false)}
         />
       )}
-
-      {/* Price Alert Modal — available to everyone */}
       {alertTarget && (
         <PriceAlertModal
           gpuModelId={alertTarget.gpuModelId}
@@ -595,52 +552,73 @@ export function OffersTable({
   );
 }
 
+function FilterSelect({
+  label,
+  value,
+  all,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  all: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="offer-field">
+      {label}
+      <select value={value} onChange={e => onChange(e.target.value)}>
+        <option value="">{all}</option>
+        {options.map(([id, name]) => (
+          <option key={id} value={id}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function SortHeader({
   label,
-  sortKey: key,
+  sortKey,
   currentKey,
   dir,
   onSort,
-  className = "",
+  className,
 }: {
   label: string;
   sortKey: SortKey;
   currentKey: SortKey;
   dir: SortDir;
-  onSort: (k: SortKey) => void;
+  onSort: (key: SortKey) => void;
   className?: string;
 }) {
-  const isActive = currentKey === key;
+  const active = currentKey === sortKey;
+  const Icon = active ? (dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
   return (
     <th
-      className={`px-4 py-3 text-left mono-label cursor-pointer select-none transition-colors duration-150 ${
-        isActive
-          ? "text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      } ${className}`}
-      onClick={() => onSort(key)}
+      scope="col"
+      className={className}
+      aria-sort={
+        active ? (dir === "asc" ? "ascending" : "descending") : undefined
+      }
     >
-      <span className="inline-flex items-center gap-1">
+      <button type="button" onClick={() => onSort(sortKey)}>
         {label}
-        {isActive ? (
-          dir === "asc" ? (
-            <ArrowUp className="w-3 h-3" />
-          ) : (
-            <ArrowDown className="w-3 h-3" />
-          )
-        ) : (
-          <ArrowUpDown className="w-3 h-3 opacity-25" />
-        )}
-      </span>
+        <Icon size={13} aria-hidden="true" />
+      </button>
     </th>
   );
 }
 
 function OfferRow({
   offer,
-  isEven,
-  rank,
+  retained,
+  availability,
   isSelected,
+  selectionFull,
   onToggleSelect,
   isAlertTriggered,
   onSetAlert,
@@ -648,204 +626,175 @@ function OfferRow({
   onViewHistory,
 }: {
   offer: GpuOffer;
-  isEven: boolean;
-  rank: number;
+  retained: boolean;
+  availability: GpuOffer["availability"];
   isSelected: boolean;
+  selectionFull: boolean;
   onToggleSelect: () => void;
   isAlertTriggered: boolean;
   onSetAlert: () => void;
   hasAlert: boolean;
-  onViewHistory: () => void;
+  onViewHistory?: () => void;
 }) {
-  const isTopOffer = rank < 3;
-
   const history = priceHistorySummary(catalog, offer.offerId);
-
-  // Coral glow styles when alert is triggered
-  const alertGlowClass = isAlertTriggered
-    ? "ring-1 ring-[oklch(0.68_0.18_25_/_0.5)] bg-[oklch(0.68_0.18_25_/_0.04)]"
-    : "";
-
+  const historyLabel =
+    history.state === "empty"
+      ? "No samples"
+      : history.state === "collecting"
+        ? "First sample"
+        : history.state === "unchanged"
+          ? "Unchanged"
+          : `${history.stats!.change >= 0 ? "+" : ""}${history.stats!.percent.toFixed(2)}%`;
+  const tier = cloudTiers.find(([id]) => id === offer.cloudType)?.[1];
+  const observed = new Date(offer.observedAt).toLocaleString();
+  const node =
+    offer.configurationKnown === false
+      ? "Node size unspecified"
+      : [
+          `${offer.gpuCount}× GPU`,
+          offer.vcpus === null ? "" : `${offer.vcpus} vCPU`,
+          offer.ramGb === null ? "" : `${offer.ramGb} GB RAM`,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+  const description = [
+    `${offer.providerName} ${offer.gpuModelName} ${node}`,
+    billingLabel(offer),
+    tier,
+    offer.region === "Not specified" ? "" : offer.region,
+  ]
+    .filter(Boolean)
+    .join(", ");
   return (
     <tr
-      className={`border-b border-border/40 transition-all duration-150 cursor-pointer
-        ${
-          isSelected
-            ? "bg-[oklch(0.62_0.19_218_/_0.06)] ring-1 ring-inset ring-[oklch(0.62_0.19_218_/_0.25)]"
-            : isAlertTriggered
-              ? "bg-[oklch(0.68_0.18_25_/_0.03)] hover:bg-[oklch(0.68_0.18_25_/_0.06)]"
-              : isEven
-                ? "bg-card hover:bg-[oklch(0.62_0.19_218_/_0.025)]"
-                : "bg-[oklch(0.975_0.003_85)] hover:bg-[oklch(0.62_0.19_218_/_0.025)]"
-        }
-        ${alertGlowClass}
-      `}
-      onClick={onToggleSelect}
+      data-selected={isSelected || undefined}
+      data-alert={isAlertTriggered || undefined}
     >
-      {/* Selection checkbox */}
-      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
-        <input
-          type="checkbox"
-          aria-label={`Compare ${offer.providerName} ${offer.gpuModelName} ${offer.cloudType}`}
-          checked={isSelected}
-          onChange={onToggleSelect}
-          className="w-4 h-4 accent-teal cursor-pointer"
-        />
-      </td>
-
-      {/* GPU */}
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {isTopOffer && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.62_0.19_218)] flex-shrink-0" />
-          )}
-          {isAlertTriggered && (
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-[oklch(0.68_0.18_25)] flex-shrink-0 animate-pulse"
-              title="Price alert triggered!"
-            />
-          )}
-          <div>
-            <div className="font-medium text-foreground text-sm">
-              {offer.gpuModelName}
-            </div>
-            <div className="font-data text-[10px] text-muted-foreground">
-              {offer.gpuModelId}
-            </div>
-          </div>
-        </div>
-      </td>
-
-      {/* VRAM */}
-      <td className="px-4 py-3 font-data text-sm text-foreground hidden sm:table-cell">
-        {offer.vramPerGpuGb ?? "—"}{" "}
-        <span className="text-muted-foreground text-[10px]">GB</span>
-      </td>
-
-      {/* Provider */}
-      <td className="px-4 py-3">
-        <ProviderIdentity offer={offer} />
-      </td>
-
-      {/* Config */}
-      <td className="px-4 py-3 hidden 2xl:table-cell">
-        <span className="font-data text-xs text-muted-foreground">
-          {offer.configurationKnown === false
-            ? "Per-GPU rate · node size unspecified"
-            : `${offer.gpuCount}× GPU · ${offer.vcpus ?? "—"} vCPU · ${offer.ramGb ?? "—"}GB`}
-        </span>
-      </td>
-
-      {/* Region */}
-      <td className="px-4 py-3 font-data text-xs text-muted-foreground hidden 2xl:table-cell">
-        {offer.region}
-      </td>
-
-      {/* Price */}
-      <td className="px-4 py-3 text-right">
-        <div
-          className={`font-data text-base font-semibold tracking-tight ${
-            isAlertTriggered ? "text-[oklch(0.55_0.15_25)]" : "text-foreground"
-          }`}
+      <td className="offer-select">
+        <label
+          title={
+            selectionFull && !isSelected ? "Three offers selected" : undefined
+          }
         >
+          <input
+            type="checkbox"
+            aria-label={`Compare ${description}`}
+            checked={isSelected}
+            disabled={selectionFull && !isSelected}
+            onChange={onToggleSelect}
+          />
+        </label>
+      </td>
+      <th scope="row" className="offer-gpu">
+        <strong>{offer.gpuModelName}</strong>
+        <small>{node}</small>
+      </th>
+      <td className="offer-rate">
+        <strong className="font-data">
           {formatPrice(offer.pricePerGpuHr)}
-        </div>
+        </strong>
         {offer.configurationKnown !== false && offer.gpuCount > 1 && (
-          <div className="font-data text-[10px] text-muted-foreground">
-            {formatPrice(offer.totalNodePriceHr)}/node
-          </div>
+          <small className="font-data">
+            {formatPrice(offer.totalNodePriceHr)} / node-hour
+          </small>
+        )}
+        {retained && (
+          <small className="offer-retained" title={observed}>
+            Last observed
+          </small>
         )}
       </td>
-
-      {/* Actual history summary; a flat line alone conveys no evidence. */}
-      <td
-        className="px-4 py-3 hidden lg:table-cell min-w-36"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="text-xs font-medium">
-          {history.state === "empty"
-            ? "No history yet"
-            : history.state === "collecting"
-              ? "First observation"
-              : history.state === "unchanged"
-                ? "Unchanged"
-                : `${history.stats!.change >= 0 ? "+" : ""}${history.stats!.percent.toFixed(2)}% since first sample`}
+      <td className="offer-provider">
+        <div>
+          <img
+            src={providerLogo(offer.providerId)}
+            alt=""
+            width={24}
+            height={24}
+            loading="lazy"
+          />
+          <span>
+            <strong>{offer.providerName}</strong>
+            <small>
+              <span
+                className={offer.billingModel === "spot" ? "offer-spot" : ""}
+              >
+                {billingLabel(offer)}
+              </span>
+              {tier && ` · ${tier}`}
+            </small>
+            {offer.region !== "Not specified" && <small>{offer.region}</small>}
+          </span>
         </div>
-        {history.stats && (
-          <div className="text-[10px] text-muted-foreground mt-1">
-            ${history.stats.last.toFixed(3)} · {history.stats.count} sample
-            {history.stats.count === 1 ? "" : "s"}
-          </div>
-        )}
-        {history.firstAt && (
-          <div
-            className="text-[10px] text-muted-foreground"
-            title={`${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`}
-          >
-            {new Date(history.firstAt).toDateString() ===
-            new Date(history.lastAt!).toDateString()
-              ? `${new Date(history.firstAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${new Date(history.lastAt!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-              : `${new Date(history.firstAt).toLocaleDateString()} – ${new Date(history.lastAt!).toLocaleDateString()}`}
-          </div>
-        )}
-        <button
-          onClick={onViewHistory}
-          className="text-[11px] text-teal underline mt-1"
-        >
-          View history →
-        </button>
       </td>
-
-      {/* Availability */}
-      <td className="px-4 py-3">
+      <td className="offer-vram font-data">
+        {offer.vramPerGpuGb === null ? "—" : `${offer.vramPerGpuGb} GB`}
+      </td>
+      <td className="offer-history">
+        {onViewHistory ? (
+          <button
+            type="button"
+            className="offer-text-button"
+            onClick={onViewHistory}
+            aria-label={`View history for ${description}`}
+            title={
+              history.firstAt
+                ? `${new Date(history.firstAt).toLocaleString()} – ${new Date(history.lastAt!).toLocaleString()}`
+                : undefined
+            }
+          >
+            {historyLabel}
+          </button>
+        ) : (
+          <span>{historyLabel}</span>
+        )}
+        {history.stats && (
+          <small>
+            {history.stats.count}{" "}
+            {history.stats.count === 1 ? "sample" : "samples"}
+          </small>
+        )}
+      </td>
+      <td>
         <AvailabilityBadge
           providerLink={offer.providerLink}
-          state={!isCurrent(catalog, offer) ? "unknown" : offer.availability}
+          state={availability}
         />
       </td>
-
-      {/* Observation freshness */}
-      <td className="px-4 py-3 hidden md:table-cell">
-        <span className="font-data text-[10px]" title={offer.observedAt}>
-          {!isCurrent(catalog, offer)
-            ? "Stale / retained"
-            : offer.dataSource === "pricing_page"
-              ? "Rate checked"
-              : "Observed"}
-          <br />
-          {new Date(offer.observedAt).toLocaleString()}
-        </span>
-      </td>
-
-      {/* Actions */}
-      <td
-        className="px-3 py-3 text-center sticky right-0 bg-card border-l border-border"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-1 justify-end">
+      <td className="offer-actions">
+        <div>
           <button
+            type="button"
+            className="offer-button offer-icon-button"
+            data-alert-set={hasAlert || undefined}
+            aria-label={`Set price alert for ${description}`}
+            title={hasAlert ? "Edit price alert" : "Set price alert"}
             onClick={onSetAlert}
-            className={`inline-flex items-center gap-1 justify-center px-2 h-8 border border-border rounded-lg transition-all duration-150 hover:scale-110 ${
-              hasAlert
-                ? "text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.1)]"
-                : "text-muted-foreground hover:text-[oklch(0.62_0.18_25)] hover:bg-[oklch(0.65_0.18_25_/_0.08)]"
-            }`}
-            title="Set a local alert (checked while the page is open)"
           >
-            <Bell className="w-3.5 h-3.5" />
-            <span className="text-xs">Alert</span>
+            <Bell size={16} />
           </button>
           <a
             href={offer.providerLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1 px-3 h-8 border border-teal/30 rounded-lg bg-teal/10 whitespace-nowrap hover:bg-teal-subtle text-[oklch(0.62_0.19_218)] transition-all duration-150 hover:scale-110"
-            title={`Open ${offer.providerName} · Source: ${offer.sourceUrl}`}
+            className="offer-button"
+            aria-label={`Open provider ${offer.providerName}`}
           >
-            <span className="text-xs font-medium">Open provider</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            Open <ExternalLink size={14} />
           </a>
         </div>
+        <a
+          className="offer-source"
+          href={offer.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Observed ${observed}`}
+        >
+          Source <ExternalLink size={11} />
+          <time dateTime={offer.observedAt}>
+            {new Date(offer.observedAt).toLocaleDateString()}
+          </time>
+        </a>
       </td>
     </tr>
   );
