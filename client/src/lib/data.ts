@@ -1,4 +1,9 @@
-import { isCurrent, type Snapshot, type GpuOffer } from "@shared/catalog";
+import {
+  isCurrent,
+  type Snapshot,
+  type GpuOffer,
+  type ListingKind,
+} from "@shared/catalog";
 import type { ComputeFeed } from "@shared/compute";
 import { addedProviders } from "@shared/added-providers";
 
@@ -36,6 +41,7 @@ interface ProviderSummary {
   profile: Provider | undefined;
   pricingUrl: string | undefined;
   compute: ComputeFeed | undefined;
+  kinds: ListingKind[];
   gpuInventory: string[];
   lowestPrices: Record<string, number>;
   regionCoverage: string[];
@@ -321,19 +327,15 @@ export function buildComparisons(gpuModelIds?: string[]): ComparisonRow[] {
 
 // ─── Provider Summary Builder ────────────────────────────────────────────────
 
-export function buildProviderSummaries(
-  snapshot: Snapshot,
-  now = Date.now()
-): ProviderSummary[] {
+export function catalogProviders(snapshot: Snapshot) {
   const feeds = new Map(
     (snapshot.compute ?? []).map(feed => [feed.providerId, feed])
   );
+  const gpuSources = new Set(snapshot.sources.map(source => source.id));
   const sources: Snapshot["sources"] = [
     ...snapshot.sources,
     ...[...feeds.values()]
-      .filter(
-        feed => !snapshot.sources.some(source => source.id === feed.providerId)
-      )
+      .filter(feed => !gpuSources.has(feed.providerId))
       .map(feed => ({
         id: feed.providerId,
         name: feed.providerName,
@@ -347,49 +349,68 @@ export function buildProviderSummaries(
       })),
   ];
   return sources.map(source => {
-    const providerOffers = snapshot.offers.filter(
-      o => o.providerId === source.id
-    );
-    const gpuInventory = [
-      ...new Set([
-        ...providerOffers.map(o => o.gpuModelName),
-        ...(source.leaseRates?.map(rate => rate.model) ?? []),
-      ]),
-    ];
-    const lowestPrices: Record<string, number> = {};
-    for (const offer of providerOffers) {
-      const gpuName = offer.gpuModelName;
-      if (
-        !lowestPrices[gpuName] ||
-        offer.pricePerGpuHr < lowestPrices[gpuName]
-      ) {
-        lowestPrices[gpuName] = offer.pricePerGpuHr;
-      }
+    const compute = feeds.get(source.id);
+    const kinds: ListingKind[] = gpuSources.has(source.id) ? ["gpu"] : [];
+    if (compute) {
+      kinds.push(
+        ...new Set(compute.kinds ?? compute.rates.map(rate => rate.kind))
+      );
     }
-    const regionCoverage = Array.from(
-      new Set([
-        ...providerOffers.map(o => o.region).filter(Boolean),
-        ...(source.leaseRates?.map(rate => rate.region) ?? []),
-      ])
-    );
-
-    return {
-      source,
-      profile: getProvider(source.id),
-      compute: feeds.get(source.id),
-      pricingUrl:
-        source.evidence?.sourceUrl ??
-        providerOffers[0]?.sourceUrl ??
-        feeds.get(source.id)?.providerLink ??
-        feeds.get(source.id)?.url,
-      gpuInventory,
-      lowestPrices,
-      regionCoverage,
-      offerCount: providerOffers.length,
-      billingModels: [
-        ...new Set(providerOffers.map(o => o.billingModel ?? "on-demand")),
-      ],
-      retained: providerOffers.some(o => !isCurrent(snapshot, o, now)),
-    };
+    return { source, compute, kinds, profile: getProvider(source.id) };
   });
+}
+
+export function buildProviderSummaries(
+  snapshot: Snapshot,
+  now = Date.now()
+): ProviderSummary[] {
+  return catalogProviders(snapshot).map(
+    ({ source, compute, profile, kinds }) => {
+      const providerOffers = snapshot.offers.filter(
+        o => o.providerId === source.id
+      );
+      const gpuInventory = [
+        ...new Set([
+          ...providerOffers.map(o => o.gpuModelName),
+          ...(source.leaseRates?.map(rate => rate.model) ?? []),
+        ]),
+      ];
+      const lowestPrices: Record<string, number> = {};
+      for (const offer of providerOffers) {
+        const gpuName = offer.gpuModelName;
+        if (
+          !lowestPrices[gpuName] ||
+          offer.pricePerGpuHr < lowestPrices[gpuName]
+        ) {
+          lowestPrices[gpuName] = offer.pricePerGpuHr;
+        }
+      }
+      const regionCoverage = Array.from(
+        new Set([
+          ...providerOffers.map(o => o.region).filter(Boolean),
+          ...(source.leaseRates?.map(rate => rate.region) ?? []),
+        ])
+      );
+
+      return {
+        source,
+        profile,
+        compute,
+        kinds,
+        pricingUrl:
+          source.evidence?.sourceUrl ??
+          providerOffers[0]?.sourceUrl ??
+          compute?.providerLink ??
+          compute?.url,
+        gpuInventory,
+        lowestPrices,
+        regionCoverage,
+        offerCount: providerOffers.length,
+        billingModels: [
+          ...new Set(providerOffers.map(o => o.billingModel ?? "on-demand")),
+        ],
+        retained: providerOffers.some(o => !isCurrent(snapshot, o, now)),
+      };
+    }
+  );
 }

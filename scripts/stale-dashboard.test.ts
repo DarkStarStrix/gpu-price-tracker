@@ -3,6 +3,7 @@ import {
   configureCatalog,
   buildComparisons,
   buildProviderSummaries,
+  catalogProviders,
   GPU_MODELS,
 } from "../client/src/lib/data";
 import { parseRunpod } from "./providers";
@@ -10,6 +11,43 @@ import { collect } from "./collect";
 import fixture from "./fixtures/runpod.json";
 const at = "2026-11-05T18:00:00Z";
 afterEach(() => vi.useRealTimers());
+
+it("includes providers with no listings and merges GPU and compute feeds by provider ID", () => {
+  const snapshot = {
+    version: 1 as const,
+    generatedAt: at,
+    offers: [],
+    history: [],
+    sources: ["lambda", "gcp"].map(id => ({
+      id,
+      name: id === "lambda" ? "Lambda" : "Google Cloud",
+      status: "ok" as const,
+      checkedAt: at,
+      lastSuccessAt: at,
+      message: "0 offers observed",
+    })),
+    compute: [
+      {
+        providerId: "gcp",
+        providerName: "Google Cloud",
+        url: "https://cloud.google.com",
+        kinds: ["tpu" as const],
+        status: "ok" as const,
+        observedAt: at,
+        rates: [],
+      },
+    ],
+  };
+  expect(catalogProviders(snapshot)).toMatchObject([
+    { source: { id: "lambda" }, kinds: ["gpu"], profile: { name: "Lambda" } },
+    { source: { id: "gcp" }, kinds: ["gpu", "tpu"] },
+  ]);
+  expect(buildProviderSummaries(snapshot)).toMatchObject([
+    { source: { id: "lambda" }, offerCount: 0 },
+    { source: { id: "gcp" }, offerCount: 0 },
+  ]);
+});
+
 it("keeps last observed overview prices, GPU inventory and provider summaries after two hours", async () => {
   const offers = parseRunpod(fixture, at);
   const snapshot = await collect(

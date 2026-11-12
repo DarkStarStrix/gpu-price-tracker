@@ -31,8 +31,8 @@ import {
   loadHistory,
 } from "@/lib/catalog";
 import { displayQuote } from "@shared/market";
-import { formatPrice, getProvider, providerLogo } from "@/lib/data";
-import { isStale, isCurrent } from "@shared/catalog";
+import { catalogProviders, formatPrice, providerLogo } from "@/lib/data";
+import { isStale, isCurrent, type ListingKind } from "@shared/catalog";
 import { readViewLink } from "@/lib/view-link";
 import { computeKinds, type ComputeKind } from "@shared/compute";
 
@@ -68,6 +68,10 @@ export default function Home() {
     sharedView?.view === "trends" ? sharedView.id : ""
   );
   const [initialGpu, setInitialGpu] = useState("");
+  const [providerSelection, setProviderSelection] = useState<{
+    id: string;
+    kind: ListingKind;
+  }>({ id: "", kind: "gpu" });
   const [offerKind, setOfferKind] = useState<"gpu" | ComputeKind>(
     sharedView?.view === "offers" ? (sharedView.kind ?? "gpu") : "gpu"
   );
@@ -82,20 +86,15 @@ export default function Home() {
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
   const snapshotTime = new Date(generatedAt);
   const snapshotHealthy = !snapshotLoadError && freshOffers.length > 0;
-  const computeProviders = [
-    ...new Map(
-      (catalog.compute ?? [])
-        .filter(feed => feed.rates.length > 0)
-        .map(feed => [feed.providerId, feed])
-    ).values(),
-  ].sort((a, b) => a.providerName.localeCompare(b.providerName));
-  const providerCount = new Set([
-    ...offers.map(offer => offer.providerId),
-    ...computeProviders.map(feed => feed.providerId),
-  ]).size;
+  const providers = catalogProviders(catalog).sort((a, b) =>
+    a.source.name.localeCompare(b.source.name)
+  );
   const offerCount =
     offers.length +
-    computeProviders.reduce((sum, feed) => sum + feed.rates.length, 0);
+    providers.reduce(
+      (sum, provider) => sum + (provider.compute?.rates.length ?? 0),
+      0
+    );
   const floor = (id: string) => {
     const quote = displayQuote(catalog, id);
     return quote
@@ -103,7 +102,12 @@ export default function Home() {
       : "—";
   };
 
-  function navigate(tab: Tab, gpu = "", kind: "gpu" | ComputeKind = "gpu") {
+  function navigate(
+    tab: Tab,
+    gpu = "",
+    kind: ListingKind = "gpu",
+    provider = ""
+  ) {
     if (tab === activeTab) return;
     if (sharedView) {
       const url = new URL(window.location.href);
@@ -115,6 +119,7 @@ export default function Home() {
       startTransition(() => {
         setInitialGpu(gpu);
         setOfferKind(kind);
+        setProviderSelection({ id: provider, kind });
         setActiveTab(tab);
       });
     } else setActiveTab(tab);
@@ -332,7 +337,7 @@ export default function Home() {
                 </span>
                 <span className="w-8 h-px bg-[oklch(0.62_0.19_218_/_0.4)]" />
                 <span className="mono-label text-muted-foreground">
-                  {providerCount} Providers · {offerCount} Offers
+                  {providers.length} Providers · {offerCount} Offers
                 </span>
               </div>
 
@@ -388,57 +393,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-
-              {computeProviders.length > 0 && (
-                <div className="mt-6">
-                  <p className="mono-label text-muted-foreground">
-                    CPU, TPU &amp; sandbox providers
-                  </p>
-                  <ul
-                    aria-label="CPU, TPU and sandbox providers"
-                    className="mt-2 flex flex-wrap gap-1.5"
-                  >
-                    {computeProviders.map(feed => {
-                      const profile = getProvider(feed.providerId);
-                      const url = feed.providerLink ?? profile?.website;
-                      const label = (
-                        <>
-                          {profile && (
-                            <img
-                              src={providerLogo(feed.providerId)}
-                              alt=""
-                              width={16}
-                              height={16}
-                              loading="lazy"
-                              decoding="async"
-                              className="size-4 rounded-sm bg-white object-contain"
-                            />
-                          )}
-                          {feed.providerName}
-                        </>
-                      );
-                      const badge =
-                        "inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground";
-                      return (
-                        <li key={feed.providerId}>
-                          {url ? (
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`${badge} hover:border-primary`}
-                            >
-                              {label}
-                            </a>
-                          ) : (
-                            <span className={badge}>{label}</span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
             </div>
             <div className="observatory-art hidden md:block" aria-hidden="true">
               <img
@@ -450,6 +404,44 @@ export default function Home() {
                 decoding="async"
               />
             </div>
+            {providers.length > 0 && (
+              <div className="md:col-span-2">
+                <p className="mono-label text-muted-foreground">
+                  Tracked providers
+                </p>
+                <ul
+                  aria-label="Tracked providers"
+                  className="mt-2 flex flex-wrap gap-1.5"
+                >
+                  {providers.map(({ source, kinds, profile }) => (
+                    <li key={source.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate("offers", "", kinds[0] ?? "gpu", source.id)
+                        }
+                        onPointerEnter={warmOffers}
+                        onFocus={warmOffers}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground hover:border-primary"
+                      >
+                        {profile && (
+                          <img
+                            src={providerLogo(source.id)}
+                            alt=""
+                            width={16}
+                            height={16}
+                            loading="lazy"
+                            decoding="async"
+                            className="size-4 rounded-sm bg-white object-contain"
+                          />
+                        )}
+                        {source.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -540,6 +532,9 @@ export default function Home() {
               <Suspense fallback={<p role="status">Loading offers…</p>}>
                 <OffersTable
                   initialGpu={initialGpu}
+                  initialProvider={
+                    providerSelection.kind === "gpu" ? providerSelection.id : ""
+                  }
                   shared={
                     sharedView?.view === "offers" && !sharedView.kind
                       ? sharedView
@@ -557,6 +552,11 @@ export default function Home() {
                 <OffersTable
                   key={offerKind}
                   kind={offerKind}
+                  initialProvider={
+                    providerSelection.kind === offerKind
+                      ? providerSelection.id
+                      : ""
+                  }
                   shared={
                     sharedView?.view === "offers" &&
                     sharedView.kind === offerKind

@@ -58,9 +58,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {summaries.map((summary, idx) => {
           const { source, profile, pricingUrl, compute } = summary;
-          const hasGpuFeed = snapshot.sources.some(
-            feed => feed.id === source.id
-          );
+          const hasGpuFeed = summary.kinds.includes("gpu");
           const computeFresh =
             compute?.status === "ok" &&
             !!compute.observedAt &&

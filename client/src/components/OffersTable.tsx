@@ -43,7 +43,12 @@ import {
   computeSpecs,
 } from "@shared/offer-view";
 import { catalog, fullCatalog, historyLoadError } from "@/lib/catalog";
-import { formatPrice, hourlyPrice, providerLogo } from "@/lib/data";
+import {
+  catalogProviders,
+  formatPrice,
+  hourlyPrice,
+  providerLogo,
+} from "@/lib/data";
 import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ComparisonDrawer } from "./ComparisonDrawer";
@@ -94,11 +99,13 @@ function sortOffers(
 
 export function OffersTable({
   initialGpu = "",
+  initialProvider = "",
   kind = "gpu",
   onViewHistory,
   shared,
 }: {
   initialGpu?: string;
+  initialProvider?: string;
   kind?: ListingKind;
   onViewHistory?: (id: string) => void;
   shared?: Extract<SharedView, { view: "offers" }>;
@@ -119,6 +126,7 @@ export function OffersTable({
     shared?.filters ?? {
       ...emptyFilters,
       gpuModel: initialGpu,
+      provider: initialProvider,
     }
   );
   const [showFilters, setShowFilters] = useState(() =>
@@ -242,13 +250,31 @@ export function OffersTable({
       ].sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true })),
     [offers]
   );
-  const liveProviders = useMemo(
+  const providers = useMemo(
     () =>
-      [
-        ...new Map(offers.map(o => [o.providerId, o.providerName])).entries(),
-      ].sort((a, b) => a[1].localeCompare(b[1])),
-    [offers]
+      catalogProviders(snapshot)
+        .filter(provider => provider.kinds.includes(kind))
+        .sort((a, b) => a.source.name.localeCompare(b.source.name)),
+    [snapshot, kind]
   );
+  const liveProviders = useMemo(() => {
+    const idsWithOffers = new Set(offers.map(offer => offer.providerId));
+    return providers.map(
+      ({ source }) =>
+        [
+          source.id,
+          idsWithOffers.has(source.id)
+            ? source.name
+            : `${source.name} (no listed offers)`,
+        ] as const
+    );
+  }, [offers, providers]);
+  const selectedProvider = providers.find(
+    ({ source }) => source.id === filters.provider
+  );
+  const selectedProviderHasNoOffers =
+    selectedProvider &&
+    !offers.some(offer => offer.providerId === filters.provider);
   const regions = useMemo(
     () =>
       [...new Set(offers.map(o => o.region))].sort().map(r => [r, r] as const),
@@ -577,7 +603,27 @@ export function OffersTable({
             {!visible.length && (
               <tr>
                 <td colSpan={8} className="offer-market__empty">
-                  <p>No offers match your filters.</p>
+                  {selectedProviderHasNoOffers ? (
+                    <p>
+                      No {title.toLowerCase()} are listed for{" "}
+                      {selectedProvider.source.name}.
+                      {selectedProvider.profile && (
+                        <>
+                          {" "}
+                          <a
+                            href={selectedProvider.profile.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="offer-text-button"
+                          >
+                            Check with {selectedProvider.source.name} ↗
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  ) : (
+                    <p>No offers match your filters.</p>
+                  )}
                   <button
                     type="button"
                     className="offer-text-button"
