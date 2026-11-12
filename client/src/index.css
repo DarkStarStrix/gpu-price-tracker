@@ -248,23 +248,6 @@
   }
 }
 
-@keyframes scan-line {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.4;
-  }
-  90% {
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(400%);
-    opacity: 0;
-  }
-}
-
 @keyframes draw-line {
   from {
     stroke-dashoffset: 1000;
@@ -373,45 +356,44 @@
     }
   }
 
-  /* ── Graph paper background ── */
-  .graph-paper {
-    background-color: var(--paper);
-    background-image: radial-gradient(
-      circle,
-      var(--dot-color) 1px,
-      transparent 1px
-    );
-    background-size: var(--grid-size) var(--grid-size);
+  .dashboard-surface {
+    background: var(--paper);
   }
 
-  @media (min-width: 1024px) {
-    .hero-blueprint {
-      background: url("/images/gpu-blueprint.webp") right center / contain
-        no-repeat;
-      mix-blend-mode: multiply;
-      opacity: 0.88;
-    }
+  .observatory-hero {
+    background:
+      radial-gradient(
+        ellipse at 88% 35%,
+        oklch(0.91 0.045 182 / 0.55),
+        transparent 60%
+      ),
+      linear-gradient(175deg, oklch(0.985 0.006 88), var(--paper));
   }
 
-  /* ── Fine grid lines ── */
-  .grid-lines {
+  .observatory-art {
+    min-width: 0;
+    isolation: isolate;
     background-image:
-      linear-gradient(var(--grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
+      linear-gradient(oklch(0.5 0.09 205 / 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.5 0.09 205 / 0.1) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(
+      ellipse closest-side,
+      black 70%,
+      transparent 100%
+    );
   }
 
-  /* ── Grain texture overlay ── */
-  .grain::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.028;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 128px 128px;
+  .observatory-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+    mix-blend-mode: multiply;
+    mask-image: radial-gradient(
+      ellipse 68% 67% at center,
+      black 63%,
+      transparent 95%
+    );
   }
 
   .trend-range {
@@ -546,23 +528,6 @@
   /* ── Pulse dot ── */
   .pulse-dot {
     animation: pulse-dot 2s ease-in-out infinite;
-  }
-
-  /* ── Scan line effect ── */
-  .scan-line::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.62 0.19 218 / 0.3),
-      transparent
-    );
-    animation: scan-line 4s ease-in-out infinite;
-    pointer-events: none;
   }
 
   /* ── Section divider ── */

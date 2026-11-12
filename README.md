@@ -56,7 +56,9 @@ The hero tracks the current H100 SXM floor with separate spot/on-demand selector
 
 The provider movement timeline replays recorded listing additions/removals, price changes, stock changes and counts. The Offers page filters current listings by GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
 
-Price alerts are local to this browser and evaluated while the app is open. Invalid saved entries are discarded individually. Failed browser storage is reported without claiming the alert was saved. No email or background notifications are sent. CSV export protects spreadsheet cells from formula injection.
+**Copy share link** restores exact listing IDs, filters and the selected history period. Open **Estimate job cost** for one listing or a comparison to apply the observed rate to a GPU count and runtime. Known node sizes are rounded up to whole nodes. A per-GPU quote with an unreported node size is labeled as an estimate.
+
+In-tab price alerts remain available. Background price and stock watchlists require the optional Worker service and browser notification permission. See [watchlist activation](alerts/README.md). CSV export protects spreadsheet cells from formula injection.
 
 ## Ownership and failure behavior
 

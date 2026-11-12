@@ -1,0 +1,18 @@
+{
+  "name": "gpu-price-watchlists",
+  "main": "worker.ts",
+  "compatibility_date": "2026-11-11",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "SITE_ORIGIN": "https://darkstarstrix.github.io",
+    "VAPID_PUBLIC_KEY": "REPLACE_WITH_PUBLIC_KEY"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gpu-price-watchlists",
+      "database_id": "REPLACE_WITH_DATABASE_ID"
+    }
+  ]
+}

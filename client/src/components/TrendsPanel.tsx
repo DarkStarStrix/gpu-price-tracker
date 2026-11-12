@@ -8,13 +8,16 @@ import {
 } from "@/lib/catalog";
 
 import { PriceTrends } from "./PriceTrends";
+import type { SharedView } from "@/lib/view-link";
 
 export function TrendsPanel({
   initialOfferId,
   belowFold = false,
+  shared,
 }: {
   initialOfferId: string;
   belowFold?: boolean;
+  shared?: Extract<SharedView, { view: "trends" }>;
 }) {
   const section = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(!belowFold);
@@ -75,6 +78,7 @@ export function TrendsPanel({
             <PriceTrends
               snapshot={fullCatalog}
               initialOfferId={initialOfferId}
+              shared={shared}
             />
           ) : historyLoadError ? null : (
             loading

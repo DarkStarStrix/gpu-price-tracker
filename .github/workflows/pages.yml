@@ -53,6 +53,8 @@ jobs:
             git push origin HEAD:main
           fi
       - run: pnpm build:pages
+        env:
+          VITE_WATCH_API: ${{ vars.WATCH_API_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
@@ -71,3 +73,27 @@ jobs:
       - name: Deploy verified snapshot and dashboard
         id: deployment
         uses: actions/deploy-pages@v4
+
+
+  alerts:
+    needs: deploy
+    if: ${{ vars.WATCH_API_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Deliver price and restock notifications
+        run: pnpm exec tsx alerts/dispatch.ts
+        env:
+          WATCH_API_URL: ${{ vars.WATCH_API_URL }}
+          WATCH_VAPID_PUBLIC: ${{ vars.WATCH_VAPID_PUBLIC }}
+          WATCH_VAPID_PRIVATE: ${{ secrets.WATCH_VAPID_PRIVATE }}
+          WATCH_DISPATCH_TOKEN: ${{ secrets.WATCH_DISPATCH_TOKEN }}

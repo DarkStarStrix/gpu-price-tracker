@@ -4,6 +4,7 @@ import { Play, Pause, SkipForward } from "lucide-react";
 import type { Snapshot } from "@shared/catalog";
 import { getProvider } from "@/lib/data";
 import { TimeSeriesPlot } from "./TimeSeriesPlot";
+import type { SharedView } from "@/lib/view-link";
 
 const stockSeries = [
   { key: "available", label: "Available", color: "#16a34a" },
@@ -104,13 +105,19 @@ function ReplayControls({
 export function PriceTrends({
   initialOfferId = "",
   snapshot,
+  shared,
 }: {
   initialOfferId?: string;
   snapshot: Snapshot;
+  shared?: Extract<SharedView, { view: "trends" }>;
 }) {
   return (
     <section className="mb-10">
-      <PriceMarket initialOfferId={initialOfferId} snapshot={snapshot} />
+      <PriceMarket
+        initialOfferId={initialOfferId}
+        snapshot={snapshot}
+        shared={shared}
+      />
       <PoolMovement snapshot={snapshot} />
     </section>
   );

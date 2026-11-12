@@ -31,7 +31,18 @@ describe("dialogs escape dashboard transforms", () => {
     const { animated, trigger } = mount();
     const close = vi.fn();
     await act(() =>
-      root.render(<ComparisonDrawer offers={offers} onClose={close} />)
+      root.render(
+        <ComparisonDrawer
+          offers={offers}
+          onClose={close}
+          hours={168}
+          through={Date.now()}
+          anchored={false}
+          onHoursChange={() => {}}
+          shareUrl="https://example.test/?view=offers"
+          missingSharedCount={0}
+        />
+      )
     );
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
     expect(dialog).not.toBeNull();

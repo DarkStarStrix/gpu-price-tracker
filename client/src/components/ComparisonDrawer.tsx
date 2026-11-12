@@ -1,16 +1,34 @@
 import { providerLogo } from "@/lib/data";
 import { X, ExternalLink } from "lucide-react";
-import type { GpuOffer } from "@shared/catalog";
+import type { GpuOffer, Snapshot } from "@shared/catalog";
+import { marketSeries, marketStats } from "@shared/market";
 import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { Modal } from "./Modal";
 import { OfferRadar } from "./OfferRadar";
+import { CopyViewLink } from "./CopyViewLink";
+import { JobCostCalculator } from "./JobCostCalculator";
+import { historyPeriods, type HistoryHours } from "@/lib/view-link";
 export function ComparisonDrawer({
   offers,
   onClose,
+  history,
+  hours,
+  through,
+  anchored,
+  onHoursChange,
+  shareUrl,
+  missingSharedCount,
 }: {
   offers: GpuOffer[];
   onClose: () => void;
+  history?: Snapshot;
+  hours: HistoryHours;
+  through: number;
+  anchored: boolean;
+  onHoursChange: (hours: HistoryHours) => void;
+  shareUrl: string;
+  missingSharedCount: number;
 }) {
   if (offers.length < 2) return null;
   const mixed =
@@ -42,6 +60,25 @@ export function ComparisonDrawer({
     ["System RAM", o => (o.ramGb === null ? "Not reported" : `${o.ramGb} GB`)],
     ["Region", o => o.region],
     ["Observed", o => new Date(o.observedAt).toLocaleString()],
+    [
+      "Recorded price range",
+      offer => {
+        if (!history) return "History unavailable";
+        const stats = marketStats(
+          marketSeries(
+            history,
+            offer.offerId,
+            through - hours * 3_600_000,
+            through
+          )
+        );
+        if (!stats) return "No observations";
+        const low = `$${stats.low.toFixed(3)}`;
+        const prices =
+          stats.low === stats.high ? low : `${low}–$${stats.high.toFixed(3)}`;
+        return `${prices} · ${stats.count} ${stats.count === 1 ? "sample" : "samples"}`;
+      },
+    ],
   ];
   return (
     <Modal titleId="comparison-title" onClose={onClose} wide>
@@ -60,6 +97,37 @@ export function ComparisonDrawer({
         </button>
       </div>
       <div className="p-5">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <label className="offer-field">
+            History range
+            <select
+              value={hours}
+              onChange={event =>
+                onHoursChange(Number(event.target.value) as HistoryHours)
+              }
+            >
+              {historyPeriods.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <CopyViewLink url={shareUrl} />
+        </div>
+        {anchored && (
+          <p className="mb-4 text-xs text-muted-foreground">
+            History ending {new Date(through).toLocaleString()}.{" "}
+            <button className="underline" onClick={() => onHoursChange(hours)}>
+              Use latest
+            </button>
+          </p>
+        )}
+        {missingSharedCount > 0 && (
+          <p role="status" className="mb-4 text-sm text-muted-foreground">
+            Some listings from this link are missing from the current catalog.
+          </p>
+        )}
         {mixed && (
           <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded text-xs">
             This selection mixes GPU models or billing types. Check both when
@@ -67,6 +135,14 @@ export function ComparisonDrawer({
           </p>
         )}
         <OfferRadar offers={offers} />
+        <details className="mt-5 rounded-lg border border-border p-4">
+          <summary className="cursor-pointer font-medium">
+            Estimate job cost
+          </summary>
+          <div className="mt-4">
+            <JobCostCalculator offers={offers} />
+          </div>
+        </details>
         <div
           className="comparison-metrics mt-5 overflow-x-auto"
           tabIndex={0}

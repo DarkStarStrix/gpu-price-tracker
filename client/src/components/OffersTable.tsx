@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   Bell,
+  BellPlus,
+  Calculator,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -27,24 +29,29 @@ import { usePriceAlerts } from "../hooks/usePriceAlerts";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ComparisonDrawer } from "./ComparisonDrawer";
 import { PriceAlertModal } from "./PriceAlertModal";
+import { JobCostCalculator } from "./JobCostCalculator";
+import { Modal } from "./Modal";
+import {
+  emptyOfferFilters,
+  viewLink,
+  type HistoryHours,
+  type OfferFilters,
+  type SharedView,
+} from "@/lib/view-link";
 import "./offers.css";
 
 type SortKey = "price" | "gpu" | "provider" | "vram" | "availability";
 type SortDir = "asc" | "desc";
 const pageSize = 25;
-const emptyFilters = {
-  billing: "",
-  cloud: "",
-  gpuModel: "",
-  provider: "",
-  availability: "",
-  region: "",
-  search: "",
-  maxPrice: "",
-};
-type Filters = typeof emptyFilters;
+const emptyFilters = emptyOfferFilters;
+type Filters = OfferFilters;
 type FilterOption = readonly [value: string, label: string];
 const stockOrder = { available: 0, limited: 1, unavailable: 2, unknown: 3 };
+const WatchlistDialog = lazy(() =>
+  import("./WatchlistDialog").then(module => ({
+    default: module.WatchlistDialog,
+  }))
+);
 
 function sortOffers(
   a: GpuOffer,
@@ -66,24 +73,50 @@ function sortOffers(
 export function OffersTable({
   initialGpu = "",
   onViewHistory,
+  shared,
 }: {
   initialGpu?: string;
   onViewHistory?: (id: string) => void;
+  shared?: Extract<SharedView, { view: "offers" }>;
 }) {
   const { offers } = catalog;
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [filters, setFilters] = useState<Filters>({
-    ...emptyFilters,
-    gpuModel: initialGpu,
-  });
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<Filters>(
+    shared?.filters ?? {
+      ...emptyFilters,
+      gpuModel: initialGpu,
+    }
+  );
+  const [showFilters, setShowFilters] = useState(() =>
+    Boolean(
+      shared &&
+      (shared.filters.availability ||
+        shared.filters.region ||
+        shared.filters.cloud ||
+        shared.filters.maxPrice)
+    )
+  );
   const [page, setPage] = useState(1);
   const tableStart = useRef<HTMLHeadingElement>(null);
 
-  const [storedSelectedIds, setSelectedIds] = useState<string[]>([]);
-  const [showComparison, setShowComparison] = useState(false);
+  const [storedSelectedIds, setSelectedIds] = useState<string[]>(
+    shared?.ids ?? []
+  );
+  const [showComparison, setShowComparison] = useState(
+    () => reconcileSelection(shared?.ids ?? [], offers).length >= 2
+  );
+  const [historyHours, setHistoryHours] = useState<HistoryHours>(
+    shared?.hours ?? 168
+  );
+  const [historyThrough, setHistoryThrough] = useState(shared?.through);
+  const comparisonThrough = historyThrough ?? Date.now();
+  const [costOffer, setCostOffer] = useState<GpuOffer | null>(null);
+  const [watchOffer, setWatchOffer] = useState<GpuOffer | null | undefined>();
   const selectedIds = reconcileSelection(storedSelectedIds, offers);
+  const missingSharedCount =
+    shared?.ids.filter(id => !offers.some(offer => offer.offerId === id))
+      .length ?? 0;
   useEffect(() => {
     if (selectedIds.length !== storedSelectedIds.length)
       setSelectedIds(ids => reconcileSelection(ids, offers));
@@ -367,6 +400,13 @@ export function OffersTable({
           </p>
         </div>
         <div className="offer-market__status-actions">
+          <button
+            type="button"
+            className="offer-button"
+            onClick={() => setWatchOffer(null)}
+          >
+            <BellPlus size={15} /> Watchlist
+          </button>
           {visible.length > 0 && selectedIds.length === 0 && (
             <span className="inline-flex items-center gap-1.5">
               <GitCompare size={15} aria-hidden="true" /> Select 2–3 offers to
@@ -393,6 +433,15 @@ export function OffersTable({
       {storageError && (
         <p role="alert" className="mb-2 text-sm text-destructive">
           Browser storage unavailable. Alert settings are unchanged.
+        </p>
+      )}
+      {missingSharedCount > 0 && (
+        <p role="status" className="mb-2 text-sm text-muted-foreground">
+          {missingSharedCount}{" "}
+          {missingSharedCount === 1
+            ? "listing from this link is"
+            : "listings from this link are"}{" "}
+          missing from the current catalog.
         </p>
       )}
 
@@ -424,6 +473,8 @@ export function OffersTable({
               <OfferRow
                 key={offer.offerId}
                 offer={offer}
+                onEstimate={() => setCostOffer(offer)}
+                onWatch={() => setWatchOffer(offer)}
                 retained={retained}
                 availability={availability}
                 isSelected={selectedIds.includes(offer.offerId)}
@@ -534,8 +585,59 @@ export function OffersTable({
       {showComparison && selectedOffers.length >= 2 && (
         <ComparisonDrawer
           offers={selectedOffers}
+          hours={historyHours}
+          through={comparisonThrough}
+          anchored={historyThrough !== undefined}
+          onHoursChange={hours => {
+            setHistoryHours(hours);
+            setHistoryThrough(undefined);
+          }}
+          history={
+            fullCatalog?.generatedAt === catalog.generatedAt
+              ? fullCatalog
+              : undefined
+          }
+          shareUrl={viewLink(
+            {
+              view: "offers",
+              ids: selectedIds,
+              filters,
+              hours: historyHours,
+              through: comparisonThrough,
+            },
+            window.location.href
+          )}
+          missingSharedCount={missingSharedCount}
           onClose={() => setShowComparison(false)}
         />
+      )}
+      {costOffer && (
+        <Modal titleId="job-estimate-title" onClose={() => setCostOffer(null)}>
+          <div className="space-y-4 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 id="job-estimate-title" className="text-lg font-semibold">
+                Estimate job cost
+              </h2>
+              <button
+                type="button"
+                aria-label="Close estimate"
+                className="rounded p-2 hover:bg-muted"
+                onClick={() => setCostOffer(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <JobCostCalculator offers={[costOffer]} />
+          </div>
+        </Modal>
+      )}
+      {watchOffer !== undefined && (
+        <Suspense fallback={<p role="status">Loading watchlist…</p>}>
+          <WatchlistDialog
+            offer={watchOffer}
+            onClose={() => setWatchOffer(undefined)}
+          />
+        </Suspense>
       )}
       {alertTarget && (
         <PriceAlertModal
@@ -615,6 +717,8 @@ function SortHeader({
 
 function OfferRow({
   offer,
+  onEstimate,
+  onWatch,
   retained,
   availability,
   isSelected,
@@ -626,6 +730,8 @@ function OfferRow({
   onViewHistory,
 }: {
   offer: GpuOffer;
+  onEstimate: () => void;
+  onWatch: () => void;
   retained: boolean;
   availability: GpuOffer["availability"];
   isSelected: boolean;
@@ -769,6 +875,24 @@ function OfferRow({
       </td>
       <td className="offer-actions">
         <div>
+          <button
+            type="button"
+            className="offer-button offer-icon-button"
+            aria-label={`Estimate job cost for ${description}`}
+            title="Estimate job cost"
+            onClick={onEstimate}
+          >
+            <Calculator size={16} />
+          </button>
+          <button
+            type="button"
+            className="offer-button offer-icon-button"
+            aria-label={`Watch listing for ${description}`}
+            title="Watch price or stock"
+            onClick={onWatch}
+          >
+            <BellPlus size={16} />
+          </button>
           <button
             type="button"
             className="offer-button offer-icon-button"

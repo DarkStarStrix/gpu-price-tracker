@@ -3,6 +3,7 @@
     "client/src",
     "shared",
     "scripts",
+    "alerts",
     "vite.config.ts",
     "vitest.config.ts"
   ],

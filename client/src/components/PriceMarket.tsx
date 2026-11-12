@@ -5,6 +5,13 @@ import { billingLabel, cloudLabel } from "@shared/offer-view";
 import { isCurrent, type GpuOffer, type Snapshot } from "@shared/catalog";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { TimeSeriesPlot } from "./TimeSeriesPlot";
+import { CopyViewLink } from "./CopyViewLink";
+import {
+  viewLink,
+  type HistoryBounds,
+  type HistoryHours,
+  type SharedView,
+} from "@/lib/view-link";
 const date = (t: number) =>
   new Date(t).toLocaleString([], {
     month: "short",
@@ -15,22 +22,33 @@ const date = (t: number) =>
 export function PriceMarket({
   initialOfferId = "",
   snapshot: catalog,
+  shared,
 }: {
   initialOfferId?: string;
   snapshot: Snapshot;
+  shared?: Extract<SharedView, { view: "trends" }>;
 }) {
   const initial =
     catalog.offers.find(o => o.offerId === initialOfferId) ??
     catalog.history.find(o => o.offerId === initialOfferId);
-  const [gpu, setGpu] = useState(initial?.gpuModelId ?? "h100-sxm"),
+  const [gpu, setGpu] = useState(
+      shared?.gpu || initial?.gpuModelId || "h100-sxm"
+    ),
     [billing, setBilling] = useState<string>(
-      initial?.billingModel ?? "on-demand"
+      shared?.billing ?? initial?.billingModel ?? "on-demand"
     ),
     [selected, setSelected] = useState(initialOfferId),
-    [hours, setHours] = useState(168),
-    [moversOnly, setMoversOnly] = useState(false),
+    [hours, setHours] = useState<HistoryHours>(shared?.hours ?? 168),
+    [moversOnly, setMoversOnly] = useState(shared?.movers ?? false),
     [hover, setHover] = useState<{ time: number; price: number } | null>(null);
-  const windowEnd = useMemo(() => Date.now(), [catalog, hours, moversOnly]);
+  const [anchoredEnd, setAnchoredEnd] = useState(shared?.through);
+  const [chartBounds, setChartBounds] = useState<HistoryBounds | undefined>(
+    shared?.bounds
+  );
+  const windowEnd = useMemo(
+    () => anchoredEnd ?? Date.now(),
+    [catalog, hours, moversOnly, anchoredEnd]
+  );
   const windowStart = windowEnd - hours * 3600000;
   const { models, currentOffers, pastOffers } = useMemo(() => {
     const moved = moversOnly
@@ -70,8 +88,15 @@ export function PriceMarket({
     listings[0];
   const historical = pastOffers.filter(offer => offer.gpuModelId === model);
   const historicalChoice = historical.find(h => h.offerId === selected);
-  const chartId =
-    historicalChoice?.offerId ?? offer?.offerId ?? historical[0]?.offerId;
+  const linkedListingMissing = Boolean(
+    shared?.id &&
+    selected === shared.id &&
+    !listings.some(listing => listing.offerId === selected) &&
+    !historicalChoice
+  );
+  const chartId = linkedListingMissing
+    ? undefined
+    : (historicalChoice?.offerId ?? offer?.offerId ?? historical[0]?.offerId);
   const points = useMemo(
     () =>
       chartId ? marketSeries(catalog, chartId, windowStart, windowEnd) : [],
@@ -93,6 +118,7 @@ export function PriceMarket({
   const reset = () => {
     setHover(null);
     setSelected("");
+    setChartBounds(undefined);
   };
   return (
     <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-6">
@@ -146,23 +172,48 @@ export function PriceMarket({
               onChange={event => {
                 setMoversOnly(event.target.checked);
                 setHover(null);
+                setChartBounds(undefined);
               }}
             />
             Price movers only
           </label>
+          {chartId && (
+            <CopyViewLink
+              url={viewLink(
+                {
+                  view: "trends",
+                  id: chartId,
+                  gpu: model,
+                  billing,
+                  hours,
+                  movers: moversOnly,
+                  through: windowEnd,
+                  bounds: chartBounds,
+                },
+                window.location.href
+              )}
+            />
+          )}
         </div>
       </div>
       <select
         aria-label="Historical listing"
         value={chartId ?? ""}
-        disabled={!chartId}
+        disabled={!listings.length && !historical.length}
         onChange={e => {
           setSelected(e.target.value);
           setHover(null);
+          setChartBounds(undefined);
         }}
         className="mt-4 w-full border border-border bg-background rounded p-2 text-xs"
       >
-        {!chartId && <option value="">No matching listings</option>}
+        {!chartId && (
+          <option value="" disabled>
+            {linkedListingMissing
+              ? "Choose another listing"
+              : "No matching listings"}
+          </option>
+        )}
         {listings.map(o => (
           <option key={o.offerId} value={o.offerId}>
             {o.providerName} · {o.region} · {cloudLabel(o)} ·{" "}
@@ -182,6 +233,26 @@ export function PriceMarket({
           </option>
         ))}
       </select>
+      {linkedListingMissing && (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          The linked listing is outside the current filters or recorded history.
+        </p>
+      )}
+      {anchoredEnd !== undefined && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          History ending {date(anchoredEnd)}.{" "}
+          <button
+            className="underline"
+            onClick={() => {
+              setAnchoredEnd(undefined);
+              setChartBounds(undefined);
+              setHover(null);
+            }}
+          >
+            Use latest
+          </button>
+        </p>
+      )}
       <div className="flex flex-wrap justify-between gap-4 mt-5 mb-4">
         <div>
           <div className="flex flex-wrap gap-x-3 items-baseline">
@@ -207,17 +278,21 @@ export function PriceMarket({
           </p>
         </div>
         <div className="flex gap-1 items-start">
-          {[
-            [1, "1H"],
-            [24, "24H"],
-            [168, "7D"],
-          ].map(([value, label]) => (
+          {(
+            [
+              [1, "1H"],
+              [24, "24H"],
+              [168, "7D"],
+            ] as const
+          ).map(([value, label]) => (
             <button
               key={value}
               aria-pressed={hours === value}
               onClick={() => {
-                setHours(Number(value));
+                setHours(value);
                 setHover(null);
+                setAnchoredEnd(undefined);
+                setChartBounds(undefined);
               }}
               className={`px-3 py-2 text-xs font-data rounded border ${hours === value ? "border-teal bg-teal/10 text-teal" : "border-border"}`}
             >
@@ -226,7 +301,7 @@ export function PriceMarket({
           ))}
         </div>
       </div>
-      {offer && !historicalChoice && (
+      {chartId && offer && !historicalChoice && (
         <div className="flex flex-wrap items-center gap-3 mb-4 text-xs">
           <AvailabilityBadge
             providerLink={offer.providerLink}
@@ -248,11 +323,13 @@ export function PriceMarket({
       )}
       {points.length > 1 ? (
         <MarketPlot
-          key={`${chartId}:${hours}`}
+          key={`${chartId}:${hours}:${anchoredEnd ?? "latest"}`}
           points={points}
           color={color}
           stats={stats!}
           onInspect={setHover}
+          bounds={chartBounds}
+          onBoundsChange={setChartBounds}
         />
       ) : (
         <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
@@ -300,19 +377,31 @@ function MarketPlot({
   color,
   stats,
   onInspect,
+  bounds,
+  onBoundsChange,
 }: {
   points: ReturnType<typeof marketSeries>;
   color: string;
   stats: NonNullable<ReturnType<typeof marketStats>>;
   onInspect: (point: { time: number; price: number } | null) => void;
+  bounds?: HistoryBounds;
+  onBoundsChange: (bounds: HistoryBounds) => void;
 }) {
-  const [start, setStart] = useState(0);
-  const [end, setEnd] = useState<number | null>(null);
-  const first = Math.min(start, points.length - 2);
-  const last = Math.max(
-    first + 1,
-    Math.min(end ?? points.length - 1, points.length - 1)
-  );
+  const first = bounds
+    ? Math.min(
+        Math.max(
+          0,
+          points.findIndex(point => point.time >= bounds.start)
+        ),
+        points.length - 2
+      )
+    : 0;
+  const last = bounds
+    ? Math.max(
+        first + 1,
+        points.findLastIndex(point => point.time <= bounds.end)
+      )
+    : points.length - 1;
   const visible = points.slice(first, last + 1);
   const formatPrice = (value: number) => `$${value.toFixed(3)}`;
   return (
@@ -348,8 +437,10 @@ function MarketPlot({
             aria-valuetext={date(points[first].time)}
             onChange={event => {
               const next = Number(event.target.value);
-              setStart(next);
-              if (next >= last) setEnd(next + 1);
+              onBoundsChange({
+                start: points[next].time,
+                end: points[Math.max(last, next + 1)].time,
+              });
               onInspect(null);
             }}
             className="trend-range w-full"
@@ -365,8 +456,10 @@ function MarketPlot({
             aria-valuetext={date(points[last].time)}
             onChange={event => {
               const value = Number(event.target.value);
-              setEnd(value === points.length - 1 ? null : value);
-              if (value <= first) setStart(value - 1);
+              onBoundsChange({
+                start: points[Math.min(first, value - 1)].time,
+                end: points[value].time,
+              });
               onInspect(null);
             }}
             className="trend-range w-full"

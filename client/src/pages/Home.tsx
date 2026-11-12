@@ -23,9 +23,9 @@ import {
 import { displayQuote } from "@shared/market";
 import { formatPrice } from "@/lib/data";
 import { isStale, isCurrent } from "@shared/catalog";
+import { readViewLink } from "@/lib/view-link";
 
 // Generated assets
-const HERO_BG = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.webp`;
 const CONSTELLATION = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 const loadOffers = () =>
@@ -50,9 +50,16 @@ const TABS: { id: Tab; label: string; desc: string }[] = [
 ];
 
 export default function Home() {
-  const [historyOfferId, setHistoryOfferId] = useState("");
+  const [sharedView, setSharedView] = useState(() =>
+    readViewLink(window.location.search)
+  );
+  const [historyOfferId, setHistoryOfferId] = useState(
+    sharedView?.view === "trends" ? sharedView.id : ""
+  );
   const [initialGpu, setInitialGpu] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<Tab>(
+    sharedView?.view ?? "overview"
+  );
   const generatedAt = catalog.generatedAt;
   const offers = catalog.offers;
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
@@ -66,6 +73,12 @@ export default function Home() {
 
   function navigate(tab: Tab, gpu = "") {
     if (tab === activeTab) return;
+    if (sharedView) {
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState(null, "", url);
+      setSharedView(undefined);
+    }
     if (tab === "offers") {
       startTransition(() => {
         setInitialGpu(gpu);
@@ -95,7 +108,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen graph-paper grain">
+    <div className="min-h-screen dashboard-surface">
       {/* ── Navigation ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 h-[60px] border-b border-border bg-background">
         <div className="container flex items-center justify-between h-full">
@@ -230,32 +243,8 @@ export default function Home() {
 
       {/* ── Hero Section ────────────────────────────────────────────────── */}
       {activeTab === "overview" && (
-        <section className="relative overflow-hidden border-b border-border">
-          {/* Blueprint background image */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url(${HERO_BG})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center top",
-              opacity: 0.22,
-            }}
-          />
-
-          {/* Gradient overlay — fades bg into paper */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--paper)] via-[var(--paper)/60%] to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--paper)] via-transparent to-transparent" />
-
-          {/* Scan line animation */}
-          <div className="absolute inset-0 scan-line overflow-hidden pointer-events-none" />
-
-          {/* GPU Diagram — right side decorative */}
-          <div
-            aria-hidden="true"
-            className="hero-blueprint absolute right-0 top-0 bottom-0 w-[45%] hidden lg:block"
-          />
-
-          <div className="container relative py-16 md:py-20">
+        <section className="observatory-hero overflow-hidden border-b border-border">
+          <div className="container grid items-center gap-6 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] md:py-18">
             <div className="max-w-xl">
               {/* Eyebrow */}
               <div className="flex items-center gap-2 mb-5">
@@ -319,6 +308,16 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="observatory-art hidden md:block" aria-hidden="true">
+              <img
+                src={GPU_DIAGRAM}
+                alt=""
+                width={1080}
+                height={608}
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           </div>
         </section>
@@ -400,6 +399,7 @@ export default function Home() {
           <Suspense fallback={<p role="status">Loading offers…</p>}>
             <OffersTable
               initialGpu={initialGpu}
+              shared={sharedView?.view === "offers" ? sharedView : undefined}
               onViewHistory={id => {
                 setHistoryOfferId(id);
                 navigate("trends");
@@ -445,7 +445,10 @@ export default function Home() {
                 Recorded prices · rolling seven-day history
               </span>
             </div>
-            <TrendsPanel initialOfferId={historyOfferId} />
+            <TrendsPanel
+              initialOfferId={historyOfferId}
+              shared={sharedView?.view === "trends" ? sharedView : undefined}
+            />
             <div className="mt-6 p-4 rounded-lg bg-card border border-border">
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <strong className="text-foreground font-medium">Note:</strong>{" "}
