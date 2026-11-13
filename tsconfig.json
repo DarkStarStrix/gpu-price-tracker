@@ -4,6 +4,7 @@
     "shared",
     "scripts",
     "alerts",
+    "refresh",
     "vite.config.ts",
     "vitest.config.ts"
   ],
