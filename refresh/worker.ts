@@ -3,6 +3,7 @@ import type { ExportedHandler } from "@cloudflare/workers-types";
 const workflow =
   "https://api.github.com/repos/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml";
 const graceMs = 4 * 60_000;
+const expiryWarningMs = 7 * 24 * 60 * 60_000;
 
 interface Env {
   GITHUB_ACTIONS_TOKEN?: string;
@@ -12,6 +13,25 @@ interface WorkflowRun {
   status: string;
   conclusion: string | null;
   created_at: string;
+}
+
+function githubFailure(operation: string, response: Response) {
+  const { status, headers } = response;
+  const rateLimited =
+    status === 429 ||
+    (status === 403 &&
+      (headers.get("x-ratelimit-remaining") === "0" ||
+        headers.has("retry-after")));
+  const hint = rateLimited
+    ? ": GitHub rate limit"
+    : status === 401
+      ? ": credential rejected; check expiry or revocation"
+      : status === 403 && operation === "dispatch"
+        ? ": check Actions write access and repository scope"
+        : "";
+  return new Error(
+    `GitHub workflow ${operation} failed (HTTP ${status})${hint}`
+  );
 }
 
 export async function checkRefresh(
@@ -37,10 +57,24 @@ export async function checkRefresh(
   );
   if (!response.ok) {
     await response.body?.cancel();
-    throw new Error(
-      `GitHub workflow status request failed (HTTP ${response.status})`
+    throw githubFailure("status request", response);
+  }
+  const expiration = response.headers.get(
+    "github-authentication-token-expiration"
+  );
+  const expiresAt = expiration ? Date.parse(expiration) : NaN;
+  if (
+    expiresAt > scheduledTime &&
+    expiresAt - scheduledTime <= expiryWarningMs
+  ) {
+    console.warn(
+      JSON.stringify({
+        event: "collector_backup_token_expiring",
+        expiresAt: new Date(expiresAt).toISOString(),
+      })
     );
   }
+
   const { workflow_runs: runs } = (await response.json()) as {
     workflow_runs: WorkflowRun[];
   };
@@ -63,10 +97,7 @@ export async function checkRefresh(
     body: JSON.stringify({ ref: "main" }),
   });
   await dispatched.body?.cancel();
-  if (!dispatched.ok)
-    throw new Error(
-      `GitHub workflow dispatch failed (HTTP ${dispatched.status})`
-    );
+  if (!dispatched.ok) throw githubFailure("dispatch", dispatched);
   return "dispatched";
 }
 

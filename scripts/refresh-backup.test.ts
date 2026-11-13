@@ -64,3 +64,51 @@ it("rejects redirects without forwarding the GitHub credential", async () => {
   expect(request).toHaveBeenCalledTimes(1);
   expect(request.mock.calls[0][1]?.redirect).toBe("manual");
 });
+
+it("warns before token expiry and still dispatches the collector", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const request = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      Response.json(
+        { workflow_runs: [] },
+        {
+          headers: {
+            "GitHub-Authentication-Token-Expiration": "2026-11-17 19:12:00 UTC",
+          },
+        }
+      )
+    )
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  try {
+    await expect(checkRefresh(slot, "fixture", request)).resolves.toBe(
+      "dispatched"
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("2026-11-17T19:12:00.000Z")
+    );
+  } finally {
+    warn.mockRestore();
+  }
+});
+
+it.each([
+  [401, {}, "credential rejected"],
+  [403, {}, "check Actions write access"],
+  [403, { "x-ratelimit-remaining": "0" }, "GitHub rate limit"],
+])(
+  "diagnoses a failed dispatch (HTTP %s) without logging its body",
+  async (status, headers, hint) => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ workflow_runs: [] }))
+      .mockResolvedValueOnce(
+        new Response("private response", {
+          status,
+          headers: headers as HeadersInit,
+        })
+      );
+    await expect(checkRefresh(slot, "fixture", request)).rejects.toThrow(hint);
+    expect(request).toHaveBeenCalledTimes(2);
+  }
+);

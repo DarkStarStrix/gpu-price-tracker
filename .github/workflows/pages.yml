@@ -19,8 +19,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     permissions:
       contents: write
+    outputs:
+      snapshot_at: ${{ steps.snapshot.outputs.generated_at }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -55,6 +58,11 @@ jobs:
       - run: pnpm build:pages
         env:
           VITE_WATCH_API: ${{ vars.WATCH_API_URL }}
+      - name: Record the built snapshot timestamp
+        id: snapshot
+        run: |
+          generated_at=$(jq -er .generatedAt dist/data/current.json)
+          printf 'generated_at=%s\n' "$generated_at" >> "$GITHUB_OUTPUT"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
@@ -63,6 +71,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -74,6 +83,23 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Verify the new snapshot on GitHub Pages
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_AT: ${{ needs.build.outputs.snapshot_at }}
+        run: |
+          test -n "$PAGES_URL"
+          test -n "$EXPECTED_AT"
+          for attempt in {1..12}; do
+            url="${PAGES_URL%/}/data/current.json?verify=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$attempt"
+            if curl --fail --silent --show-error --max-time 10 "$url" |
+                jq -e --arg expected "$EXPECTED_AT" '.generatedAt == $expected' >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::GitHub Pages did not serve the expected snapshot ($EXPECTED_AT)."
+          exit 1
 
   alerts:
     needs: deploy
