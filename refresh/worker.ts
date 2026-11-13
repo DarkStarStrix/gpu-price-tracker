@@ -27,7 +27,8 @@ export async function checkRefresh(
   };
   const options = {
     headers,
-    redirect: "error",
+    // Workers supports manual redirects. The response checks reject every 3xx.
+    redirect: "manual",
     signal: AbortSignal.timeout(15_000),
   } as const;
   const response = await request(

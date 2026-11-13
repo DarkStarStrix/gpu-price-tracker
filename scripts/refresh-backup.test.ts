@@ -25,7 +25,7 @@ it("dispatches a missed slot through the existing main workflow", async () => {
     expect.objectContaining({
       method: "POST",
       body: '{"ref":"main"}',
-      redirect: "error",
+      redirect: "manual",
     }),
   ]);
 });
@@ -52,4 +52,15 @@ it("does not dispatch when GitHub denies the status request", async () => {
     "GitHub workflow status request failed (HTTP 403)"
   );
   expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("rejects redirects without forwarding the GitHub credential", async () => {
+  const request = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.redirect("https://example.com/", 307));
+  await expect(checkRefresh(slot, "fixture", request)).rejects.toThrow(
+    "GitHub workflow status request failed (HTTP 307)"
+  );
+  expect(request).toHaveBeenCalledTimes(1);
+  expect(request.mock.calls[0][1]?.redirect).toBe("manual");
 });
