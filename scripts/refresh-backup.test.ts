@@ -1,7 +1,81 @@
 import { expect, it, vi } from "vitest";
-import { checkRefresh } from "../refresh/worker";
+import worker, { checkRefresh } from "../refresh/worker";
 
 const slot = Date.parse("2026-11-12T19:12:00Z");
+
+it.each([
+  [14, undefined],
+  [46, "Public price snapshot is overdue"],
+])(
+  "reports a %s-minute-old snapshot even when dispatch fails",
+  async (age, issue) => {
+    const request = vi.fn<typeof fetch>().mockImplementation(async url => {
+      if (String(url).includes("/data/current.json?health=")) {
+        return Response.json({
+          generatedAt: new Date(slot - age * 60_000).toISOString(),
+          sources: [
+            { id: "verda", status: "error" },
+            { id: "runpod", status: "ok" },
+            { id: "disabled-provider", status: "not_configured" },
+          ],
+          compute: [{ providerId: "vultr", status: "error" }],
+        });
+      }
+      return new Response(null, { status: 403 });
+    });
+    vi.stubGlobal("fetch", request);
+    const clock = vi.spyOn(Date, "now").mockReturnValue(slot);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const result = worker.scheduled(
+        { scheduledTime: slot, cron: "", noRetry() {} },
+        { GITHUB_ACTIONS_TOKEN: "fixture" }
+      );
+      await expect(result).rejects.toThrow("status request failed (HTTP 403)");
+      expect(request.mock.calls[0][1]?.headers).toBeUndefined();
+      expect(log).toHaveBeenCalledWith({
+        event: "collector_snapshot",
+        ageMinutes: age,
+        failedSources: ["gpu:verda", "compute:vultr"],
+        failedSourceCount: 2,
+      });
+      expect(error.mock.calls).toEqual(issue ? [[issue]] : []);
+    } finally {
+      vi.unstubAllGlobals();
+      clock.mockRestore();
+      log.mockRestore();
+      error.mockRestore();
+    }
+  }
+);
+
+it("reports a broken snapshot while still dispatching a missed slot", async () => {
+  const request = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(new Response("<html>Unavailable</html>"))
+    .mockResolvedValueOnce(Response.json({ workflow_runs: [] }))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  vi.stubGlobal("fetch", request);
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await worker.scheduled(
+      { scheduledTime: slot, cron: "", noRetry() {} },
+      { GITHUB_ACTIONS_TOKEN: "fixture" }
+    );
+    expect(error).toHaveBeenCalledWith(
+      "Public price snapshot has invalid freshness metadata"
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('"result":"dispatched"')
+    );
+  } finally {
+    vi.unstubAllGlobals();
+    log.mockRestore();
+    error.mockRestore();
+  }
+});
 
 function github(status: string, conclusion: string | null, createdAt: string) {
   return vi

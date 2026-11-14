@@ -5,5 +5,10 @@
   "workers_dev": false,
   "preview_urls": false,
   "triggers": { "crons": ["12,27,42,57 * * * *"] },
-  "observability": { "enabled": true, "traces": { "enabled": true } },
+  "upload_source_maps": true,
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true },
+    "issues": { "enabled": true }
+  },
 }
